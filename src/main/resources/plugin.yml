@@ -1,0 +1,30 @@
+name: LotterySix
+version: '${project.version}'
+main: com.loohp.lotterysix.LotterySixPlugin
+api-version: 1.19
+authors: [LOOHP]
+depend: [Vault, PlaceholderAPI]
+softdepend: [DiscordSRV]
+description: Lottery game in Minecraft inspired by the game 'Mark Six' by the HKJC
+
+commands:
+  lotterysix:
+    aliases: [lottery, ls]
+    description: Plugin main command
+
+permissions:
+  lotterysix.reload:
+    default: op
+    description: Reload the config
+  lotterysix.play:
+    default: true
+    description: Allow players to play lottery six
+  lotterysix.start:
+    default: op
+    description: Allow players to manuelly start the next game
+  lotterysix.run:
+    default: op
+    description: Allow players to manuelly run the current started game
+  lotterysix.cancel:
+    default: op
+    description: Allow players to manuelly cancel the current started game

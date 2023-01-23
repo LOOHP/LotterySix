@@ -1,0 +1,158 @@
+Messages:
+  Reloaded: "&eLotterySix has been reloaded!"
+  NoPermission: "&cYou do not have permission to do that!"
+  NoConsole: "&cThis command can only be ran by players!"
+  InvalidUsage: "&cInvalid Usage!"
+  NotEnoughMoney: "&cYou don't have ${Price} in your account!"
+  BidPlaced: "&aBet placed! ${Price} deduced from your account!"
+  NoGameRunning: "&cNo game is running at the moment"
+  GameAlreadyRunning: "&cA game had already been started"
+  GameLocked: "&cGame is currently running and locked"
+
+Formatting:
+  Date: "dd-MM-yyyy HH:mm:ss zzz"
+
+LotterySix:
+  #CornJob expression, https://crontab.guru/
+  #How often should the lottery run
+  #Put "Never" to never run automatically
+  RunInterval: "0 21 * * 3"
+  TimeZone: "Asia/Hong_Kong"
+  #How long before the lottery runs after it had started
+  #This is in seconds
+  BidsAcceptDuration: 604800
+  #This must be a positive integer
+  PricePerBet: 10
+  #Number Of Number Choices, Starting from 1, Inclusive
+  #The lower the number of choices, the higher the odds
+  #Minimum is 7, Maximum is 54
+  NumberOfChoices: 39
+  #The lowest prize allocation for winning the top three tiers
+  LowestTopPlacesPrize: 8000000
+  #This percentage of total bids acquired will be taken from the prize pool
+  TaxPercentage: 0.25
+
+GUI:
+  MainMenu:
+    Title: "&1LotterySix"
+    CheckPastResults:
+      - "&dCheck past results"
+    NoLotteryGamesScheduled:
+      - "&cNo LotterySix games are scheduled"
+    CheckOwnBets:
+      - "&eNext LotterySix!"
+      - "&aDateTime: {Date}"
+      - "&aTotal Bets: ${TotalBets}"
+      - "&aEstimated Prize Pool: ${PrizePool}"
+      - ""
+      - "&bClick to view your placed bets!"
+    PlaceNewBets:
+      - "&6Place New Bets"
+      - "&aPlease bet responsibly"
+      - ""
+      - "&7Odds:"
+      - "&7First: 1 in {FIRSTOdds}"
+      - "&7Second: 1 in {SECONDOdds}"
+      - "&7Third: 1 in {THIRDOdds}"
+      - "&7Fourth: 1 in {FOURTHOdds}"
+      - "&7Fifth: 1 in {FIFTHOdds}"
+      - "&7Sixth: 1 in {SIXTHOdds}"
+      - "&7Seventh: 1 in {SEVENTHOdds}"
+  LastResults:
+    Title: "&2Last Results"
+    LotteryInfo:
+      - "&aDateTime: {Date}"
+      - "&aTotal Bets: ${TotalBets}"
+      - "&a1st - 3rd Winners: {FirstToThirdPlaceWinnersCount}"
+      - "&aTotal Prizes: {TotalPrizes}"
+    YourBets:
+      - "&aYour Bets"
+    NoWinnings: "&7No Winnings"
+  YourBets:
+    Title: "&2Your Bets"
+    Nothing:
+      - "&cNo bets placed yet"
+    LotteryInfo:
+      - "&aDateTime: {Date}"
+      - "&aTotal Bets: ${TotalBets}"
+      - "&aEstimated Prize Pool: {PrizePool}"
+    NextPage:
+      - "&aNext Page (%nextpage%/%pages%)"
+    PreviousPage:
+      - "&cPrevious Page (%prevpage%/%pages%)"
+  NewBet:
+    Title: "&2Pick 6 Numbers"
+  ConfirmNewBet:
+    Title: "&2Confirm Bet"
+    LotteryInfo:
+      - "&ePlease bet responsibly"
+    Confirm:
+      - "&aConfirm (${PrizePerBet})"
+    Cancel:
+      - "&cCancel"
+
+Announcer:
+  PeriodicMessage:
+    Message: "&6[LotterySix] Join the next round of LotterySix by placing your bet with [/lottery play]! &eDraw will happen on {Date} with an estimated prize pool of ${PrizePool}!"
+    #This is in seconds
+    Frequency: 900
+    #Send this message one more time one minute before scheduled draw
+    OneMinuteBefore: true
+
+  DrawCancelledMessage: "&e[LotterySix] LotterySix game on {Date} had been cancelled by an admin or because there are no bets submitted"
+
+  LiveDrawAnnouncer:
+    #Announce drawn numbers as it happens
+    Enabled: true
+    #Send Title Messages as well
+    #If you use this feature, don't set TimeBetween to 0
+    SendMessagesTitle: true
+    #Time between each number reveal
+    #This is in seconds
+    TimeBetween: 5
+    PreMessage:
+      - "&a[LotterySix] Submissions for LotterySix game on {Date} are closed! &eLottery draw will begin shortly, 6 + 1 numbers will be drawn"
+    #These will also be sent as title if enabled above
+    Messages:
+      - "&eLotterySix &aDraw will begin"
+      - "&61st Number: {FirstNumber}"
+      - "&62nd Number: {SecondNumber}"
+      - "&63rd Number: {ThirdNumber}"
+      - "&64th Number: {FourthNumber}"
+      - "&65th Number: {FifthNumber}"
+      - "&66th Number: {SixthNumber}"
+      - "&aSpecial Number: {SpecialNumber}"
+      - "&b1st Tier Prize: &a${FIRSTPrize} &7x{FIRSTPrizeCount}"
+      - "&b2nd Tier Prize: &a${SECONDPrize} &7x{SECONDPrizeCount}"
+      - "&b3rd Tier Prize: &a${THIRDPrize} &7x{THIRDPrizeCount}"
+    PostMessages:
+      - "&e[LotterySix] &aCongratulations winners! Prizes will be given out shortly, here is a recap of the draw results:"
+      - "&e[LotterySix] &aDate: {Date}"
+      - "&e[LotterySix] &aDraw Results: {FirstNumber} {SecondNumber} {ThirdNumber} {FourthNumber} {FifthNumber} {SixthNumber} &e+ {SpecialNumber}"
+      - "&e[LotterySix] &a1st Tier Prize: &6${FIRSTPrize} &7x{FIRSTPrizeCount}"
+      - "&e[LotterySix] &a2nd Tier Prize: &6${SECONDPrize} &7x{SECONDPrizeCount}"
+      - "&e[LotterySix] &a3rd Tier Prize: &6${THIRDPrize} &7x{THIRDPrizeCount}"
+      - "&e[LotterySix] &a4th Tier Prize: &6${FOURTHPrize} &7x{FOURTHPrizeCount}"
+      - "&e[LotterySix] &a5th Tier Prize: &6${FIFTHPrize} &7x{FIFTHPrizeCount}"
+      - "&e[LotterySix] &a6th Tier Prize: &6${SIXTHPrize} &7x{SIXTHPrizeCount}"
+      - "&e[LotterySix] &a7th Tier Prize: &6${SEVENTHPrize} &7x{SEVENTHPrizeCount}"
+
+DiscordSRV:
+  DrawResultAnnouncement:
+    #Set this to a channel that does not exist to disable
+    Channel: "Global"
+    Title: "LotterySix Draw Results"
+    Description:
+      - "**Date: {Date}**"
+      - "**Draw Results: {FirstNumber} {SecondNumber} {ThirdNumber} {FourthNumber} {FifthNumber} {SixthNumber} + {SpecialNumber}**"
+      - ""
+      - "1st Tier Prize: ${FIRSTPrize} x{FIRSTPrizeCount}"
+      - "2nd Tier Prize: ${SECONDPrize} x{SECONDPrizeCount}"
+      - "3rd Tier Prize: ${THIRDPrize} x{THIRDPrizeCount}"
+      - "4th Tier Prize: ${FOURTHPrize} x{FOURTHPrizeCount}"
+      - "5th Tier Prize: ${FIFTHPrize} x{FIFTHPrizeCount}"
+      - "6th Tier Prize: ${SIXTHPrize} x{SIXTHPrizeCount}"
+      - "7th Tier Prize: ${SEVENTHPrize} x{SEVENTHPrizeCount}"
+      - ""
+      - "*Congratulations!*"
+    ThumbnailURL: "https://static.wikia.nocookie.net/minecraft_gamepedia/images/8/8a/Gold_Ingot_JE4_BE2.png"
