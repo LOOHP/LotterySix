@@ -69,10 +69,6 @@
                             <createDependencyReducedPom>false</createDependencyReducedPom>
                             <relocations>
                                 <relocation>
-                                    <pattern>net.kyori</pattern>
-                                    <shadedPattern>com.loohp.lotterysix.libs.net.kyori</shadedPattern>
-                                </relocation>
-                                <relocation>
                                     <pattern>de.themoep.inventorygui</pattern>
                                     <shadedPattern>com.loohp.lotterysix.libs.de.themoep.inventorygui</shadedPattern>
                                 </relocation>
@@ -299,42 +295,6 @@
             <artifactId>VaultAPI</artifactId>
             <version>1.7</version>
             <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>net.kyori</groupId>
-            <artifactId>adventure-text-serializer-gson</artifactId>
-            <version>4.12.0</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>net.kyori</groupId>
-            <artifactId>adventure-text-serializer-legacy</artifactId>
-            <version>4.12.0</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>net.kyori</groupId>
-            <artifactId>adventure-text-serializer-plain</artifactId>
-            <version>4.12.0</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>net.kyori</groupId>
-            <artifactId>adventure-api</artifactId>
-            <version>4.12.0</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>net.kyori</groupId>
-            <artifactId>adventure-nbt</artifactId>
-            <version>4.12.0</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>net.kyori</groupId>
-            <artifactId>adventure-text-minimessage</artifactId>
-            <version>4.12.0</version>
-            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>com.discordsrv</groupId>
