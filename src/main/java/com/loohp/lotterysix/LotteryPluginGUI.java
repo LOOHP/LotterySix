@@ -280,7 +280,7 @@ public class LotteryPluginGUI {
             List<PlayerWinnings> winningsList = game.getPlayerWinnings(player.getUniqueId());
             for (PlayerWinnings winnings : winningsList) {
                 strings.add(coloredString(winnings.getWinningBet().getChosenNumbers()));
-                strings.add(ChatColor.GOLD + "" + winnings.getTier() + " $" + winnings.getWinnings());
+                strings.add(ChatColor.GOLD + "" + winnings.getTier().getShortHand() + " $" + winnings.getWinnings());
                 strings.add("");
             }
             for (PlayerBets bets : game.getPlayerBets(player.getUniqueId())) {

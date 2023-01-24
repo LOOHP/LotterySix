@@ -22,12 +22,21 @@ package com.loohp.lotterysix.game.objects;
 
 public enum PrizeTier {
 
-    FIRST,
-    SECOND,
-    THIRD,
-    FOURTH,
-    FIFTH,
-    SIXTH,
-    SEVENTH;
+    FIRST("1st"),
+    SECOND("2nd"),
+    THIRD("3rd"),
+    FOURTH("4th"),
+    FIFTH("5th"),
+    SIXTH("6th"),
+    SEVENTH("7th");
 
+    private final String shortHand;
+
+    PrizeTier(String shortHand) {
+        this.shortHand = shortHand;
+    }
+
+    public String getShortHand() {
+        return shortHand;
+    }
 }
