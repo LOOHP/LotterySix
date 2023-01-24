@@ -28,6 +28,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class WinningNumbers implements Iterable<Integer> {
 
@@ -101,6 +102,10 @@ public class WinningNumbers implements Iterable<Integer> {
                 return itr.next();
             }
         };
+    }
+
+    public IntStream stream() {
+        return numbers.stream().mapToInt(i -> i);
     }
 
     public Iterator<Integer> orderedIterator() {

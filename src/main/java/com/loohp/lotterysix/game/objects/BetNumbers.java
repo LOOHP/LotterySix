@@ -30,6 +30,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class BetNumbers implements Iterable<Integer> {
 
@@ -58,6 +59,10 @@ public class BetNumbers implements Iterable<Integer> {
                 return itr.next();
             }
         };
+    }
+
+    public IntStream stream() {
+        return numbers.stream().mapToInt(i -> i);
     }
 
     public Set<Integer> getNumbers() {

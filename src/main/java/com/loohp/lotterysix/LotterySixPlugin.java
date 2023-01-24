@@ -31,6 +31,7 @@ import com.loohp.lotterysix.game.completed.CompletedLotterySixGame;
 import com.loohp.lotterysix.game.objects.PlayerBets;
 import com.loohp.lotterysix.game.objects.PlayerWinnings;
 import com.loohp.lotterysix.game.playable.PlayableLotterySixGame;
+import com.loohp.lotterysix.metrics.Charts;
 import com.loohp.lotterysix.metrics.Metrics;
 import com.loohp.lotterysix.placeholderapi.LotteryPlaceholders;
 import com.loohp.lotterysix.utils.ChatColorUtils;
@@ -109,6 +110,8 @@ public class LotterySixPlugin extends JavaPlugin {
         });
         instance.reloadConfig();
         guiProvider = new LotteryPluginGUI(this);
+
+        Charts.setup(metrics);
 
         new LotteryPlaceholders().register();
 
