@@ -22,6 +22,7 @@ package com.loohp.lotterysix;
 
 import com.google.common.collect.Collections2;
 import com.loohp.lotterysix.config.Config;
+import com.loohp.lotterysix.debug.Debug;
 import com.loohp.lotterysix.discordsrv.DiscordSRVHook;
 import com.loohp.lotterysix.events.LotterySixEvent;
 import com.loohp.lotterysix.events.PlayerBetEvent;
@@ -30,6 +31,7 @@ import com.loohp.lotterysix.game.completed.CompletedLotterySixGame;
 import com.loohp.lotterysix.game.objects.PlayerBets;
 import com.loohp.lotterysix.game.objects.PlayerWinnings;
 import com.loohp.lotterysix.game.playable.PlayableLotterySixGame;
+import com.loohp.lotterysix.metrics.Metrics;
 import com.loohp.lotterysix.placeholderapi.LotteryPlaceholders;
 import com.loohp.lotterysix.utils.ChatColorUtils;
 import com.loohp.lotterysix.utils.LotteryUtils;
@@ -47,7 +49,7 @@ import java.util.Collection;
 
 public class LotterySixPlugin extends JavaPlugin {
 
-    public static final int BSTATS_PLUGIN_ID = -1;
+    public static final int BSTATS_PLUGIN_ID = 17516;
     public static final String CONFIG_ID = "config";
 
     public static LotterySixPlugin plugin;
@@ -63,6 +65,9 @@ public class LotterySixPlugin extends JavaPlugin {
         if (!getDataFolder().exists()) {
             getDataFolder().mkdirs();
         }
+
+        Metrics metrics = new Metrics(this, BSTATS_PLUGIN_ID);
+        getServer().getPluginManager().registerEvents(new Debug(), this);
 
         try {
             Config.loadConfig(CONFIG_ID, new File(getDataFolder(), "config.yml"), getClass().getClassLoader().getResourceAsStream("config.yml"), getClass().getClassLoader().getResourceAsStream("config.yml"), true);
