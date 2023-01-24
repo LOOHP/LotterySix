@@ -20,28 +20,35 @@
 
 package com.loohp.lotterysix.game.objects;
 
-public enum PrizeTier {
+public enum PlayerStatsKey {
 
-    FIRST("1st"),
-    SECOND("2nd"),
-    THIRD("3rd"),
-    FOURTH("4th"),
-    FIFTH("5th"),
-    SIXTH("6th"),
-    SEVENTH("7th");
+    TOTAL_BETS_PLACED(long.class, 0L),
+    TOTAL_ROUNDS_PARTICIPATED(long.class, 0L),
+    TOTAL_WINNINGS(long.class, 0L),
+    HIGHEST_WON_TIER(PrizeTier.class, null);
 
-    private final String shortHand;
+    private final Class<?> valueTypeClass;
+    private final Object defaultValue;
 
-    PrizeTier(String shortHand) {
-        this.shortHand = shortHand;
+    <T> PlayerStatsKey(Class<T> valueTypeClass, T defaultValue) {
+        this.valueTypeClass = valueTypeClass;
+        this.defaultValue = defaultValue;
     }
 
-    public String getShortHand() {
-        return shortHand;
+    public static PlayerStatsKey fromKey(String key) {
+        for (PlayerStatsKey statsKey : values()) {
+            if (key.equalsIgnoreCase(statsKey.name())) {
+                return statsKey;
+            }
+        }
+        return null;
     }
 
-    @Override
-    public String toString() {
-        return getShortHand();
+    public Class<?> getValueTypeClass() {
+        return valueTypeClass;
+    }
+
+    public Object getDefaultValue() {
+        return defaultValue;
     }
 }

@@ -20,7 +20,11 @@
 
 package com.loohp.lotterysix;
 
+import com.loohp.lotterysix.game.objects.PlayerPreferenceKey;
+import com.loohp.lotterysix.utils.ArrayUtils;
+import com.loohp.lotterysix.utils.ChatColorUtils;
 import net.md_5.bungee.api.ChatColor;
+import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -29,6 +33,7 @@ import org.bukkit.entity.Player;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.UUID;
 
 public class Commands implements CommandExecutor, TabCompleter {
 
@@ -116,8 +121,48 @@ public class Commands implements CommandExecutor, TabCompleter {
                 sender.sendMessage(LotterySixPlugin.getInstance().messageNoPermission);
             }
             return true;
+        } else if (args[0].equalsIgnoreCase("preference")) {
+            if (sender.hasPermission("lotterysix.preference")) {
+                if (args.length > 2) {
+                    UUID uuid;
+                    if (sender instanceof Player) {
+                        if (sender.hasPermission("lotterysix.preference.others")) {
+                            uuid = ArrayUtils.getOptional(args, 3).map(s -> Bukkit.getOfflinePlayer(s)).orElseGet(() -> (Player) sender).getUniqueId();
+                        } else {
+                            uuid = ((Player) sender).getUniqueId();
+                        }
+                    } else {
+                        if (args.length > 3) {
+                            uuid = Bukkit.getOfflinePlayer(args[3]).getUniqueId();
+                        } else {
+                            sender.sendMessage(LotterySixPlugin.getInstance().messageNoConsole);
+                            return true;
+                        }
+                    }
+                    PlayerPreferenceKey preferenceKey = PlayerPreferenceKey.fromKey(args[1]);
+                    if (preferenceKey == null) {
+                        sender.sendMessage(LotterySixPlugin.getInstance().messageInvalidUsage);
+                    } else {
+                        String valueStr = args[2];
+                        Object value = preferenceKey.getReader().apply(valueStr);
+                        if (value == null) {
+                            sender.sendMessage(LotterySixPlugin.getInstance().messageInvalidUsage);
+                        } else {
+                            LotterySixPlugin.getInstance().getPlayerPreferenceManager().getLotteryPlayer(uuid).setPreference(preferenceKey, value);
+                            sender.sendMessage(LotterySixPlugin.getInstance().messagePreferenceUpdated);
+                        }
+                    }
+                } else {
+                    sender.sendMessage(LotterySixPlugin.getInstance().messageInvalidUsage);
+                }
+            } else {
+                sender.sendMessage(LotterySixPlugin.getInstance().messageNoPermission);
+            }
+            return true;
         }
-        return false;
+
+        sender.sendMessage(ChatColorUtils.translateAlternateColorCodes('&', Bukkit.spigot().getConfig().getString("messages.unknown-command")));
+        return true;
     }
 
     @Override
@@ -140,6 +185,9 @@ public class Commands implements CommandExecutor, TabCompleter {
                 }
                 if (sender.hasPermission("lotterysix.cancel")) {
                     tab.add("cancel");
+                }
+                if (sender.hasPermission("lotterysix.preference")) {
+                    tab.add("preference");
                 }
                 return tab;
             case 1:
@@ -166,6 +214,48 @@ public class Commands implements CommandExecutor, TabCompleter {
                 if (sender.hasPermission("lotterysix.cancel")) {
                     if ("cancel".startsWith(args[0].toLowerCase())) {
                         tab.add("cancel");
+                    }
+                }
+                if (sender.hasPermission("lotterysix.preference")) {
+                    if ("preference".startsWith(args[0].toLowerCase())) {
+                        tab.add("preference");
+                    }
+                }
+                return tab;
+            case 2:
+                if (sender.hasPermission("lotterysix.preference")) {
+                    if ("preference".equalsIgnoreCase(args[0])) {
+                        for (PlayerPreferenceKey key : PlayerPreferenceKey.values()) {
+                            String name = key.name().toLowerCase();
+                            if (name.startsWith(args[1].toLowerCase())) {
+                                tab.add(name);
+                            }
+                        }
+                    }
+                }
+                return tab;
+            case 3:
+                if (sender.hasPermission("lotterysix.preference")) {
+                    if ("preference".equalsIgnoreCase(args[0])) {
+                        PlayerPreferenceKey key = PlayerPreferenceKey.fromKey(args[1]);
+                        if (key != null) {
+                            for (String value : key.getSuggestedValues()) {
+                                if (value.toLowerCase().startsWith(args[2].toLowerCase())) {
+                                    tab.add(value);
+                                }
+                            }
+                        }
+                    }
+                }
+                return tab;
+            case 4:
+                if (sender.hasPermission("lotterysix.preference.others")) {
+                    if ("preference".equalsIgnoreCase(args[0])) {
+                        for (Player player : Bukkit.getOnlinePlayers()) {
+                            if (player.getName().toLowerCase().startsWith(args[3].toLowerCase())) {
+                                tab.add(player.getName());
+                            }
+                        }
                     }
                 }
                 return tab;

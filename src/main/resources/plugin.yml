@@ -28,3 +28,9 @@ permissions:
   lotterysix.cancel:
     default: op
     description: Allow players to manuelly cancel the current started game
+  lotterysix.preference:
+    default: true
+    description: Allow players to set their own preferences
+  lotterysix.preference.others:
+    default: op
+    description: Allow players to set other player's preferences

@@ -23,14 +23,16 @@ package com.loohp.lotterysix.game;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.loohp.lotterysix.config.Config;
-import com.loohp.lotterysix.game.completed.CompletedLotterySixGame;
+import com.loohp.lotterysix.game.lottery.CompletedLotterySixGame;
 import com.loohp.lotterysix.game.objects.BetNumbers;
 import com.loohp.lotterysix.game.objects.CronExpression;
 import com.loohp.lotterysix.game.objects.LotterySixAction;
 import com.loohp.lotterysix.game.objects.MessageConsumer;
 import com.loohp.lotterysix.game.objects.PlayerBets;
+import com.loohp.lotterysix.game.objects.PlayerPreferenceKey;
 import com.loohp.lotterysix.game.objects.PlayerWinnings;
-import com.loohp.lotterysix.game.playable.PlayableLotterySixGame;
+import com.loohp.lotterysix.game.lottery.PlayableLotterySixGame;
+import com.loohp.lotterysix.game.player.LotteryPlayerManager;
 import com.loohp.lotterysix.utils.ChatColorUtils;
 
 import java.io.BufferedReader;
@@ -72,6 +74,7 @@ public class LotterySix implements AutoCloseable {
     public String messageNoGameRunning;
     public String messageGameAlreadyRunning;
     public String messageGameLocked;
+    public String messagePreferenceUpdated;
 
     public SimpleDateFormat dateFormat;
 
@@ -119,6 +122,8 @@ public class LotterySix implements AutoCloseable {
     public String discordSRVDrawResultAnnouncementDescription;
     public String discordSRVDrawResultAnnouncementThumbnailURL;
 
+    private final LotteryPlayerManager playerPreferenceManager;
+
     private volatile PlayableLotterySixGame currentGame;
     private volatile boolean gameLocked;
     private final List<CompletedLotterySixGame> completedGames;
@@ -154,6 +159,8 @@ public class LotterySix implements AutoCloseable {
         reloadConfig();
         loadData();
 
+        this.playerPreferenceManager = new LotteryPlayerManager(this);
+
         new Timer().scheduleAtFixedRate(lotteryTask = new TimerTask() {
             private int counter = 0;
             @Override
@@ -168,7 +175,9 @@ public class LotterySix implements AutoCloseable {
                         runCurrentGame();
                     } else if (counter % announcerPeriodicMessageFrequency == 0) {
                         for (UUID uuid : onlinePlayersSupplier.get()) {
-                            messageSendingConsumer.accept(uuid, announcerPeriodicMessageMessage, currentGame);
+                            if (!playerPreferenceManager.getLotteryPlayer(uuid).getPreference(PlayerPreferenceKey.HIDE_PERIODIC_ANNOUNCEMENTS, boolean.class)) {
+                                messageSendingConsumer.accept(uuid, announcerPeriodicMessageMessage, currentGame);
+                            }
                         }
                     }
                 }
@@ -189,6 +198,10 @@ public class LotterySix implements AutoCloseable {
 
     public String getConfigId() {
         return configId;
+    }
+
+    public LotteryPlayerManager getPlayerPreferenceManager() {
+        return playerPreferenceManager;
     }
 
     public PlayableLotterySixGame getCurrentGame() {
@@ -247,7 +260,9 @@ public class LotterySix implements AutoCloseable {
                         for (UUID uuid : onlinePlayersSupplier.get()) {
                             messageSendingConsumer.accept(uuid, message, completed);
                             if (liveDrawAnnouncerSendMessagesTitle) {
-                                titleSendingConsumer.accept(uuid, message, completed);
+                                if (!playerPreferenceManager.getLotteryPlayer(uuid).getPreference(PlayerPreferenceKey.HIDE_TITLES, boolean.class)) {
+                                    titleSendingConsumer.accept(uuid, message, completed);
+                                }
                             }
                         }
                     }
@@ -319,6 +334,7 @@ public class LotterySix implements AutoCloseable {
         messageNoGameRunning = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Messages.NoGameRunning"));
         messageGameAlreadyRunning = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Messages.GameAlreadyRunning"));
         messageGameLocked = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Messages.GameLocked"));
+        messagePreferenceUpdated = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Messages.PreferenceUpdated"));
 
         String runInternalStr = config.getConfiguration().getString("LotterySix.RunInterval");
         try {

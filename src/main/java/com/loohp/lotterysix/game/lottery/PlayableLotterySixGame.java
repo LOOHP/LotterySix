@@ -18,12 +18,13 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.loohp.lotterysix.game.playable;
+package com.loohp.lotterysix.game.lottery;
 
 import com.loohp.lotterysix.game.LotterySix;
-import com.loohp.lotterysix.game.completed.CompletedLotterySixGame;
 import com.loohp.lotterysix.game.objects.BetNumbers;
+import com.loohp.lotterysix.game.objects.LotteryPlayer;
 import com.loohp.lotterysix.game.objects.PlayerBets;
+import com.loohp.lotterysix.game.objects.PlayerStatsKey;
 import com.loohp.lotterysix.game.objects.PlayerWinnings;
 import com.loohp.lotterysix.game.objects.PrizeTier;
 import com.loohp.lotterysix.game.objects.WinningNumbers;
@@ -32,8 +33,10 @@ import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -88,6 +91,9 @@ public class PlayableLotterySixGame {
         this.valid = false;
         if (instance != null) {
             instance.refundBets(bets);
+            for (PlayerBets bet : bets) {
+                instance.getPlayerPreferenceManager().getLotteryPlayer(bet.getPlayer()).updateStats(PlayerStatsKey.TOTAL_BETS_PLACED, long.class, i -> i - bet.getBet());
+            }
         }
     }
 
@@ -112,6 +118,7 @@ public class PlayableLotterySixGame {
             if (!instance.takeMoney(bet)) {
                 return false;
             }
+            instance.getPlayerPreferenceManager().getLotteryPlayer(bet.getPlayer()).updateStats(PlayerStatsKey.TOTAL_BETS_PLACED, long.class, i -> i + bet.getBet());
         }
         bets.add(bet);
         if (instance != null) {
@@ -142,11 +149,20 @@ public class PlayableLotterySixGame {
             tiers.put(prizeTier, new ArrayList<>());
         }
         long totalPrize = carryOverFund + (long) Math.floor(bets.stream().mapToLong(each -> each.getBet()).count() * (1.0 - taxPercentage));
+        Set<UUID> participants = new HashSet<>();
         for (PlayerBets playerBets : bets) {
+            participants.add(playerBets.getPlayer());
             PrizeTier prizeTier = winningNumbers.checkWinning(playerBets.getChosenNumbers());
             if (prizeTier != null) {
                 tiers.get(prizeTier).add(playerBets);
             }
+        }
+        if (instance != null) {
+            new Thread(() -> {
+                for (UUID player : participants) {
+                    instance.getPlayerPreferenceManager().getLotteryPlayer(player).updateStats(PlayerStatsKey.TOTAL_ROUNDS_PARTICIPATED, long.class, i -> i + 1);
+                }
+            }).start();
         }
         List<PlayerWinnings> winnings = new ArrayList<>();
         long totalPrizes = 0;
@@ -218,6 +234,13 @@ public class PlayableLotterySixGame {
 
         if (instance != null) {
             instance.givePrizes(winnings);
+            new Thread(() -> {
+                for (PlayerWinnings winning : winnings) {
+                    LotteryPlayer lotteryPlayer = instance.getPlayerPreferenceManager().getLotteryPlayer(winning.getPlayer());
+                    lotteryPlayer.updateStats(PlayerStatsKey.TOTAL_WINNINGS, long.class, i -> i + winning.getWinnings());
+                    lotteryPlayer.updateStats(PlayerStatsKey.HIGHEST_WON_TIER, PrizeTier.class, t -> t == null || winning.getTier().ordinal() < t.ordinal(), winning.getTier());
+                }
+            }).start();
         }
 
         return new CompletedLotterySixGame(gameId, now, winningNumbers, winnings, bets, totalPrizes, (long) Math.floor(carryOverNext * (1 - taxPercentage)));

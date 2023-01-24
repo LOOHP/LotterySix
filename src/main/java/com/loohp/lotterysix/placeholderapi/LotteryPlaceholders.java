@@ -21,11 +21,17 @@
 package com.loohp.lotterysix.placeholderapi;
 
 import com.loohp.lotterysix.LotterySixPlugin;
+import com.loohp.lotterysix.game.objects.PlayerPreferenceKey;
+import com.loohp.lotterysix.game.objects.PlayerStatsKey;
 import com.loohp.lotterysix.utils.LotteryUtils;
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;
 import org.bukkit.OfflinePlayer;
 
 public class LotteryPlaceholders extends PlaceholderExpansion {
+
+    private static String asString(Object input) {
+        return input == null ? "N/A" : input.toString();
+    }
 
     @Override
     public String getAuthor() {
@@ -67,6 +73,20 @@ public class LotteryPlaceholders extends PlaceholderExpansion {
             } else {
                 String str = "{" + identifier.substring("lastgame_".length()) + "}";
                 return LotteryUtils.formatPlaceholders(offlineplayer, str, LotterySixPlugin.getInstance(), LotterySixPlugin.getInstance().getCompletedGames().get(0));
+            }
+        } else if (identifier.startsWith("preference_")) {
+            PlayerPreferenceKey key = PlayerPreferenceKey.fromKey(identifier.substring("preference_".length()));
+            if (key == null) {
+                return "";
+            } else {
+                return asString(LotterySixPlugin.getInstance().getPlayerPreferenceManager().getLotteryPlayer(offlineplayer.getUniqueId()).getPreference(key));
+            }
+        } else if (identifier.startsWith("stats_")) {
+            PlayerStatsKey key = PlayerStatsKey.fromKey(identifier.substring("stats_".length()));
+            if (key == null) {
+                return "";
+            } else {
+                return asString(LotterySixPlugin.getInstance().getPlayerPreferenceManager().getLotteryPlayer(offlineplayer.getUniqueId()).getStats(key));
             }
         }
         return null;

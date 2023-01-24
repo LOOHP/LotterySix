@@ -18,30 +18,24 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.loohp.lotterysix.game.objects;
+package com.loohp.lotterysix.utils;
 
-public enum PrizeTier {
+import java.util.Optional;
 
-    FIRST("1st"),
-    SECOND("2nd"),
-    THIRD("3rd"),
-    FOURTH("4th"),
-    FIFTH("5th"),
-    SIXTH("6th"),
-    SEVENTH("7th");
+public class ArrayUtils {
 
-    private final String shortHand;
-
-    PrizeTier(String shortHand) {
-        this.shortHand = shortHand;
+    public static <T> T getOrNull(T[] array, int index) {
+        if (index < 0 || index >= array.length) {
+            return null;
+        }
+        return array[index];
     }
 
-    public String getShortHand() {
-        return shortHand;
+    public static <T> Optional<T> getOptional(T[] array, int index) {
+        if (index < 0 || index >= array.length) {
+            return Optional.empty();
+        }
+        return Optional.of(array[index]);
     }
 
-    @Override
-    public String toString() {
-        return getShortHand();
-    }
 }

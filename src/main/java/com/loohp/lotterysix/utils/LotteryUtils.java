@@ -21,9 +21,9 @@
 package com.loohp.lotterysix.utils;
 
 import com.loohp.lotterysix.game.LotterySix;
-import com.loohp.lotterysix.game.completed.CompletedLotterySixGame;
+import com.loohp.lotterysix.game.lottery.CompletedLotterySixGame;
 import com.loohp.lotterysix.game.objects.PrizeTier;
-import com.loohp.lotterysix.game.playable.PlayableLotterySixGame;
+import com.loohp.lotterysix.game.lottery.PlayableLotterySixGame;
 import me.clip.placeholderapi.PlaceholderAPI;
 import org.bukkit.OfflinePlayer;
 

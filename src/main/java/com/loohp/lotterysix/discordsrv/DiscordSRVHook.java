@@ -22,7 +22,7 @@ package com.loohp.lotterysix.discordsrv;
 
 import com.loohp.lotterysix.events.LotterySixEvent;
 import com.loohp.lotterysix.game.LotterySix;
-import com.loohp.lotterysix.game.completed.CompletedLotterySixGame;
+import com.loohp.lotterysix.game.lottery.CompletedLotterySixGame;
 import com.loohp.lotterysix.game.objects.LotterySixAction;
 import com.loohp.lotterysix.utils.LotteryUtils;
 import github.scarsz.discordsrv.DiscordSRV;

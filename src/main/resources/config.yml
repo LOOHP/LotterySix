@@ -8,6 +8,7 @@ Messages:
   NoGameRunning: "&cNo game is running at the moment"
   GameAlreadyRunning: "&cA game had already been started"
   GameLocked: "&cGame is currently running and locked"
+  PreferenceUpdated: "&aSuccessfully updated player preference!"
 
 Formatting:
   Date: "dd-MM-yyyy HH:mm:ss zzz"

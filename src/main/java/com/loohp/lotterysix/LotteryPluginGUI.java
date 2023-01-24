@@ -22,11 +22,11 @@ package com.loohp.lotterysix;
 
 import com.cryptomorin.xseries.XMaterial;
 import com.loohp.lotterysix.game.LotterySix;
-import com.loohp.lotterysix.game.completed.CompletedLotterySixGame;
+import com.loohp.lotterysix.game.lottery.CompletedLotterySixGame;
 import com.loohp.lotterysix.game.objects.BetNumbers;
 import com.loohp.lotterysix.game.objects.PlayerBets;
 import com.loohp.lotterysix.game.objects.PlayerWinnings;
-import com.loohp.lotterysix.game.playable.PlayableLotterySixGame;
+import com.loohp.lotterysix.game.lottery.PlayableLotterySixGame;
 import com.loohp.lotterysix.utils.ChatColorUtils;
 import com.loohp.lotterysix.utils.LotteryUtils;
 import de.themoep.inventorygui.DynamicGuiElement;

@@ -21,7 +21,7 @@
 package com.loohp.lotterysix.metrics;
 
 import com.loohp.lotterysix.LotterySixPlugin;
-import com.loohp.lotterysix.game.completed.CompletedLotterySixGame;
+import com.loohp.lotterysix.game.lottery.CompletedLotterySixGame;
 import com.loohp.lotterysix.game.objects.PrizeTier;
 
 import java.util.Arrays;
@@ -117,6 +117,16 @@ public class Charts {
                     valueMap.put(game.getDrawResult().getSpecialNumber() + "", 1);
                 }
                 return valueMap;
+            }
+        }));
+
+        metrics.addCustomChart(new Metrics.SingleLineChart("lotterysix_played", new Callable<Integer>() {
+            private long lastCall = System.currentTimeMillis();
+            @Override
+            public Integer call() throws Exception {
+                int counts = (int) LotterySixPlugin.getInstance().getCompletedGames().stream().filter(each -> each.getDatetime() >= lastCall).count();
+                lastCall = System.currentTimeMillis();
+                return counts;
             }
         }));
 

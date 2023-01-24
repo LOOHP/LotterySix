@@ -27,10 +27,10 @@ import com.loohp.lotterysix.discordsrv.DiscordSRVHook;
 import com.loohp.lotterysix.events.LotterySixEvent;
 import com.loohp.lotterysix.events.PlayerBetEvent;
 import com.loohp.lotterysix.game.LotterySix;
-import com.loohp.lotterysix.game.completed.CompletedLotterySixGame;
+import com.loohp.lotterysix.game.lottery.CompletedLotterySixGame;
 import com.loohp.lotterysix.game.objects.PlayerBets;
 import com.loohp.lotterysix.game.objects.PlayerWinnings;
-import com.loohp.lotterysix.game.playable.PlayableLotterySixGame;
+import com.loohp.lotterysix.game.lottery.PlayableLotterySixGame;
 import com.loohp.lotterysix.metrics.Charts;
 import com.loohp.lotterysix.metrics.Metrics;
 import com.loohp.lotterysix.placeholderapi.LotteryPlaceholders;
@@ -41,6 +41,10 @@ import net.md_5.bungee.api.ChatColor;
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -48,7 +52,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 
-public class LotterySixPlugin extends JavaPlugin {
+public class LotterySixPlugin extends JavaPlugin implements Listener {
 
     public static final int BSTATS_PLUGIN_ID = 17516;
     public static final String CONFIG_ID = "config";
@@ -69,6 +73,7 @@ public class LotterySixPlugin extends JavaPlugin {
 
         Metrics metrics = new Metrics(this, BSTATS_PLUGIN_ID);
         getServer().getPluginManager().registerEvents(new Debug(), this);
+        getServer().getPluginManager().registerEvents(this, this);
 
         try {
             Config.loadConfig(CONFIG_ID, new File(getDataFolder(), "config.yml"), getClass().getClassLoader().getResourceAsStream("config.yml"), getClass().getClassLoader().getResourceAsStream("config.yml"), true);
@@ -161,5 +166,15 @@ public class LotterySixPlugin extends JavaPlugin {
         for (Player player : Bukkit.getOnlinePlayers()) {
             guiProvider.forceClose(player);
         }
+    }
+
+    @EventHandler
+    public void onJoin(PlayerJoinEvent event) {
+        Bukkit.getScheduler().runTaskAsynchronously(this, () -> instance.getPlayerPreferenceManager().loadLotteryPlayer(event.getPlayer().getUniqueId(), true));
+    }
+
+    @EventHandler
+    public void onQuit(PlayerQuitEvent event) {
+        Bukkit.getScheduler().runTaskAsynchronously(this, () -> instance.getPlayerPreferenceManager().unloadLotteryPlayer(event.getPlayer().getUniqueId(), true));
     }
 }
