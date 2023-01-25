@@ -121,6 +121,17 @@ public class LotterySix implements AutoCloseable {
     public String discordSRVDrawResultAnnouncementTitle;
     public String discordSRVDrawResultAnnouncementDescription;
     public String discordSRVDrawResultAnnouncementThumbnailURL;
+    public String discordSRVSlashCommandsGlobalMessagesNotLinked;
+    public boolean discordSRVSlashCommandsViewPastDrawEnabled;
+    public String discordSRVSlashCommandsViewPastDrawDescription;
+    public String discordSRVSlashCommandsViewPastDrawNoResults;
+    public String discordSRVSlashCommandsViewPastDrawYourBets;
+    public String discordSRVSlashCommandsViewPastDrawNoWinnings;
+    public boolean discordSRVSlashCommandsViewCurrentBetsEnabled;
+    public String discordSRVSlashCommandsViewCurrentBetsDescription;
+    public String discordSRVSlashCommandsViewCurrentBetsTitle;
+    public String discordSRVSlashCommandsViewCurrentBetsNoBets;
+    public String discordSRVSlashCommandsViewCurrentBetsNoGame;
 
     private final LotteryPlayerManager playerPreferenceManager;
 
@@ -398,6 +409,17 @@ public class LotterySix implements AutoCloseable {
         discordSRVDrawResultAnnouncementTitle = config.getConfiguration().getString("DiscordSRV.DrawResultAnnouncement.Title");
         discordSRVDrawResultAnnouncementDescription = String.join("\n", config.getConfiguration().getStringList("DiscordSRV.DrawResultAnnouncement.Description"));
         discordSRVDrawResultAnnouncementThumbnailURL = config.getConfiguration().getString("DiscordSRV.DrawResultAnnouncement.ThumbnailURL");
+        discordSRVSlashCommandsGlobalMessagesNotLinked = config.getConfiguration().getString("DiscordSRV.SlashCommands.Global.Messages.NotLinked");
+        discordSRVSlashCommandsViewPastDrawEnabled = config.getConfiguration().getBoolean("DiscordSRV.SlashCommands.ViewPastDraw.Enabled");
+        discordSRVSlashCommandsViewPastDrawDescription = config.getConfiguration().getString("DiscordSRV.SlashCommands.ViewPastDraw.Description");
+        discordSRVSlashCommandsViewPastDrawNoResults = config.getConfiguration().getString("DiscordSRV.SlashCommands.ViewPastDraw.NoResults");
+        discordSRVSlashCommandsViewPastDrawYourBets = config.getConfiguration().getString("DiscordSRV.SlashCommands.ViewPastDraw.YourBets");
+        discordSRVSlashCommandsViewPastDrawNoWinnings = config.getConfiguration().getString("DiscordSRV.SlashCommands.ViewPastDraw.NoWinnings");
+        discordSRVSlashCommandsViewCurrentBetsEnabled = config.getConfiguration().getBoolean("DiscordSRV.SlashCommands.ViewCurrentBets.Enabled");
+        discordSRVSlashCommandsViewCurrentBetsDescription = config.getConfiguration().getString("DiscordSRV.SlashCommands.ViewCurrentBets.Description");
+        discordSRVSlashCommandsViewCurrentBetsTitle = config.getConfiguration().getString("DiscordSRV.SlashCommands.ViewCurrentBets.Title");
+        discordSRVSlashCommandsViewCurrentBetsNoBets = config.getConfiguration().getString("DiscordSRV.SlashCommands.ViewCurrentBets.NoBets");
+        discordSRVSlashCommandsViewCurrentBetsNoGame = config.getConfiguration().getString("DiscordSRV.SlashCommands.ViewCurrentBets.NoGame");
     }
 
     public synchronized void loadData() {

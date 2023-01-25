@@ -73,7 +73,11 @@ public class LotteryPlayerManager {
     }
 
     public boolean isLotteryPlayerLoaded(UUID player) {
-        return persistentReferences.contains(getLotteryPlayer(player, false));
+        LotteryPlayer lotteryPlayer = getLotteryPlayer(player, false);
+        if (lotteryPlayer == null) {
+            return false;
+        }
+        return persistentReferences.contains(lotteryPlayer);
     }
 
     public synchronized LotteryPlayer loadLotteryPlayer(UUID player, boolean persist) {
@@ -155,7 +159,10 @@ public class LotteryPlayerManager {
         if (save) {
             saveLotteryPlayer(player);
         }
-        persistentReferences.remove(getLotteryPlayer(player, false));
+        LotteryPlayer lotteryPlayer = getLotteryPlayer(player, false);
+        if (lotteryPlayer != null) {
+            persistentReferences.remove(lotteryPlayer);
+        }
         loadedPlayers.remove(player);
     }
 

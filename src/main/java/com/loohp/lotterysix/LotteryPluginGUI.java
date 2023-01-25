@@ -41,6 +41,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.BookMeta;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -276,25 +277,33 @@ public class LotteryPluginGUI {
                 gui.addElement(new StaticGuiElement(c++, getNumberItem(i), getNumberColor(i) + "" + i));
             }
             gui.addElement(new StaticGuiElement('g', XMaterial.GOLD_BLOCK.parseItem(), LotteryUtils.formatPlaceholders(player, instance.guiLastResultsLotteryInfo, instance, game)));
-            List<String> strings = new ArrayList<>(Arrays.asList(LotteryUtils.formatPlaceholders(player, instance.guiLastResultsYourBets, instance, game)));
+
+            List<String> pages = new ArrayList<>();
             List<PlayerWinnings> winningsList = game.getPlayerWinnings(player.getUniqueId());
             for (PlayerWinnings winnings : winningsList) {
-                strings.add(coloredString(winnings.getWinningBet().getChosenNumbers()));
-                strings.add(ChatColor.GOLD + "" + winnings.getTier().getShortHand() + " $" + winnings.getWinnings());
-                strings.add("");
+                String str = coloredString(winnings.getWinningBet().getChosenNumbers()) + "\n"
+                        + ChatColor.GOLD + "" + winnings.getTier().getShortHand() + " $" + winnings.getWinnings();
+                pages.add(str);
             }
             for (PlayerBets bets : game.getPlayerBets(player.getUniqueId())) {
                 if (winningsList.stream().noneMatch(each -> each.getWinningBet().getBetId().equals(bets.getBetId()))) {
-                    strings.add(coloredString(bets.getChosenNumbers()));
-                    strings.add(LotteryUtils.formatPlaceholders(player, instance.guiLastResultsNoWinnings, instance, game) + " $0");
-                    strings.add("");
+                    String str = coloredString(bets.getChosenNumbers()) + "\n"
+                            + LotteryUtils.formatPlaceholders(player, instance.guiLastResultsNoWinnings, instance, game) + " $0";
+                    pages.add(str);
                 }
             }
-            if (strings.size() > 1) {
-                strings.remove(strings.size() - 1);
-            }
+            ItemStack itemStack = XMaterial.WRITTEN_BOOK.parseItem();
+            BookMeta meta = (BookMeta) itemStack.getItemMeta();
+            meta.setAuthor("LotterySix");
+            meta.setTitle("LotterySix");
+            meta.setPages(pages);
+            itemStack.setItemMeta(meta);
 
-            gui.addElement(new StaticGuiElement('h', XMaterial.GREEN_WOOL.parseItem(), strings.toArray(new String[0])));
+            gui.addElement(new StaticGuiElement('h', XMaterial.GREEN_WOOL.parseItem(), click -> {
+                Bukkit.getScheduler().runTaskLater(plugin, () -> click.getGui().close(click.getWhoClicked(), true), 1);
+                Bukkit.getScheduler().runTaskLater(plugin, () -> ((Player) click.getWhoClicked()).openBook(itemStack), 2);
+                return true;
+            }, LotteryUtils.formatPlaceholders(player, instance.guiLastResultsYourBets, instance, game)));
         }
 
         return gui;

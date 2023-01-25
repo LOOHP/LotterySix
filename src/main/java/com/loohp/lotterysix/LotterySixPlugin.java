@@ -59,6 +59,8 @@ public class LotterySixPlugin extends JavaPlugin implements Listener {
 
     public static LotterySixPlugin plugin;
 
+    public static DiscordSRVHook discordSRVHook = null;
+
     private static LotterySix instance;
     private static LotteryPluginGUI guiProvider;
     private static Economy econ = null;
@@ -121,7 +123,7 @@ public class LotterySixPlugin extends JavaPlugin implements Listener {
         new LotteryPlaceholders().register();
 
         if (getServer().getPluginManager().isPluginEnabled("DiscordSRV")) {
-            getServer().getPluginManager().registerEvents(new DiscordSRVHook(), this);
+            getServer().getPluginManager().registerEvents(discordSRVHook = new DiscordSRVHook(), this);
             getServer().getConsoleSender().sendMessage(ChatColor.AQUA + "[LotterySix] LotterySix has hooked into DiscordSRV!");
         }
 

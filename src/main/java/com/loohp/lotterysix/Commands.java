@@ -48,6 +48,9 @@ public class Commands implements CommandExecutor, TabCompleter {
         if (args[0].equalsIgnoreCase("reload")) {
             if (sender.hasPermission("lotterysix.reload")) {
                 LotterySixPlugin.getInstance().reloadConfig();
+                if (LotterySixPlugin.discordSRVHook != null) {
+                    LotterySixPlugin.discordSRVHook.reload();
+                }
                 sender.sendMessage(LotterySixPlugin.getInstance().messageReloaded);
             } else {
                 sender.sendMessage(LotterySixPlugin.getInstance().messageNoPermission);

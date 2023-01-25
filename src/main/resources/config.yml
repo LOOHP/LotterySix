@@ -157,3 +157,21 @@ DiscordSRV:
       - ""
       - "*Congratulations!*"
     ThumbnailURL: "https://static.wikia.nocookie.net/minecraft_gamepedia/images/8/8a/Gold_Ingot_JE4_BE2.png"
+  SlashCommands:
+    Global:
+      Messages:
+        NotLinked: "Minecraft account must be linked to use this command."
+    #SlashCommand /pastdraw
+    ViewPastDraw:
+      Enabled: true
+      Description: "View the draw results of the last LotterySix round"
+      NoResults: "No results are available"
+      YourBets: "**Your bets**"
+      NoWinnings: "No Winnings"
+    #SlashCommand /mybets
+    ViewCurrentBets:
+      Enabled: true
+      Description: "View my bets for the current round of LotterySix"
+      Title: "Your Bets for {Date}"
+      NoBets: "You haven't placed any bets"
+      NoGame: "There are no LotterySix games scheduled"
