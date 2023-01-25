@@ -250,7 +250,7 @@ public class LotteryPluginGUI {
                                             gui.removeElement(bankerC);
                                             gui.addElement(new StaticGuiElement(bankerC, XMaterial.MAGENTA_WOOL.parseItem(), ChatColor.LIGHT_PURPLE + "" + number));
                                         }
-                                    } else if (builder.completed() || (isBanker && !((BetNumbersBuilder.BankerBuilder) builder).getBankers().isEmpty())) {
+                                    } else if (builder.completed() || (isBanker && !((BetNumbersBuilder.BankerBuilder) builder).inSelectionPhase() && !((BetNumbersBuilder.BankerBuilder) builder).getBankers().isEmpty())) {
                                         gui.removeElement('\0');
                                         gui.addElement(new StaticGuiElement('\0', isBanker && !((BetNumbersBuilder.BankerBuilder) builder).inSelectionPhase() ? XMaterial.EMERALD_BLOCK.parseItem() : XMaterial.GOLD_BLOCK.parseItem(), click -> {
                                             if (builder.completed()) {
