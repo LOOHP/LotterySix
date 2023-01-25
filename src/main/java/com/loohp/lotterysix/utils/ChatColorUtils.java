@@ -35,10 +35,10 @@ public class ChatColorUtils {
     }
 
     private static ChatColor[] getNumberColors() {
-        ChatColor[] array = new ChatColor[54];
+        ChatColor[] array = new ChatColor[49];
         ChatColor currentColor = ChatColor.RED;
         int c = 0;
-        for (int i = 0; i < 54; i++) {
+        for (int i = 0; i < 49; i++) {
             array[i] = currentColor;
             if (c++ >= 1) {
                 currentColor = nextNumberColor(currentColor);

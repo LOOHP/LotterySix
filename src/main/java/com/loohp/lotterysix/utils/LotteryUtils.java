@@ -24,15 +24,53 @@ import com.loohp.lotterysix.game.LotterySix;
 import com.loohp.lotterysix.game.lottery.CompletedLotterySixGame;
 import com.loohp.lotterysix.game.objects.PrizeTier;
 import com.loohp.lotterysix.game.lottery.PlayableLotterySixGame;
+import com.loohp.lotterysix.game.objects.betnumbers.BetNumbers;
+import com.loohp.lotterysix.game.objects.betnumbers.BetNumbersBuilder;
+import com.loohp.lotterysix.game.objects.betnumbers.BetNumbersType;
 import me.clip.placeholderapi.PlaceholderAPI;
 import org.bukkit.OfflinePlayer;
 
+import java.math.BigInteger;
 import java.text.DecimalFormat;
 import java.util.Date;
+import java.util.stream.LongStream;
 
 public class LotteryUtils {
 
+    public static final BigInteger SIX_FACTORIAL = BigInteger.valueOf(720);
     public static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("0.##");
+
+    public static BigInteger factorial(long number) {
+        return LongStream.rangeClosed(1, number).mapToObj(i -> BigInteger.valueOf(i)).reduce(BigInteger.ONE, (x, y) -> x.multiply(y));
+    }
+
+    public static long calculatePrice(BetNumbers numbers, LotterySix lotterySix) {
+        return calculatePrice(numbers.getType(), numbers.getNumbers().size(), numbers.getBankersNumbers().size(), lotterySix.pricePerBet);
+    }
+
+    public static long calculatePrice(BetNumbersBuilder builder, LotterySix lotterySix) {
+        return calculatePrice(builder.getType(), builder.size(), builder.getType().equals(BetNumbersType.BANKER) ? ((BetNumbersBuilder.BankerBuilder) builder).bankerSize() : 0, lotterySix.pricePerBet);
+    }
+
+    public static long calculatePrice(BetNumbersType type, int size, int bankerSize, long pricePerBet) {
+        long permutations = 0;
+        switch (type) {
+            case SINGLE:
+            case RANDOM: {
+                permutations = 1;
+                break;
+            }
+            case MULTIPLE: {
+                permutations = factorial(size).divide((factorial(size - 6).multiply(SIX_FACTORIAL))).longValue();
+                break;
+            }
+            case BANKER: {
+                permutations = factorial(size).divide(factorial(size - (6 - bankerSize)).multiply(factorial(6 - bankerSize))).longValue();
+                break;
+            }
+        }
+        return permutations * pricePerBet;
+    }
 
     public static String[] formatPlaceholders(OfflinePlayer player, String[] str, LotterySix lotterySix) {
         String[] array = new String[str.length];
@@ -43,7 +81,7 @@ public class LotteryUtils {
     }
 
     public static String formatPlaceholders(OfflinePlayer player, String str, LotterySix lotterySix) {
-        str = str.replace("{PrizePerBet}", lotterySix.pricePerBet + "");
+        str = str.replace("{PricePerBet}", lotterySix.pricePerBet + "");
         for (PrizeTier prizeTier : PrizeTier.values()) {
             str = str.replace("{" + prizeTier.name() + "Odds}", DECIMAL_FORMAT.format(calculateOddsOneOver(lotterySix.numberOfChoices, prizeTier)));
         }
@@ -64,7 +102,7 @@ public class LotteryUtils {
         }
         str = str
                 .replace("{Date}", lotterySix.dateFormat.format(new Date(game.getScheduledDateTime())))
-                .replace("{PrizePerBet}", lotterySix.pricePerBet + "")
+                .replace("{PricePerBet}", lotterySix.pricePerBet + "")
                 .replace("{TotalBets}", game.getTotalBets() + "")
                 .replace("{PrizePool}", game.estimatedPrizePool(lotterySix.lowestTopPlacesPrize, lotterySix.taxPercentage) + "");
         for (PrizeTier prizeTier : PrizeTier.values()) {
@@ -87,7 +125,7 @@ public class LotteryUtils {
         }
         str = str
                 .replace("{Date}", lotterySix.dateFormat.format(new Date(game.getDatetime())))
-                .replace("{PrizePerBet}", lotterySix.pricePerBet + "")
+                .replace("{PricePerBet}", lotterySix.pricePerBet + "")
                 .replace("{TotalBets}", game.getTotalBets() + "")
                 .replace("{TotalPrizes}", game.getTotalPrizes() + "")
                 .replace("{FirstToThirdPlaceWinnersCount}", game.getWinnings().stream().filter(each -> each.getTier().ordinal() < 3).count() + "")
@@ -97,6 +135,12 @@ public class LotteryUtils {
                 .replace("{FourthNumber}", ChatColorUtils.applyNumberColor(game.getDrawResult().getNumber(3)))
                 .replace("{FifthNumber}", ChatColorUtils.applyNumberColor(game.getDrawResult().getNumber(4)))
                 .replace("{SixthNumber}", ChatColorUtils.applyNumberColor(game.getDrawResult().getNumber(5)))
+                .replace("{FirstNumberOrdered}", ChatColorUtils.applyNumberColor(game.getDrawResult().getNumberOrdered(0)))
+                .replace("{SecondNumberOrdered}", ChatColorUtils.applyNumberColor(game.getDrawResult().getNumberOrdered(1)))
+                .replace("{ThirdNumberOrdered}", ChatColorUtils.applyNumberColor(game.getDrawResult().getNumberOrdered(2)))
+                .replace("{FourthNumberOrdered}", ChatColorUtils.applyNumberColor(game.getDrawResult().getNumberOrdered(3)))
+                .replace("{FifthNumberOrdered}", ChatColorUtils.applyNumberColor(game.getDrawResult().getNumberOrdered(4)))
+                .replace("{SixthNumberOrdered}", ChatColorUtils.applyNumberColor(game.getDrawResult().getNumberOrdered(5)))
                 .replace("{SpecialNumber}", ChatColorUtils.applyNumberColor(game.getDrawResult().getSpecialNumber()));
         for (PrizeTier prizeTier : PrizeTier.values()) {
             str = str

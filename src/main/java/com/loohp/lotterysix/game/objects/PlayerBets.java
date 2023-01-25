@@ -20,6 +20,8 @@
 
 package com.loohp.lotterysix.game.objects;
 
+import com.loohp.lotterysix.game.objects.betnumbers.BetNumbers;
+
 import java.util.Objects;
 import java.util.UUID;
 

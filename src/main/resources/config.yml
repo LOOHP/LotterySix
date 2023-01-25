@@ -4,7 +4,7 @@ Messages:
   NoConsole: "&cThis command can only be ran by players!"
   InvalidUsage: "&cInvalid Usage!"
   NotEnoughMoney: "&cYou don't have ${Price} in your account!"
-  BidPlaced: "&aBet placed! ${Price} deduced from your account!"
+  BetPlaced: "&aBet placed! ${Price} deduced from your account!"
   NoGameRunning: "&cNo game is running at the moment"
   GameAlreadyRunning: "&cA game had already been started"
   GameLocked: "&cGame is currently running and locked"
@@ -21,16 +21,16 @@ LotterySix:
   TimeZone: "Asia/Hong_Kong"
   #How long before the lottery runs after it had started
   #This is in seconds
-  BidsAcceptDuration: 604800
+  BetsAcceptDuration: 604800
   #This must be a positive integer
   PricePerBet: 10
   #Number Of Number Choices, Starting from 1, Inclusive
   #The lower the number of choices, the higher the odds
-  #Minimum is 7, Maximum is 54
+  #Minimum is 7, Maximum is 49
   NumberOfChoices: 39
   #The lowest prize allocation for winning the top three tiers
   LowestTopPlacesPrize: 8000000
-  #This percentage of total bids acquired will be taken from the prize pool
+  #This percentage of total bets acquired will be taken from the prize pool
   TaxPercentage: 0.25
 
 GUI:
@@ -81,14 +81,55 @@ GUI:
       - "&aNext Page (%nextpage%/%pages%)"
     PreviousPage:
       - "&cPrevious Page (%prevpage%/%pages%)"
+  SelectNewBetType:
+    Title: "&2Select Bet Type"
+    Single:
+      - "&6Single Entry"
+      - "&7Choose 6 different numbers"
+      - "&7Simplest to understand, recommended for first time players"
+    Multiple:
+      - "&eMultiple Entry"
+      - "&7Choose 7 or more different numbers"
+      - "&7Example: If seven numbers 1, 2, 3, 4, 5, 6 and 7 are selected,"
+      - "&7it can be split into seven single entries as below:"
+      - "&7"
+      - "&71. 1+2+3+4+5+6"
+      - "&72. 1+2+3+4+5+7"
+      - "&73. 1+2+3+4+6+7"
+      - "&74. 1+2+3+5+6+7"
+      - "&75. 1+2+4+5+6+7"
+      - "&76. 1+3+4+5+6+7"
+      - "&77. 2+3+4+5+6+7"
+    Banker:
+      - "&aBanker Entry"
+      - "&7Choose one to five number(s) as banker(s),"
+      - "&7with other numbers selected as legs"
+      - "&7Example: If two bankers 1 and 2 with leg numbers 3,4,5,6 and 7 are selected"
+      - "&7breakdown of the selections in a 2-banker-and-5-leg-number entry is:"
+      - "&7"
+      - "&71. 1+2   3+4+5+6"
+      - "&72. 1+2   3+4+5+7"
+      - "&73. 1+2   3+4+6+7"
+      - "&74. 1+2   3+5+6+7"
+      - "&75. 1+2   4+5+6+7"
+    Random:
+      - "&aRandom Entry"
+      - "&7No idea what numbers to pick?"
+      - "&7Let the computer pick 6 random numbers for you!"
   NewBet:
-    Title: "&2Pick 6 Numbers"
+    SingleTitle: "&2Pick 6 Numbers"
+    MultipleTitle: "&2Pick More Than 7 Numbers"
+    BankerTitle: "&2Pick Bankers & Numbers"
+    Finish:
+      - "&eClick to finish selection (${Price})"
+    FinishBankers:
+      - "&eClick to finish BANKER selection (${Price})"
   ConfirmNewBet:
     Title: "&2Confirm Bet"
     LotteryInfo:
       - "&ePlease bet responsibly"
     Confirm:
-      - "&aConfirm (${PrizePerBet})"
+      - "&aConfirm (${Price})"
     Cancel:
       - "&cCancel"
 
@@ -129,7 +170,7 @@ Announcer:
     PostMessages:
       - "&e[LotterySix] &aCongratulations winners! Prizes will be given out shortly, here is a recap of the draw results:"
       - "&e[LotterySix] &aDate: {Date}"
-      - "&e[LotterySix] &aDraw Results: {FirstNumber} {SecondNumber} {ThirdNumber} {FourthNumber} {FifthNumber} {SixthNumber} &e+ {SpecialNumber}"
+      - "&e[LotterySix] &aDraw Results: {FirstNumberOrdered} {SecondNumberOrdered} {ThirdNumberOrdered} {FourthNumberOrdered} {FifthNumberOrdered} {SixthNumberOrdered} &e+ {SpecialNumber}"
       - "&e[LotterySix] &a1st Tier Prize: &6${FIRSTPrize} &7x{FIRSTPrizeCount}"
       - "&e[LotterySix] &a2nd Tier Prize: &6${SECONDPrize} &7x{SECONDPrizeCount}"
       - "&e[LotterySix] &a3rd Tier Prize: &6${THIRDPrize} &7x{THIRDPrizeCount}"
@@ -145,7 +186,7 @@ DiscordSRV:
     Title: "LotterySix Draw Results"
     Description:
       - "**Date: {Date}**"
-      - "**Draw Results: {FirstNumber} {SecondNumber} {ThirdNumber} {FourthNumber} {FifthNumber} {SixthNumber} + {SpecialNumber}**"
+      - "**Draw Results: {FirstNumberOrdered} {SecondNumberOrdered} {ThirdNumberOrdered} {FourthNumberOrdered} {FifthNumberOrdered} {SixthNumberOrdered} + {SpecialNumber}**"
       - ""
       - "1st Tier Prize: ${FIRSTPrize} x{FIRSTPrizeCount}"
       - "2nd Tier Prize: ${SECONDPrize} x{SECONDPrizeCount}"
@@ -168,6 +209,7 @@ DiscordSRV:
       NoResults: "No results are available"
       YourBets: "**Your bets**"
       NoWinnings: "No Winnings"
+      ThumbnailURL: "https://static.wikia.nocookie.net/minecraft_gamepedia/images/8/8a/Gold_Ingot_JE4_BE2.png"
     #SlashCommand /mybets
     ViewCurrentBets:
       Enabled: true
@@ -175,3 +217,4 @@ DiscordSRV:
       Title: "Your Bets for {Date}"
       NoBets: "You haven't placed any bets"
       NoGame: "There are no LotterySix games scheduled"
+      ThumbnailURL: "https://static.wikia.nocookie.net/minecraft_gamepedia/images/8/8a/Gold_Ingot_JE4_BE2.png"

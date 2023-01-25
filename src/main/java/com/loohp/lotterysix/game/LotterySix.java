@@ -24,7 +24,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.loohp.lotterysix.config.Config;
 import com.loohp.lotterysix.game.lottery.CompletedLotterySixGame;
-import com.loohp.lotterysix.game.objects.BetNumbers;
+import com.loohp.lotterysix.game.objects.betnumbers.BetNumbers;
 import com.loohp.lotterysix.game.objects.CronExpression;
 import com.loohp.lotterysix.game.objects.LotterySixAction;
 import com.loohp.lotterysix.game.objects.MessageConsumer;
@@ -48,6 +48,7 @@ import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
@@ -61,7 +62,8 @@ import java.util.function.Supplier;
 
 public class LotterySix implements AutoCloseable {
 
-    private final TimerTask lotteryTask;
+    private TimerTask lotteryTask;
+    private TimerTask announcementTask;
     private final File dataFolder;
     private final String configId;
 
@@ -70,7 +72,7 @@ public class LotterySix implements AutoCloseable {
     public String messageNoConsole;
     public String messageInvalidUsage;
     public String messageNotEnoughMoney;
-    public String messageBidPlaced;
+    public String messageBetPlaced;
     public String messageNoGameRunning;
     public String messageGameAlreadyRunning;
     public String messageGameLocked;
@@ -80,7 +82,7 @@ public class LotterySix implements AutoCloseable {
 
     public CronExpression runInterval;
     public TimeZone timezone;
-    public long bidsAcceptDuration;
+    public long betsAcceptDuration;
     public long pricePerBet;
     public int numberOfChoices;
     public long lowestTopPlacesPrize;
@@ -100,7 +102,16 @@ public class LotterySix implements AutoCloseable {
     public String[] guiYourBetsLotteryInfo;
     public String[] guiYourBetsNextPage;
     public String[] guiYourBetsPreviousPage;
-    public String guiNewBetTitle;
+    public String guiSelectNewBetTypeTitle;
+    public String[] guiSelectNewBetTypeSingle;
+    public String[] guiSelectNewBetTypeMultiple;
+    public String[] guiSelectNewBetTypeBanker;
+    public String[] guiSelectNewBetTypeRandom;
+    public String guiNewBetSingleTitle;
+    public String guiNewBetMultipleTitle;
+    public String guiNewBetBankerTitle;
+    public String[] guiNewBetFinish;
+    public String[] guiNewBetFinishBankers;
     public String guiConfirmNewBetTitle;
     public String[] guiConfirmNewBetLotteryInfo;
     public String[] guiConfirmNewBetConfirm;
@@ -127,11 +138,13 @@ public class LotterySix implements AutoCloseable {
     public String discordSRVSlashCommandsViewPastDrawNoResults;
     public String discordSRVSlashCommandsViewPastDrawYourBets;
     public String discordSRVSlashCommandsViewPastDrawNoWinnings;
+    public String discordSRVSlashCommandsViewPastDrawThumbnailURL;
     public boolean discordSRVSlashCommandsViewCurrentBetsEnabled;
     public String discordSRVSlashCommandsViewCurrentBetsDescription;
     public String discordSRVSlashCommandsViewCurrentBetsTitle;
     public String discordSRVSlashCommandsViewCurrentBetsNoBets;
     public String discordSRVSlashCommandsViewCurrentBetsNoGame;
+    public String discordSRVSlashCommandsViewCurrentBetsThumbnailURL;
 
     private final LotteryPlayerManager playerPreferenceManager;
 
@@ -200,6 +213,9 @@ public class LotterySix implements AutoCloseable {
     @Override
     public void close() {
         lotteryTask.cancel();
+        if (announcementTask != null) {
+            announcementTask.cancel();
+        }
         saveData(false);
     }
 
@@ -221,7 +237,7 @@ public class LotterySix implements AutoCloseable {
 
     public PlayableLotterySixGame startNewGame() {
         long now = LocalDateTime.now().atZone(timezone.toZoneId()).withNano(0).withSecond(0).toInstant().toEpochMilli();
-        return startNewGame(now + bidsAcceptDuration);
+        return startNewGame(now + betsAcceptDuration);
     }
 
     public synchronized PlayableLotterySixGame startNewGame(long dateTime) {
@@ -250,7 +266,7 @@ public class LotterySix implements AutoCloseable {
         currentGame = null;
         saveData(false);
         if (liveDrawAnnouncerEnabled) {
-            new Timer().scheduleAtFixedRate(new TimerTask() {
+            new Timer().scheduleAtFixedRate(announcementTask = new TimerTask() {
                 private int counter = -liveDrawAnnouncerTimeBetween;
                 private int index = 0;
                 @Override
@@ -341,7 +357,7 @@ public class LotterySix implements AutoCloseable {
         messageNoConsole = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Messages.NoConsole"));
         messageInvalidUsage = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Messages.InvalidUsage"));
         messageNotEnoughMoney = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Messages.NotEnoughMoney"));
-        messageBidPlaced = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Messages.BidPlaced"));
+        messageBetPlaced = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Messages.BetPlaced"));
         messageNoGameRunning = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Messages.NoGameRunning"));
         messageGameAlreadyRunning = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Messages.GameAlreadyRunning"));
         messageGameLocked = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Messages.GameLocked"));
@@ -368,9 +384,9 @@ public class LotterySix implements AutoCloseable {
         dateFormat = new SimpleDateFormat(ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Formatting.Date")));
         dateFormat.setTimeZone(timezone);
 
-        bidsAcceptDuration = config.getConfiguration().getLong("LotterySix.BidsAcceptDuration") * 1000;
+        betsAcceptDuration = config.getConfiguration().getLong("LotterySix.BetsAcceptDuration") * 1000;
         pricePerBet = config.getConfiguration().getLong("LotterySix.PricePerBet");
-        numberOfChoices = Math.max(7, Math.min(54, config.getConfiguration().getInt("LotterySix.NumberOfChoices")));
+        numberOfChoices = Math.max(7, Math.min(49, config.getConfiguration().getInt("LotterySix.NumberOfChoices")));
         lowestTopPlacesPrize = config.getConfiguration().getLong("LotterySix.LowestTopPlacesPrize");
         taxPercentage = config.getConfiguration().getDouble("LotterySix.TaxPercentage");
 
@@ -388,7 +404,16 @@ public class LotterySix implements AutoCloseable {
         guiYourBetsLotteryInfo = config.getConfiguration().getStringList("GUI.YourBets.LotteryInfo").toArray(new String[0]);
         guiYourBetsNextPage = config.getConfiguration().getStringList("GUI.YourBets.NextPage").toArray(new String[0]);
         guiYourBetsPreviousPage = config.getConfiguration().getStringList("GUI.YourBets.PreviousPage").toArray(new String[0]);
-        guiNewBetTitle = config.getConfiguration().getString("GUI.NewBet.Title");
+        guiSelectNewBetTypeTitle = config.getConfiguration().getString("GUI.SelectNewBetType.Title");
+        guiSelectNewBetTypeSingle = config.getConfiguration().getStringList("GUI.SelectNewBetType.Single").toArray(new String[0]);
+        guiSelectNewBetTypeMultiple = config.getConfiguration().getStringList("GUI.SelectNewBetType.Multiple").toArray(new String[0]);
+        guiSelectNewBetTypeBanker = config.getConfiguration().getStringList("GUI.SelectNewBetType.Banker").toArray(new String[0]);
+        guiSelectNewBetTypeRandom = config.getConfiguration().getStringList("GUI.SelectNewBetType.Random").toArray(new String[0]);
+        guiNewBetSingleTitle = config.getConfiguration().getString("GUI.NewBet.SingleTitle");
+        guiNewBetMultipleTitle = config.getConfiguration().getString("GUI.NewBet.MultipleTitle");
+        guiNewBetBankerTitle = config.getConfiguration().getString("GUI.NewBet.BankerTitle");
+        guiNewBetFinish = config.getConfiguration().getStringList("GUI.NewBet.Finish").toArray(new String[0]);
+        guiNewBetFinishBankers = config.getConfiguration().getStringList("GUI.NewBet.FinishBankers").toArray(new String[0]);
         guiConfirmNewBetTitle = config.getConfiguration().getString("GUI.ConfirmNewBet.Title");
         guiConfirmNewBetLotteryInfo = config.getConfiguration().getStringList("GUI.ConfirmNewBet.LotteryInfo").toArray(new String[0]);
         guiConfirmNewBetConfirm = config.getConfiguration().getStringList("GUI.ConfirmNewBet.Confirm").toArray(new String[0]);
@@ -415,11 +440,13 @@ public class LotterySix implements AutoCloseable {
         discordSRVSlashCommandsViewPastDrawNoResults = config.getConfiguration().getString("DiscordSRV.SlashCommands.ViewPastDraw.NoResults");
         discordSRVSlashCommandsViewPastDrawYourBets = config.getConfiguration().getString("DiscordSRV.SlashCommands.ViewPastDraw.YourBets");
         discordSRVSlashCommandsViewPastDrawNoWinnings = config.getConfiguration().getString("DiscordSRV.SlashCommands.ViewPastDraw.NoWinnings");
+        discordSRVSlashCommandsViewPastDrawThumbnailURL = config.getConfiguration().getString("DiscordSRV.SlashCommands.ViewPastDraw.ThumbnailURL");
         discordSRVSlashCommandsViewCurrentBetsEnabled = config.getConfiguration().getBoolean("DiscordSRV.SlashCommands.ViewCurrentBets.Enabled");
         discordSRVSlashCommandsViewCurrentBetsDescription = config.getConfiguration().getString("DiscordSRV.SlashCommands.ViewCurrentBets.Description");
         discordSRVSlashCommandsViewCurrentBetsTitle = config.getConfiguration().getString("DiscordSRV.SlashCommands.ViewCurrentBets.Title");
         discordSRVSlashCommandsViewCurrentBetsNoBets = config.getConfiguration().getString("DiscordSRV.SlashCommands.ViewCurrentBets.NoBets");
         discordSRVSlashCommandsViewCurrentBetsNoGame = config.getConfiguration().getString("DiscordSRV.SlashCommands.ViewCurrentBets.NoGame");
+        discordSRVSlashCommandsViewCurrentBetsThumbnailURL = config.getConfiguration().getString("DiscordSRV.SlashCommands.ViewPastDraw.ThumbnailURL");
     }
 
     public synchronized void loadData() {
@@ -442,6 +469,7 @@ public class LotterySix implements AutoCloseable {
                 }
             }
         }
+        completedGames.sort(Comparator.comparing((CompletedLotterySixGame game) -> game.getDatetime()).reversed());
     }
 
     public synchronized void saveData(boolean onlyCurrent) {

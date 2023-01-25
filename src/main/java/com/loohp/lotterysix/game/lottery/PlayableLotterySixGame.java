@@ -21,7 +21,7 @@
 package com.loohp.lotterysix.game.lottery;
 
 import com.loohp.lotterysix.game.LotterySix;
-import com.loohp.lotterysix.game.objects.BetNumbers;
+import com.loohp.lotterysix.game.objects.betnumbers.BetNumbers;
 import com.loohp.lotterysix.game.objects.LotteryPlayer;
 import com.loohp.lotterysix.game.objects.PlayerBets;
 import com.loohp.lotterysix.game.objects.PlayerStatsKey;

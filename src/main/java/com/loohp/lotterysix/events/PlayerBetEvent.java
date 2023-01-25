@@ -20,7 +20,7 @@
 
 package com.loohp.lotterysix.events;
 
-import com.loohp.lotterysix.game.objects.BetNumbers;
+import com.loohp.lotterysix.game.objects.betnumbers.BetNumbers;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;

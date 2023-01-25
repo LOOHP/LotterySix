@@ -22,6 +22,7 @@ package com.loohp.lotterysix.metrics;
 
 import com.loohp.lotterysix.LotterySixPlugin;
 import com.loohp.lotterysix.game.lottery.CompletedLotterySixGame;
+import com.loohp.lotterysix.game.objects.PlayerBets;
 import com.loohp.lotterysix.game.objects.PrizeTier;
 
 import java.util.Arrays;
@@ -111,7 +112,7 @@ public class Charts {
                 Map<String, Integer> valueMap = new HashMap<>();
                 if (getLatestGame().isPresent()) {
                     CompletedLotterySixGame game = getLatestGame().get();
-                    for (int i : game.getDrawResult()) {
+                    for (int i : game.getDrawResult().getNumbers()) {
                         valueMap.put(i + "", 1);
                     }
                     valueMap.put(game.getDrawResult().getSpecialNumber() + "", 1);
@@ -127,6 +128,20 @@ public class Charts {
                 int counts = (int) LotterySixPlugin.getInstance().getCompletedGames().stream().filter(each -> each.getDatetime() >= lastCall).count();
                 lastCall = System.currentTimeMillis();
                 return counts;
+            }
+        }));
+
+        metrics.addCustomChart(new Metrics.AdvancedPie("most_popular_bet_entry_method", new Callable<Map<String, Integer>>() {
+            @Override
+            public Map<String, Integer> call() throws Exception {
+                Map<String, Integer> valueMap = new HashMap<>();
+                if (getLatestGame().isPresent()) {
+                    CompletedLotterySixGame game = getLatestGame().get();
+                    for (PlayerBets playerBets : game.getBets()) {
+                        valueMap.merge(playerBets.getChosenNumbers().getType().name(), 1, (a, b) -> a + b);
+                    }
+                }
+                return valueMap;
             }
         }));
 

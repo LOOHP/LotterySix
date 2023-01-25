@@ -29,6 +29,7 @@ import com.loohp.lotterysix.game.objects.LotterySixAction;
 import com.loohp.lotterysix.game.objects.PlayerBets;
 import com.loohp.lotterysix.game.objects.PlayerWinnings;
 import com.loohp.lotterysix.utils.LotteryUtils;
+import com.loohp.lotterysix.utils.StringUtils;
 import github.scarsz.discordsrv.DiscordSRV;
 import github.scarsz.discordsrv.api.commands.PluginSlashCommand;
 import github.scarsz.discordsrv.api.commands.SlashCommand;
@@ -116,7 +117,6 @@ public class DiscordSRVHook implements Listener, SlashCommandProvider {
             return;
         }
         LotterySix lotterySix = LotterySixPlugin.getInstance();
-        TextChannel channel = (TextChannel) event.getChannel();
         String label = event.getName();
         if (LotterySixPlugin.getInstance().discordSRVSlashCommandsViewPastDrawEnabled && label.equalsIgnoreCase(PAST_DRAW_LABEL)) {
             String discordUserId = event.getUser().getId();
@@ -137,11 +137,11 @@ public class DiscordSRVHook implements Listener, SlashCommandProvider {
                     str.append("\n\n").append(lotterySix.discordSRVSlashCommandsViewPastDrawYourBets).append("\n");
                     List<PlayerWinnings> winningsList = game.getPlayerWinnings(uuid);
                     for (PlayerWinnings winnings : winningsList) {
-                        str.append(winnings.getWinningBet().getChosenNumbers()).append("\n").append(winnings.getTier().getShortHand()).append(" $").append(winnings.getWinnings()).append("\n");
+                        str.append(StringUtils.wrapAtSpace(winnings.getWinningBet().getChosenNumbers().toString(), 6)).append("\n").append(winnings.getTier().getShortHand()).append(" $").append(winnings.getWinnings()).append("\n");
                     }
                     for (PlayerBets bets : playerBets) {
                         if (winningsList.stream().noneMatch(each -> each.getWinningBet().getBetId().equals(bets.getBetId()))) {
-                            str.append(bets.getChosenNumbers()).append("\n").append(lotterySix.discordSRVSlashCommandsViewPastDrawNoWinnings).append(" $0\n");
+                            str.append(StringUtils.wrapAtSpace(bets.getChosenNumbers().toString(), 6)).append("\n").append(lotterySix.discordSRVSlashCommandsViewPastDrawNoWinnings).append(" $0\n");
                         }
                     }
                 }
@@ -150,7 +150,7 @@ public class DiscordSRVHook implements Listener, SlashCommandProvider {
                         .setColor(Color.YELLOW)
                         .setTitle(ChatColor.stripColor(LotteryUtils.formatPlaceholders(null, lotterySix.discordSRVDrawResultAnnouncementTitle, lotterySix, game)))
                         .setDescription(str.substring(0, str.length() - 1))
-                        .setThumbnail(lotterySix.discordSRVDrawResultAnnouncementThumbnailURL);
+                        .setThumbnail(lotterySix.discordSRVSlashCommandsViewPastDrawThumbnailURL);
                 event.replyEmbeds(builder.build()).setEphemeral(true).queue();
             }
             return;
@@ -173,14 +173,14 @@ public class DiscordSRVHook implements Listener, SlashCommandProvider {
                     StringBuilder str = new StringBuilder();
 
                     for (PlayerBets bet : bets) {
-                        str.append("**").append(bet.getChosenNumbers()).append("**\n");
+                        str.append("**").append(StringUtils.wrapAtSpace(bet.getChosenNumbers().toString(), 6)).append("**\n");
                     }
 
                     EmbedBuilder builder = new EmbedBuilder()
                             .setColor(Color.YELLOW)
                             .setTitle(ChatColor.stripColor(LotteryUtils.formatPlaceholders(Bukkit.getOfflinePlayer(uuid), lotterySix.discordSRVSlashCommandsViewCurrentBetsTitle, lotterySix, game)))
                             .setDescription(str.substring(0, str.length() - 1))
-                            .setThumbnail(lotterySix.discordSRVDrawResultAnnouncementThumbnailURL);
+                            .setThumbnail(lotterySix.discordSRVSlashCommandsViewCurrentBetsThumbnailURL);
                     event.replyEmbeds(builder.build()).setEphemeral(true).queue();
                 }
             }

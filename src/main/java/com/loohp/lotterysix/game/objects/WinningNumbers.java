@@ -20,6 +20,8 @@
 
 package com.loohp.lotterysix.game.objects;
 
+import com.loohp.lotterysix.game.objects.betnumbers.BetNumbers;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -30,7 +32,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-public class WinningNumbers implements Iterable<Integer> {
+public class WinningNumbers {
 
     private final List<Integer> numbers;
     private final int specialNumber;
@@ -56,18 +58,30 @@ public class WinningNumbers implements Iterable<Integer> {
         return numbers.get(index);
     }
 
+    public int getNumberOrdered(int index) {
+        return getNumbersOrdered().get(index);
+    }
+
     public int getSpecialNumber() {
         return specialNumber;
     }
 
     public PrizeTier checkWinning(BetNumbers betNumbers) {
         int matches = 0;
-        for (int num : betNumbers) {
+        for (int num : betNumbers.getBankersNumbers()) {
             if (numbers.contains(num)) {
                 matches++;
             }
         }
-        boolean matchSpecial = betNumbers.getNumbers().contains(specialNumber);
+        for (int num : betNumbers.getNumbers()) {
+            if (numbers.contains(num)) {
+                matches++;
+                if (matches >= 6) {
+                    break;
+                }
+            }
+        }
+        boolean matchSpecial = betNumbers.getAllNumbers().contains(specialNumber);
         switch (matches) {
             case 6: {
                 return PrizeTier.FIRST;
@@ -87,7 +101,6 @@ public class WinningNumbers implements Iterable<Integer> {
         }
     }
 
-    @Override
     public Iterator<Integer> iterator() {
         return new Iterator<Integer>() {
             private final Iterator<Integer> itr = numbers.iterator();
@@ -126,7 +139,7 @@ public class WinningNumbers implements Iterable<Integer> {
 
     @Override
     public String toString() {
-        return numbers.stream().map(each -> each.toString()).collect(Collectors.joining(" ", "", " \"" + specialNumber + "\""));
+        return numbers.stream().sorted().map(each -> each.toString()).collect(Collectors.joining(" ", "", " \"" + specialNumber + "\""));
     }
 
     @Override
