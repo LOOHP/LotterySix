@@ -339,23 +339,24 @@ public class LotteryPluginGUI {
                 "  h   i  ",
                 "         "
         };
+        long price = LotteryUtils.calculatePrice(betNumbers, instance);
         InventoryGui gui = new InventoryGui(plugin, LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetTitle, instance, game), guiSetup);
         gui.addElement(new StaticGuiElement('a', XMaterial.GOLD_BLOCK.parseItem(), StringUtils.wrapAtSpace(betNumbers.toColoredString(), 6)
-                .replace("{Price}", LotteryUtils.calculatePrice(betNumbers, instance) + "")));
+                .replace("{Price}", price + "")));
         gui.addElement(new StaticGuiElement('g', XMaterial.BEACON.parseItem(), Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetLotteryInfo, instance, game))
-                .map(each -> each.replace("{Price}", LotteryUtils.calculatePrice(betNumbers, instance) + "")).toArray(String[]::new)));
+                .map(each -> each.replace("{Price}", price + "")).toArray(String[]::new)));
         gui.addElement(new StaticGuiElement('h', XMaterial.GREEN_WOOL.parseItem(), click -> {
             if (game != null && game.isValid()) {
-                if (game.addBet(player.getUniqueId(), LotterySixPlugin.getInstance().pricePerBet, betNumbers)) {
-                    player.sendMessage(instance.messageBetPlaced.replace("{Price}", LotteryUtils.calculatePrice(betNumbers, instance) + ""));
+                if (game.addBet(player.getUniqueId(), price, betNumbers)) {
+                    player.sendMessage(instance.messageBetPlaced.replace("{Price}", price + ""));
                 } else {
-                    player.sendMessage(instance.messageNotEnoughMoney.replace("{Price}", LotteryUtils.calculatePrice(betNumbers, instance) + ""));
+                    player.sendMessage(instance.messageNotEnoughMoney.replace("{Price}", price + ""));
                 }
                 Bukkit.getScheduler().runTaskLater(plugin, () -> click.getGui().close(click.getWhoClicked(), true), 1);
             }
             return true;
         }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetConfirm, instance, game))
-                .map(each -> each.replace("{Price}", LotteryUtils.calculatePrice(betNumbers, instance) + "")).toArray(String[]::new)));
+                .map(each -> each.replace("{Price}", price + "")).toArray(String[]::new)));
         gui.addElement(new StaticGuiElement('i', XMaterial.BARRIER.parseItem(), click -> {
             Bukkit.getScheduler().runTaskLater(plugin, () -> click.getWhoClicked().closeInventory(), 1);
             return true;
