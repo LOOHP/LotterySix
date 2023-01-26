@@ -9,6 +9,8 @@ Messages:
   GameAlreadyRunning: "&cA game had already been started"
   GameLocked: "&cGame is currently running and locked"
   PreferenceUpdated: "&aSuccessfully updated player preference!"
+  GameStarted: "&aStarted new LotterySix game"
+  GameSettingsUpdated: "&aUpdated current round of LotterySix"
 
 Formatting:
   Date: "dd-MM-yyyy HH:mm:ss zzz"
@@ -17,11 +19,15 @@ LotterySix:
   #CornJob expression, https://crontab.guru/
   #How often should the lottery run
   #Put "Never" to never run automatically
-  RunInterval: "0 21 * * 3"
+  RunInterval: "0 22 * * 2,4,6"
   TimeZone: "Asia/Hong_Kong"
   #How long before the lottery runs after it had started
+  #Setting this to a negative value refers to
+  #N seconds before the next scheduled round
+  #If RunInterval is "Never",
+  #A negative value will be treated as positive
   #This is in seconds
-  BetsAcceptDuration: 604800
+  BetsAcceptDuration: -1800
   #This must be a positive integer
   PricePerBet: 10
   #Number Of Number Choices, Starting from 1, Inclusive
@@ -29,6 +35,8 @@ LotterySix:
   #Minimum is 7, Maximum is 49
   NumberOfChoices: 39
   #The lowest prize allocation for winning the top three tiers
+  #Ideally you want this value to be lower than
+  #the price for betting all numbers divided by 0.45
   LowestTopPlacesPrize: 8000000
   #This percentage of total bets acquired will be taken from the prize pool
   TaxPercentage: 0.25
@@ -42,15 +50,15 @@ GUI:
       - "&cNo LotterySix games are scheduled"
     CheckOwnBets:
       - "&eNext LotterySix!"
-      - "&aDateTime: {Date}"
+      - "&aDraw Date: {Date}"
       - "&aTotal Bets: ${TotalBets}"
       - "&aEstimated Prize Pool: ${PrizePool}"
-      - ""
+      - "&a"
       - "&bClick to view your placed bets!"
     PlaceNewBets:
       - "&6Place New Bets"
       - "&aPlease bet responsibly"
-      - ""
+      - "&a"
       - "&7Odds:"
       - "&7First: 1 in {FIRSTOdds}"
       - "&7Second: 1 in {SECONDOdds}"
@@ -62,10 +70,17 @@ GUI:
   LastResults:
     Title: "&2Last Results"
     LotteryInfo:
-      - "&aDateTime: {Date}"
+      - "&aDraw Date: {Date}"
       - "&aTotal Bets: ${TotalBets}"
-      - "&a1st - 3rd Winners: {FirstToThirdPlaceWinnersCount}"
       - "&aTotal Prizes: {TotalPrizes}"
+      - "&a"
+      - "&a1st Tier Prize: &6${FIRSTPrize} &7x{FIRSTPrizeCount}"
+      - "&a2nd Tier Prize: &6${SECONDPrize} &7x{SECONDPrizeCount}"
+      - "&a3rd Tier Prize: &6${THIRDPrize} &7x{THIRDPrizeCount}"
+      - "&a4th Tier Prize: &6${FOURTHPrize} &7x{FOURTHPrizeCount}"
+      - "&a5th Tier Prize: &6${FIFTHPrize} &7x{FIFTHPrizeCount}"
+      - "&a6th Tier Prize: &6${SIXTHPrize} &7x{SIXTHPrizeCount}"
+      - "&a7th Tier Prize: &6${SEVENTHPrize} &7x{SEVENTHPrizeCount}"
     YourBets:
       - "&aYour Bets"
     NoWinnings: "&7No Winnings"
@@ -73,14 +88,6 @@ GUI:
     Title: "&2Your Bets"
     Nothing:
       - "&cNo bets placed yet"
-    LotteryInfo:
-      - "&aDateTime: {Date}"
-      - "&aTotal Bets: ${TotalBets}"
-      - "&aEstimated Prize Pool: {PrizePool}"
-    NextPage:
-      - "&aNext Page (%nextpage%/%pages%)"
-    PreviousPage:
-      - "&cPrevious Page (%prevpage%/%pages%)"
   SelectNewBetType:
     Title: "&2Select Bet Type"
     Single:

@@ -20,20 +20,21 @@
 
 package com.loohp.lotterysix.game;
 
+import com.cronutils.model.Cron;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.loohp.lotterysix.config.Config;
 import com.loohp.lotterysix.game.lottery.CompletedLotterySixGame;
-import com.loohp.lotterysix.game.objects.betnumbers.BetNumbers;
-import com.loohp.lotterysix.game.objects.CronExpression;
+import com.loohp.lotterysix.game.lottery.PlayableLotterySixGame;
 import com.loohp.lotterysix.game.objects.LotterySixAction;
 import com.loohp.lotterysix.game.objects.MessageConsumer;
 import com.loohp.lotterysix.game.objects.PlayerBets;
 import com.loohp.lotterysix.game.objects.PlayerPreferenceKey;
 import com.loohp.lotterysix.game.objects.PlayerWinnings;
-import com.loohp.lotterysix.game.lottery.PlayableLotterySixGame;
+import com.loohp.lotterysix.game.objects.betnumbers.BetNumbers;
 import com.loohp.lotterysix.game.player.LotteryPlayerManager;
 import com.loohp.lotterysix.utils.ChatColorUtils;
+import com.loohp.lotterysix.utils.CronUtils;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -43,9 +44,8 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -62,8 +62,8 @@ import java.util.function.Supplier;
 
 public class LotterySix implements AutoCloseable {
 
-    private TimerTask lotteryTask;
-    private TimerTask announcementTask;
+    private final TimerTask lotteryTask;
+    private volatile TimerTask announcementTask;
     private final File dataFolder;
     private final String configId;
 
@@ -77,10 +77,12 @@ public class LotterySix implements AutoCloseable {
     public String messageGameAlreadyRunning;
     public String messageGameLocked;
     public String messagePreferenceUpdated;
+    public String messageGameStarted;
+    public String messageGameSettingsUpdated;
 
     public SimpleDateFormat dateFormat;
 
-    public CronExpression runInterval;
+    public Cron runInterval;
     public TimeZone timezone;
     public long betsAcceptDuration;
     public long pricePerBet;
@@ -99,9 +101,6 @@ public class LotterySix implements AutoCloseable {
     public String guiLastResultsNoWinnings;
     public String guiYourBetsTitle;
     public String[] guiYourBetsNothing;
-    public String[] guiYourBetsLotteryInfo;
-    public String[] guiYourBetsNextPage;
-    public String[] guiYourBetsPreviousPage;
     public String guiSelectNewBetTypeTitle;
     public String[] guiSelectNewBetTypeSingle;
     public String[] guiSelectNewBetTypeMultiple;
@@ -187,10 +186,12 @@ public class LotterySix implements AutoCloseable {
 
         new Timer().scheduleAtFixedRate(lotteryTask = new TimerTask() {
             private int counter = 0;
+            private int saveInterval = 0;
             @Override
             public void run() {
                 if (currentGame == null) {
-                    if (runInterval != null && runInterval.isSatisfiedBy(new Date())) {
+                    if (runInterval != null && CronUtils.satisfyByCurrentMinute(runInterval, timezone)) {
+
                         startNewGame();
                         counter = 0;
                     }
@@ -205,6 +206,10 @@ public class LotterySix implements AutoCloseable {
                         }
                     }
                 }
+                if (saveInterval % 30 == 0) {
+                    saveData(true);
+                }
+                saveInterval++;
                 counter++;
             }
         }, 0, 1000);
@@ -236,12 +241,19 @@ public class LotterySix implements AutoCloseable {
     }
 
     public PlayableLotterySixGame startNewGame() {
-        long now = LocalDateTime.now().atZone(timezone.toZoneId()).withNano(0).withSecond(0).toInstant().toEpochMilli();
-        return startNewGame(now + betsAcceptDuration);
+        ZonedDateTime now = CronUtils.getNow(timezone);
+        long endTime = now.withNano(0).toInstant().toEpochMilli() + betsAcceptDuration;
+        if (runInterval != null && betsAcceptDuration < 0) {
+            ZonedDateTime dateTime = CronUtils.getNextExecution(runInterval, now);
+            if (dateTime != null) {
+                endTime = dateTime.toInstant().toEpochMilli() + betsAcceptDuration;
+            }
+        }
+        return startNewGame(endTime);
     }
 
     public synchronized PlayableLotterySixGame startNewGame(long dateTime) {
-        currentGame = PlayableLotterySixGame.createNewGame(this, Math.max(dateTime, System.currentTimeMillis()), completedGames.isEmpty() ? 0 : completedGames.get(0).getRemainingFunds());
+        currentGame = PlayableLotterySixGame.createNewGame(this, Math.max(dateTime, System.currentTimeMillis()), completedGames.isEmpty() ? 0 : completedGames.get(0).getRemainingFunds(), lowestTopPlacesPrize);
         saveData(true);
         actionListener.accept(LotterySixAction.START);
         return currentGame;
@@ -261,7 +273,7 @@ public class LotterySix implements AutoCloseable {
                 }
             }
         }
-        CompletedLotterySixGame completed = currentGame.runLottery(numberOfChoices, pricePerBet, lowestTopPlacesPrize, taxPercentage);
+        CompletedLotterySixGame completed = currentGame.runLottery(numberOfChoices, pricePerBet, taxPercentage);
         completedGames.add(0, completed);
         currentGame = null;
         saveData(false);
@@ -278,6 +290,7 @@ public class LotterySix implements AutoCloseable {
                             }
                         }
                         setGameLocked(false);
+                        announcementTask = null;
                         this.cancel();
                         actionListener.accept(LotterySixAction.RUN_LOTTERY_FINISH);
                         return;
@@ -362,29 +375,24 @@ public class LotterySix implements AutoCloseable {
         messageGameAlreadyRunning = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Messages.GameAlreadyRunning"));
         messageGameLocked = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Messages.GameLocked"));
         messagePreferenceUpdated = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Messages.PreferenceUpdated"));
+        messageGameStarted = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Messages.GameStarted"));
+        messageGameSettingsUpdated = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Messages.GameSettingsUpdated"));
 
         String runInternalStr = config.getConfiguration().getString("LotterySix.RunInterval");
-        try {
-            String[] sections = runInternalStr.trim().split(" ");
-            if (runInternalStr.equalsIgnoreCase("Never")) {
-                runInterval = null;
-            } else {
-                String cron = "* " + sections[0] + " " + sections[1] + " ? " + sections[2] + " " + sections[3] + " " + sections[4];
-                runInterval = new CronExpression(cron);
-            }
-        } catch (ParseException e) {
-            e.printStackTrace();
+        if (runInternalStr.equalsIgnoreCase("Never")) {
             runInterval = null;
+        } else {
+            runInterval = CronUtils.PARSER.parse(runInternalStr);
         }
-        if (runInterval != null) {
-            timezone = TimeZone.getTimeZone(config.getConfiguration().getString("LotterySix.TimeZone"));
-            runInterval.setTimeZone(timezone);
-        }
+        timezone = TimeZone.getTimeZone(config.getConfiguration().getString("LotterySix.TimeZone"));
 
         dateFormat = new SimpleDateFormat(ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Formatting.Date")));
         dateFormat.setTimeZone(timezone);
 
         betsAcceptDuration = config.getConfiguration().getLong("LotterySix.BetsAcceptDuration") * 1000;
+        if (runInterval == null) {
+            betsAcceptDuration = Math.abs(betsAcceptDuration);
+        }
         pricePerBet = config.getConfiguration().getLong("LotterySix.PricePerBet");
         numberOfChoices = Math.max(7, Math.min(49, config.getConfiguration().getInt("LotterySix.NumberOfChoices")));
         lowestTopPlacesPrize = config.getConfiguration().getLong("LotterySix.LowestTopPlacesPrize");
@@ -401,9 +409,6 @@ public class LotterySix implements AutoCloseable {
         guiLastResultsNoWinnings = config.getConfiguration().getString("GUI.LastResults.NoWinnings");
         guiYourBetsTitle = config.getConfiguration().getString("GUI.YourBets.Title");
         guiYourBetsNothing = config.getConfiguration().getStringList("GUI.YourBets.Nothing").toArray(new String[0]);
-        guiYourBetsLotteryInfo = config.getConfiguration().getStringList("GUI.YourBets.LotteryInfo").toArray(new String[0]);
-        guiYourBetsNextPage = config.getConfiguration().getStringList("GUI.YourBets.NextPage").toArray(new String[0]);
-        guiYourBetsPreviousPage = config.getConfiguration().getStringList("GUI.YourBets.PreviousPage").toArray(new String[0]);
         guiSelectNewBetTypeTitle = config.getConfiguration().getString("GUI.SelectNewBetType.Title");
         guiSelectNewBetTypeSingle = config.getConfiguration().getStringList("GUI.SelectNewBetType.Single").toArray(new String[0]);
         guiSelectNewBetTypeMultiple = config.getConfiguration().getStringList("GUI.SelectNewBetType.Multiple").toArray(new String[0]);

@@ -41,9 +41,12 @@ import io.github.bananapuncher714.nbteditor.NBTEditor;
 import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta;
+import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -65,6 +68,10 @@ public class LotteryPluginGUI {
     }
 
     private static ItemStack getNumberItem(int number) {
+        return getNumberItem(number, false);
+    }
+
+    private static ItemStack getNumberItem(int number, boolean enchanted) {
         XMaterial material;
         ChatColor color = ChatColorUtils.getNumberColor(number);
         if (color.equals(ChatColor.RED)) {
@@ -78,6 +85,12 @@ public class LotteryPluginGUI {
         }
         ItemStack itemStack = material.parseItem();
         itemStack.setAmount(number);
+        if (enchanted) {
+            itemStack.addUnsafeEnchantment(Enchantment.LUCK, 10);
+            ItemMeta itemMeta = itemStack.getItemMeta();
+            itemMeta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
+            itemStack.setItemMeta(itemMeta);
+        }
         return NBTEditor.set(itemStack, number, "LotterySixNumber");
     }
 
@@ -174,7 +187,7 @@ public class LotteryPluginGUI {
                 " aaaaaaa ",
                 "         "
         };
-        InventoryGui gui = new InventoryGui(plugin, LotteryUtils.formatPlaceholders(null, instance.guiMainMenuTitle, instance), guiSetup);
+        InventoryGui gui = new InventoryGui(plugin, LotteryUtils.formatPlaceholders(null, instance.guiSelectNewBetTypeTitle, instance), guiSetup);
         gui.setFiller(XMaterial.ORANGE_STAINED_GLASS_PANE.parseItem());
         gui.addElement(new StaticGuiElement('a', new ItemStack(Material.AIR), ChatColor.LIGHT_PURPLE.toString()));
         gui.addElement(new StaticGuiElement('b', XMaterial.BRICK.parseItem(), click -> {
@@ -427,19 +440,21 @@ public class LotteryPluginGUI {
                 gui.addElement(new StaticGuiElement(c++, getNumberItem(i), getNumberColor(i) + "" + i));
             }
             int specialNumber = game.getDrawResult().getSpecialNumber();
-            gui.addElement(new StaticGuiElement(c, getNumberItem(specialNumber), getNumberColor(specialNumber) + "" + specialNumber));
+            gui.addElement(new StaticGuiElement(c, getNumberItem(specialNumber, true), getNumberColor(specialNumber) + "" + specialNumber));
             gui.addElement(new StaticGuiElement('h', XMaterial.GOLD_BLOCK.parseItem(), LotteryUtils.formatPlaceholders(player, instance.guiLastResultsLotteryInfo, instance, game)));
+
+            String winningNumberStr = game.getDrawResult().toColoredString();
 
             List<String> pages = new ArrayList<>();
             List<PlayerWinnings> winningsList = game.getPlayerWinnings(player.getUniqueId());
             for (PlayerWinnings winnings : winningsList) {
-                String str = winnings.getWinningBet().getChosenNumbers().toColoredString() + "\n"
+                String str = winningNumberStr + "\n\n" + winnings.getWinningBet().getChosenNumbers().toColoredString() + "\n"
                         + ChatColor.GOLD + "" + winnings.getTier().getShortHand() + " $" + winnings.getWinnings();
                 pages.add(str);
             }
             for (PlayerBets bets : game.getPlayerBets(player.getUniqueId())) {
                 if (winningsList.stream().noneMatch(each -> each.getWinningBet().getBetId().equals(bets.getBetId()))) {
-                    String str = bets.getChosenNumbers().toColoredString() + "\n"
+                    String str = winningNumberStr + "\n\n" + bets.getChosenNumbers().toColoredString() + "\n"
                             + LotteryUtils.formatPlaceholders(player, instance.guiLastResultsNoWinnings, instance, game) + " $0";
                     pages.add(str);
                 }

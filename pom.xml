@@ -25,7 +25,7 @@
     <groupId>com.loohp</groupId>
     <artifactId>LotterySix</artifactId>
     <name>LotterySix</name>
-    <version>1.2.0.0</version>
+    <version>1.2.1.0</version>
 
     <description>Lottery game in Minecraft inspired by the game 'Mark Six' by the HKJC</description>
     <url>https://github.com/LOOHP/LotterySix/</url>
@@ -87,6 +87,14 @@
                                 <relocation>
                                     <pattern>io.github.bananapuncher714.nbteditor</pattern>
                                     <shadedPattern>com.loohp.lotterysix.libs.io.github.bananapuncher714.nbteditor</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>com.cronutils</pattern>
+                                    <shadedPattern>com.loohp.lotterysix.libs.com.cronutils</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>com.sun.el</pattern>
+                                    <shadedPattern>com.loohp.lotterysix.libs.com.sun.el</shadedPattern>
                                 </relocation>
                             </relocations>
                         </configuration>
@@ -303,15 +311,15 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>com.github.Querz</groupId>
-            <artifactId>NBT</artifactId>
-            <version>6.1</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
             <groupId>io.github.bananapuncher714</groupId>
             <artifactId>nbteditor</artifactId>
             <version>7.18.4</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.cronutils</groupId>
+            <artifactId>cron-utils</artifactId>
+            <version>9.2.0</version>
             <scope>compile</scope>
         </dependency>
     </dependencies>

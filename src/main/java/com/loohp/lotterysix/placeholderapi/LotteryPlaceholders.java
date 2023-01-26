@@ -20,12 +20,17 @@
 
 package com.loohp.lotterysix.placeholderapi;
 
+import com.cronutils.model.Cron;
 import com.loohp.lotterysix.LotterySixPlugin;
 import com.loohp.lotterysix.game.objects.PlayerPreferenceKey;
 import com.loohp.lotterysix.game.objects.PlayerStatsKey;
+import com.loohp.lotterysix.utils.CronUtils;
 import com.loohp.lotterysix.utils.LotteryUtils;
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;
 import org.bukkit.OfflinePlayer;
+
+import java.time.ZonedDateTime;
+import java.util.Date;
 
 public class LotteryPlaceholders extends PlaceholderExpansion {
 
@@ -87,6 +92,23 @@ public class LotteryPlaceholders extends PlaceholderExpansion {
                 return "";
             } else {
                 return asString(LotterySixPlugin.getInstance().getPlayerPreferenceManager().getLotteryPlayer(offlineplayer.getUniqueId()).getStats(key));
+            }
+        } else if (identifier.startsWith("scheduler_")) {
+            Cron cron = LotterySixPlugin.getInstance().runInterval;
+            if (cron == null) {
+                return asString(null);
+            } else {
+                String type = identifier.substring("scheduler_".length());
+                if (type.equalsIgnoreCase("interval")) {
+                    return CronUtils.DESCRIPTOR.describe(cron);
+                } else if (type.equalsIgnoreCase("next")) {
+                    ZonedDateTime dateTime = CronUtils.getNextExecution(cron, CronUtils.getNow(LotterySixPlugin.getInstance().timezone));
+                    if (dateTime == null) {
+                        return asString(null);
+                    } else {
+                        return LotterySixPlugin.getInstance().dateFormat.format(new Date(dateTime.toInstant().toEpochMilli()));
+                    }
+                }
             }
         }
         return null;

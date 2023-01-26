@@ -20,9 +20,14 @@
 
 package com.loohp.lotterysix;
 
+import com.cronutils.model.Cron;
+import com.loohp.lotterysix.game.lottery.PlayableLotterySixGame;
 import com.loohp.lotterysix.game.objects.PlayerPreferenceKey;
+import com.loohp.lotterysix.game.objects.betnumbers.BetNumbersType;
 import com.loohp.lotterysix.utils.ArrayUtils;
 import com.loohp.lotterysix.utils.ChatColorUtils;
+import com.loohp.lotterysix.utils.CronUtils;
+import com.loohp.lotterysix.utils.LotteryUtils;
 import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
@@ -31,6 +36,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 
+import java.time.ZonedDateTime;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
@@ -86,6 +92,7 @@ public class Commands implements CommandExecutor, TabCompleter {
                         }
                     } else {
                         LotterySixPlugin.getInstance().startNewGame();
+                        sender.sendMessage(LotterySixPlugin.getInstance().messageGameStarted);
                     }
                 } else {
                     sender.sendMessage(LotterySixPlugin.getInstance().messageGameAlreadyRunning);
@@ -162,6 +169,50 @@ public class Commands implements CommandExecutor, TabCompleter {
                 sender.sendMessage(LotterySixPlugin.getInstance().messageNoPermission);
             }
             return true;
+        } else if (args[0].equalsIgnoreCase("settopprizefund")) {
+            if (sender.hasPermission("lotterysix.settopprizefund")) {
+                if (args.length > 1) {
+                    try {
+                        long amount = Long.parseLong(args[1]);
+                        PlayableLotterySixGame game = LotterySixPlugin.getInstance().getCurrentGame();
+                        if (game == null) {
+                            sender.sendMessage(LotterySixPlugin.getInstance().messageNoGameRunning);
+                        } else {
+                            game.setLowestTopPlacesPrize(amount);
+                            sender.sendMessage(LotterySixPlugin.getInstance().messageGameSettingsUpdated);
+                        }
+                    } catch (NumberFormatException e) {
+                        sender.sendMessage(LotterySixPlugin.getInstance().messageInvalidUsage);
+                    }
+                } else {
+                    sender.sendMessage(LotterySixPlugin.getInstance().messageInvalidUsage);
+                }
+            } else {
+                sender.sendMessage(LotterySixPlugin.getInstance().messageNoPermission);
+            }
+            return true;
+        } else if (args[0].equalsIgnoreCase("setdrawtime")) {
+            if (sender.hasPermission("lotterysix.setdrawtime")) {
+                if (args.length > 1) {
+                    try {
+                        long time = Long.parseLong(args[1]);
+                        PlayableLotterySixGame game = LotterySixPlugin.getInstance().getCurrentGame();
+                        if (game == null) {
+                            sender.sendMessage(LotterySixPlugin.getInstance().messageNoGameRunning);
+                        } else {
+                            game.setScheduledDateTime(time);
+                            sender.sendMessage(LotterySixPlugin.getInstance().messageGameSettingsUpdated);
+                        }
+                    } catch (NumberFormatException e) {
+                        sender.sendMessage(LotterySixPlugin.getInstance().messageInvalidUsage);
+                    }
+                } else {
+                    sender.sendMessage(LotterySixPlugin.getInstance().messageInvalidUsage);
+                }
+            } else {
+                sender.sendMessage(LotterySixPlugin.getInstance().messageNoPermission);
+            }
+            return true;
         }
 
         sender.sendMessage(ChatColorUtils.translateAlternateColorCodes('&', Bukkit.spigot().getConfig().getString("messages.unknown-command")));
@@ -191,6 +242,12 @@ public class Commands implements CommandExecutor, TabCompleter {
                 }
                 if (sender.hasPermission("lotterysix.preference")) {
                     tab.add("preference");
+                }
+                if (sender.hasPermission("lotterysix.settopprizefund")) {
+                    tab.add("settopprizefund");
+                }
+                if (sender.hasPermission("lotterysix.setdrawtime")) {
+                    tab.add("setdrawtime");
                 }
                 return tab;
             case 1:
@@ -224,6 +281,16 @@ public class Commands implements CommandExecutor, TabCompleter {
                         tab.add("preference");
                     }
                 }
+                if (sender.hasPermission("lotterysix.settopprizefund")) {
+                    if ("settopprizefund".startsWith(args[0].toLowerCase())) {
+                        tab.add("settopprizefund");
+                    }
+                }
+                if (sender.hasPermission("lotterysix.setdrawtime")) {
+                    if ("setdrawtime".startsWith(args[0].toLowerCase())) {
+                        tab.add("setdrawtime");
+                    }
+                }
                 return tab;
             case 2:
                 if (sender.hasPermission("lotterysix.preference")) {
@@ -232,6 +299,41 @@ public class Commands implements CommandExecutor, TabCompleter {
                             String name = key.name().toLowerCase();
                             if (name.startsWith(args[1].toLowerCase())) {
                                 tab.add(name);
+                            }
+                        }
+                    }
+                }
+                if (sender.hasPermission("lotterysix.settopprizefund")) {
+                    if ("settopprizefund".equalsIgnoreCase(args[0])) {
+                        long max = LotteryUtils.calculatePrice(BetNumbersType.MULTIPLE, LotterySixPlugin.getInstance().numberOfChoices, 0, LotterySixPlugin.getInstance().pricePerBet);
+                        long high = Math.round(max / 0.5);
+                        long low = Math.round(high * 0.125);
+                        String highStr = LotteryUtils.oneSignificantFigure(high);
+                        String lowStr = LotteryUtils.oneSignificantFigure(low);
+                        if (highStr.startsWith(args[1].toLowerCase())) {
+                            tab.add(highStr);
+                        }
+                        if (lowStr.startsWith(args[1].toLowerCase())) {
+                            tab.add(lowStr);
+                        }
+                    }
+                }
+                if (sender.hasPermission("lotterysix.setdrawtime")) {
+                    if ("setdrawtime".equalsIgnoreCase(args[0])) {
+                        Cron cron = LotterySixPlugin.getInstance().runInterval;
+                        if (cron != null) {
+                            long duration = LotterySixPlugin.getInstance().betsAcceptDuration;
+                            ZonedDateTime dateTime;
+                            if (duration < 0) {
+                                dateTime = CronUtils.getNextExecution(cron, CronUtils.getNow(LotterySixPlugin.getInstance().timezone));
+                            } else {
+                                dateTime = CronUtils.getLastExecution(cron, CronUtils.getNow(LotterySixPlugin.getInstance().timezone));
+                            }
+                            if (dateTime != null) {
+                                long time = dateTime.toInstant().toEpochMilli() + duration;
+                                if (Long.toString(time).startsWith(args[1].toLowerCase())) {
+                                    tab.add(Long.toString(time));
+                                }
                             }
                         }
                     }

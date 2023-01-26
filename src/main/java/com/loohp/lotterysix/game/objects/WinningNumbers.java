@@ -21,6 +21,7 @@
 package com.loohp.lotterysix.game.objects;
 
 import com.loohp.lotterysix.game.objects.betnumbers.BetNumbers;
+import com.loohp.lotterysix.utils.ChatColorUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -140,6 +141,11 @@ public class WinningNumbers {
     @Override
     public String toString() {
         return numbers.stream().sorted().map(each -> each.toString()).collect(Collectors.joining(" ", "", " \"" + specialNumber + "\""));
+    }
+
+    public String toColoredString() {
+        String numbersString = numbers.stream().sorted().map(each -> ChatColorUtils.getNumberColor(each) + each.toString()).collect(Collectors.joining(" "));
+        return numbersString + " \u00a7e+ " + ChatColorUtils.getNumberColor(specialNumber) + specialNumber;
     }
 
     @Override

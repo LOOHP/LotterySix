@@ -22,8 +22,8 @@ package com.loohp.lotterysix.utils;
 
 import com.loohp.lotterysix.game.LotterySix;
 import com.loohp.lotterysix.game.lottery.CompletedLotterySixGame;
-import com.loohp.lotterysix.game.objects.PrizeTier;
 import com.loohp.lotterysix.game.lottery.PlayableLotterySixGame;
+import com.loohp.lotterysix.game.objects.PrizeTier;
 import com.loohp.lotterysix.game.objects.betnumbers.BetNumbers;
 import com.loohp.lotterysix.game.objects.betnumbers.BetNumbersBuilder;
 import com.loohp.lotterysix.game.objects.betnumbers.BetNumbersType;
@@ -39,6 +39,14 @@ public class LotteryUtils {
 
     public static final BigInteger SIX_FACTORIAL = BigInteger.valueOf(720);
     public static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("0.##");
+
+    public static String oneSignificantFigure(long value) {
+        StringBuilder sb = new StringBuilder(Long.toString(value));
+        for (int i = sb.charAt(0) == '-' ? 2 : 1; i < sb.length(); i++) {
+            sb.setCharAt(i, '0');
+        }
+        return sb.toString();
+    }
 
     public static BigInteger factorial(long number) {
         return LongStream.rangeClosed(1, number).mapToObj(i -> BigInteger.valueOf(i)).reduce(BigInteger.ONE, (x, y) -> x.multiply(y));
@@ -104,7 +112,7 @@ public class LotteryUtils {
                 .replace("{Date}", lotterySix.dateFormat.format(new Date(game.getScheduledDateTime())))
                 .replace("{PricePerBet}", lotterySix.pricePerBet + "")
                 .replace("{TotalBets}", game.getTotalBets() + "")
-                .replace("{PrizePool}", game.estimatedPrizePool(lotterySix.lowestTopPlacesPrize, lotterySix.taxPercentage) + "");
+                .replace("{PrizePool}", game.estimatedPrizePool(lotterySix.taxPercentage) + "");
         for (PrizeTier prizeTier : PrizeTier.values()) {
             str = str.replace("{" + prizeTier.name() + "Odds}", DECIMAL_FORMAT.format(calculateOddsOneOver(lotterySix.numberOfChoices, prizeTier)));
         }

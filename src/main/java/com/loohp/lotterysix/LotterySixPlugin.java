@@ -123,7 +123,8 @@ public class LotterySixPlugin extends JavaPlugin implements Listener {
         new LotteryPlaceholders().register();
 
         if (getServer().getPluginManager().isPluginEnabled("DiscordSRV")) {
-            getServer().getPluginManager().registerEvents(discordSRVHook = new DiscordSRVHook(), this);
+            discordSRVHook = new DiscordSRVHook();
+            getServer().getPluginManager().registerEvents(discordSRVHook, this);
             getServer().getConsoleSender().sendMessage(ChatColor.AQUA + "[LotterySix] LotterySix has hooked into DiscordSRV!");
         }
 

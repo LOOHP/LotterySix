@@ -42,24 +42,26 @@ import java.util.stream.Collectors;
 
 public class PlayableLotterySixGame {
 
-    public static PlayableLotterySixGame createNewGame(LotterySix instance, long scheduledDateTime, long carryOverFund) {
-        return new PlayableLotterySixGame(instance, UUID.randomUUID(), scheduledDateTime, new ArrayList<>(), carryOverFund, true);
+    public static PlayableLotterySixGame createNewGame(LotterySix instance, long scheduledDateTime, long carryOverFund, long lowestTopPlacesPrize) {
+        return new PlayableLotterySixGame(instance, UUID.randomUUID(), scheduledDateTime, new ArrayList<>(), carryOverFund, lowestTopPlacesPrize, true);
     }
 
     private transient LotterySix instance;
 
     private final UUID gameId;
-    private final long scheduledDateTime;
+    private long scheduledDateTime;
     private final List<PlayerBets> bets;
     private final long carryOverFund;
+    private long lowestTopPlacesPrize;
     private volatile boolean valid;
 
-    public PlayableLotterySixGame(LotterySix instance, UUID gameId, long scheduledDateTime, List<PlayerBets> bets, long carryOverFund, boolean valid) {
+    private PlayableLotterySixGame(LotterySix instance, UUID gameId, long scheduledDateTime, List<PlayerBets> bets, long lowestTopPlacesPrize, long carryOverFund, boolean valid) {
         this.instance = instance;
         this.gameId = gameId;
         this.scheduledDateTime = scheduledDateTime;
         this.bets = bets;
         this.carryOverFund = carryOverFund;
+        this.lowestTopPlacesPrize = lowestTopPlacesPrize;
         this.valid = valid;
     }
 
@@ -75,12 +77,24 @@ public class PlayableLotterySixGame {
         return gameId;
     }
 
+    public void setScheduledDateTime(long scheduledDateTime) {
+        this.scheduledDateTime = scheduledDateTime;
+    }
+
     public long getScheduledDateTime() {
         return scheduledDateTime;
     }
 
     public long getCarryOverFund() {
         return carryOverFund;
+    }
+
+    public long getLowestTopPlacesPrize() {
+        return lowestTopPlacesPrize;
+    }
+
+    public void setLowestTopPlacesPrize(long lowestTopPlacesPrize) {
+        this.lowestTopPlacesPrize = lowestTopPlacesPrize;
     }
 
     public boolean isValid() {
@@ -135,11 +149,11 @@ public class PlayableLotterySixGame {
         return Collections.unmodifiableList(bets.stream().filter(each -> each.getPlayer().equals(player)).collect(Collectors.toList()));
     }
 
-    public long estimatedPrizePool(long lowestTopPlacesPrize, double taxPercentage) {
+    public long estimatedPrizePool(double taxPercentage) {
         return Math.max(lowestTopPlacesPrize, carryOverFund + (long) Math.floor(bets.stream().mapToLong(each -> each.getBet()).count() * (1.0 - taxPercentage)));
     }
 
-    public synchronized CompletedLotterySixGame runLottery(int maxNumber, long pricePerBet, long lowestTopPlacesPrize, double taxPercentage) {
+    public synchronized CompletedLotterySixGame runLottery(int maxNumber, long pricePerBet, double taxPercentage) {
         long now = System.currentTimeMillis();
         SecureRandom random = new SecureRandom();
         int[] num = random.ints(1, maxNumber + 1).distinct().limit(7).toArray();

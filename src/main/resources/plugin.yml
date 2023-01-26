@@ -34,3 +34,9 @@ permissions:
   lotterysix.preference.others:
     default: op
     description: Allow players to set other player's preferences
+  lotterysix.settopprizefund:
+    default: op
+    description: Allow players to set the top prize fund for the on-going round
+  lotterysix.setdrawtime:
+    default: op
+    description: Allow players to set the draw time of the on-going round
