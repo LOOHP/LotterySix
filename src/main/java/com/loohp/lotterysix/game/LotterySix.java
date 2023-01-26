@@ -50,12 +50,15 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.TimeZone;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.UUID;
 import java.util.function.BiConsumer;
+import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -79,6 +82,8 @@ public class LotterySix implements AutoCloseable {
     public String messagePreferenceUpdated;
     public String messageGameStarted;
     public String messageGameSettingsUpdated;
+    public String messageBetLimitReachedSelf;
+    public String messageBetLimitReachedPermission;
 
     public SimpleDateFormat dateFormat;
 
@@ -145,6 +150,8 @@ public class LotterySix implements AutoCloseable {
     public String discordSRVSlashCommandsViewCurrentBetsNoGame;
     public String discordSRVSlashCommandsViewCurrentBetsThumbnailURL;
 
+    public Map<String, Long> playerBetLimit;
+
     private final LotteryPlayerManager playerPreferenceManager;
 
     private volatile PlayableLotterySixGame currentGame;
@@ -154,6 +161,7 @@ public class LotterySix implements AutoCloseable {
     private final Consumer<Collection<PlayerWinnings>> givePrizesConsumer;
     private final Consumer<Collection<PlayerBets>> refundBetsConsumer;
     private final Predicate<PlayerBets> takeMoneyConsumer;
+    private final BiPredicate<UUID, String> hasPermissionPredicate;
     private final Runnable lockRunnable;
     private final Supplier<Collection<UUID>> onlinePlayersSupplier;
     private final MessageConsumer messageSendingConsumer;
@@ -161,12 +169,13 @@ public class LotterySix implements AutoCloseable {
     private final BiConsumer<UUID, BetNumbers> playerBetListener;
     private final Consumer<LotterySixAction> actionListener;
 
-    public LotterySix(File dataFolder, String configId, Consumer<Collection<PlayerWinnings>> givePrizesConsumer, Consumer<Collection<PlayerBets>> refundBetsConsumer, Predicate<PlayerBets> takeMoneyConsumer, Runnable lockRunnable, Supplier<Collection<UUID>> onlinePlayersSupplier, MessageConsumer messageSendingConsumer, MessageConsumer titleSendingConsumer, BiConsumer<UUID, BetNumbers> playerBetListener, Consumer<LotterySixAction> actionListener) {
+    public LotterySix(File dataFolder, String configId, Consumer<Collection<PlayerWinnings>> givePrizesConsumer, Consumer<Collection<PlayerBets>> refundBetsConsumer, Predicate<PlayerBets> takeMoneyConsumer, BiPredicate<UUID, String> hasPermissionPredicate, Runnable lockRunnable, Supplier<Collection<UUID>> onlinePlayersSupplier, MessageConsumer messageSendingConsumer, MessageConsumer titleSendingConsumer, BiConsumer<UUID, BetNumbers> playerBetListener, Consumer<LotterySixAction> actionListener) {
         this.dataFolder = dataFolder;
         this.configId = configId;
         this.givePrizesConsumer = givePrizesConsumer;
         this.refundBetsConsumer = refundBetsConsumer;
         this.takeMoneyConsumer = takeMoneyConsumer;
+        this.hasPermissionPredicate = hasPermissionPredicate;
         this.lockRunnable = lockRunnable;
         this.onlinePlayersSupplier = onlinePlayersSupplier;
         this.messageSendingConsumer = messageSendingConsumer;
@@ -361,6 +370,27 @@ public class LotterySix implements AutoCloseable {
         return actionListener;
     }
 
+    public long getPlayerBetLimit(UUID uuid) {
+        if (hasPermissionPredicate.test(uuid, "lotterysix.betlimit.unlimited")) {
+            return -1;
+        }
+        long limit = Long.MIN_VALUE;
+        for (Map.Entry<String, Long> entry : playerBetLimit.entrySet()) {
+            if (hasPermissionPredicate.test(uuid, "lotterysix.betlimit." + entry.getKey())) {
+                long value = entry.getValue();
+                if (value < 0) {
+                    return -1;
+                } else if (value > limit) {
+                    limit = value;
+                }
+            }
+        }
+        if (limit == Long.MIN_VALUE) {
+            return playerBetLimit.getOrDefault("default", -1L);
+        }
+        return limit;
+    }
+
     public void reloadConfig() {
         Config config = Config.getConfig(configId);
         config.reload();
@@ -377,6 +407,8 @@ public class LotterySix implements AutoCloseable {
         messagePreferenceUpdated = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Messages.PreferenceUpdated"));
         messageGameStarted = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Messages.GameStarted"));
         messageGameSettingsUpdated = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Messages.GameSettingsUpdated"));
+        messageBetLimitReachedSelf = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Messages.BetLimitReachedSelf"));
+        messageBetLimitReachedPermission = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Messages.BetLimitReachedPermission"));
 
         String runInternalStr = config.getConfiguration().getString("LotterySix.RunInterval");
         if (runInternalStr.equalsIgnoreCase("Never")) {
@@ -452,6 +484,11 @@ public class LotterySix implements AutoCloseable {
         discordSRVSlashCommandsViewCurrentBetsNoBets = config.getConfiguration().getString("DiscordSRV.SlashCommands.ViewCurrentBets.NoBets");
         discordSRVSlashCommandsViewCurrentBetsNoGame = config.getConfiguration().getString("DiscordSRV.SlashCommands.ViewCurrentBets.NoGame");
         discordSRVSlashCommandsViewCurrentBetsThumbnailURL = config.getConfiguration().getString("DiscordSRV.SlashCommands.ViewPastDraw.ThumbnailURL");
+
+        playerBetLimit = new HashMap<>();
+        for (String group : config.getConfiguration().getConfigurationSection("Restrictions.BetLimitPerRound").getKeys(false)) {
+            playerBetLimit.put(group, config.getConfiguration().getLong("Restrictions.BetLimitPerRound." + group));
+        }
     }
 
     public synchronized void loadData() {

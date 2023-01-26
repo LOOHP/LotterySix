@@ -39,7 +39,9 @@ import com.loohp.lotterysix.utils.LotteryUtils;
 import me.clip.placeholderapi.PlaceholderAPI;
 import net.md_5.bungee.api.ChatColor;
 import net.milkbowl.vault.economy.Economy;
+import net.milkbowl.vault.permission.Permission;
 import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -64,6 +66,7 @@ public class LotterySixPlugin extends JavaPlugin implements Listener {
     private static LotterySix instance;
     private static LotteryPluginGUI guiProvider;
     private static Economy econ = null;
+    private static Permission perms = null;
 
     @Override
     public void onEnable() {
@@ -85,12 +88,18 @@ public class LotterySixPlugin extends JavaPlugin implements Listener {
             return;
         }
 
-        RegisteredServiceProvider<Economy> rsp = getServer().getServicesManager().getRegistration(Economy.class);
-        econ = rsp.getProvider();
+        econ = getServer().getServicesManager().getRegistration(Economy.class).getProvider();
+        perms = getServer().getServicesManager().getRegistration(Permission.class).getProvider();
 
         getCommand("lotterysix").setExecutor(new Commands());
 
-        instance = new LotterySix(getDataFolder(), CONFIG_ID, c -> givePrizes(c), c -> refundBets(c), b -> takeMoney(b), () -> forceCloseAllGui(), () -> Collections2.transform(Bukkit.getOnlinePlayers(), p -> p.getUniqueId()), (uuid, message, game) -> {
+        instance = new LotterySix(getDataFolder(), CONFIG_ID, c -> givePrizes(c), c -> refundBets(c), b -> takeMoney(b), (uuid, permission) -> {
+            OfflinePlayer player = Bukkit.getOfflinePlayer(uuid);
+            if (player.isOnline()) {
+                return player.getPlayer().hasPermission(permission);
+            }
+            return perms.playerHas(Bukkit.getWorlds().get(0).getName(), Bukkit.getOfflinePlayer(uuid), permission);
+        }, () -> forceCloseAllGui(), () -> Collections2.transform(Bukkit.getOnlinePlayers(), p -> p.getUniqueId()), (uuid, message, game) -> {
             Player player = Bukkit.getPlayer(uuid);
             if (player != null) {
                 if (game instanceof PlayableLotterySixGame) {
@@ -147,6 +156,10 @@ public class LotterySixPlugin extends JavaPlugin implements Listener {
 
     public static Economy getEcon() {
         return econ;
+    }
+
+    public static Permission getPerms() {
+        return perms;
     }
 
     public static void givePrizes(Collection<PlayerWinnings> winnings) {

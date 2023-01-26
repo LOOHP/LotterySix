@@ -11,6 +11,8 @@ Messages:
   PreferenceUpdated: "&aSuccessfully updated player preference!"
   GameStarted: "&aStarted new LotterySix game"
   GameSettingsUpdated: "&aUpdated current round of LotterySix"
+  BetLimitReachedSelf: "&cYou have reached your bet limit, edit player preferences to change this limit. Please bet responsibly."
+  BetLimitReachedPermission: "&cYou have reached your bet limit. Please bet responsibly."
 
 Formatting:
   Date: "dd-MM-yyyy HH:mm:ss zzz"
@@ -40,6 +42,16 @@ LotterySix:
   LowestTopPlacesPrize: 8000000
   #This percentage of total bets acquired will be taken from the prize pool
   TaxPercentage: 0.25
+
+Restrictions:
+  #Max amount of money a player can bet in a single round of LotterySix
+  #Setting -1 means unlimited
+  #To add a player to a group, give the permission "lotterysix.betlimit.<group>"
+  #For example "lotterysix.betlimit.vip"
+  #Players with no groups will be treated as "default" unless they have "lotterysix.betlimit.unlimited"
+  BetLimitPerRound:
+    default: -1
+    minor: 0
 
 GUI:
   MainMenu:

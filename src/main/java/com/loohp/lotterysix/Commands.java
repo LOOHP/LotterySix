@@ -21,6 +21,7 @@
 package com.loohp.lotterysix;
 
 import com.cronutils.model.Cron;
+import com.loohp.lotterysix.debug.Debug;
 import com.loohp.lotterysix.game.lottery.PlayableLotterySixGame;
 import com.loohp.lotterysix.game.objects.PlayerPreferenceKey;
 import com.loohp.lotterysix.game.objects.betnumbers.BetNumbersType;
@@ -30,6 +31,7 @@ import com.loohp.lotterysix.utils.CronUtils;
 import com.loohp.lotterysix.utils.LotteryUtils;
 import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -206,6 +208,30 @@ public class Commands implements CommandExecutor, TabCompleter {
                     } catch (NumberFormatException e) {
                         sender.sendMessage(LotterySixPlugin.getInstance().messageInvalidUsage);
                     }
+                } else {
+                    sender.sendMessage(LotterySixPlugin.getInstance().messageInvalidUsage);
+                }
+            } else {
+                sender.sendMessage(LotterySixPlugin.getInstance().messageNoPermission);
+            }
+            return true;
+        } else if (args[0].equalsIgnoreCase("admininfo")) {
+            if (sender.hasPermission("lotterysix.admininfo")) {
+                if (args.length > 1) {
+                    OfflinePlayer player;
+                    try {
+                        player = Bukkit.getOfflinePlayer(UUID.fromString(args[1]));
+                    } catch (IllegalArgumentException e) {
+                        player = Bukkit.getOfflinePlayer(args[1]);
+                    }
+                    int maxPastGames = 1;
+                    if (args.length > 2) {
+                        try {
+                            maxPastGames = Integer.parseInt(args[2]);
+                        } catch (NumberFormatException ignore) {
+                        }
+                    }
+                    Debug.debugLotteryPlayer(sender, player, maxPastGames);
                 } else {
                     sender.sendMessage(LotterySixPlugin.getInstance().messageInvalidUsage);
                 }

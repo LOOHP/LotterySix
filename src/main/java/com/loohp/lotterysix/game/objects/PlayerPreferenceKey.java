@@ -28,7 +28,8 @@ import java.util.function.Function;
 public enum PlayerPreferenceKey {
 
     HIDE_TITLES(boolean.class, false, Arrays.asList("true", "false"), s -> Boolean.parseBoolean(s)),
-    HIDE_PERIODIC_ANNOUNCEMENTS(boolean.class, false, Arrays.asList("true", "false"), s -> Boolean.parseBoolean(s));
+    HIDE_PERIODIC_ANNOUNCEMENTS(boolean.class, false, Arrays.asList("true", "false"), s -> Boolean.parseBoolean(s)),
+    BET_LIMIT_PER_ROUND(long.class, 100000L, Arrays.asList("0", "100", "1000", "100000", "10000000"), s -> Long.parseLong(s));
 
     private final Class<?> valueTypeClass;
     private final Object defaultValue;

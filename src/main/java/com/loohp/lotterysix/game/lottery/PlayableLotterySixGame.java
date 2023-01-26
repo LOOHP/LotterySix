@@ -21,6 +21,8 @@
 package com.loohp.lotterysix.game.lottery;
 
 import com.loohp.lotterysix.game.LotterySix;
+import com.loohp.lotterysix.game.objects.AddBetResult;
+import com.loohp.lotterysix.game.objects.PlayerPreferenceKey;
 import com.loohp.lotterysix.game.objects.betnumbers.BetNumbers;
 import com.loohp.lotterysix.game.objects.LotteryPlayer;
 import com.loohp.lotterysix.game.objects.PlayerBets;
@@ -119,26 +121,35 @@ public class PlayableLotterySixGame {
         return bets.stream().mapToLong(each -> each.getBet()).sum();
     }
 
-    public boolean addBet(UUID player, long bet, BetNumbers chosenNumbers) {
+    public AddBetResult addBet(UUID player, long bet, BetNumbers chosenNumbers) {
         return addBet(new PlayerBets(player, bet, chosenNumbers));
     }
 
-    public synchronized boolean addBet(PlayerBets bet) {
+    public synchronized AddBetResult addBet(PlayerBets bet) {
         if (instance.isGameLocked()) {
-            return false;
+            return AddBetResult.GAME_LOCKED;
         }
         if (instance != null) {
+            LotteryPlayer lotteryPlayer = instance.getPlayerPreferenceManager().getLotteryPlayer(bet.getPlayer());
             instance.getPlayerBetListener().accept(bet.getPlayer(), bet.getChosenNumbers());
-            if (!instance.takeMoney(bet)) {
-                return false;
+            long totalBets = getPlayerBets(bet.getPlayer()).stream().mapToLong(each -> each.getBet()).sum() + bet.getBet();
+            if (lotteryPlayer.getPreference(PlayerPreferenceKey.BET_LIMIT_PER_ROUND, long.class) < totalBets) {
+                return AddBetResult.LIMIT_SELF;
             }
-            instance.getPlayerPreferenceManager().getLotteryPlayer(bet.getPlayer()).updateStats(PlayerStatsKey.TOTAL_BETS_PLACED, long.class, i -> i + bet.getBet());
+            long permissionLimit = instance.getPlayerBetLimit(bet.getPlayer());
+            if (permissionLimit >= 0 && permissionLimit < totalBets) {
+                return AddBetResult.LIMIT_PERMISSION;
+            }
+            if (!instance.takeMoney(bet)) {
+                return AddBetResult.NOT_ENOUGH_MONEY;
+            }
+            lotteryPlayer.updateStats(PlayerStatsKey.TOTAL_BETS_PLACED, long.class, i -> i + bet.getBet());
         }
         bets.add(bet);
         if (instance != null) {
             instance.saveData(true);
         }
-        return true;
+        return AddBetResult.SUCCESS;
     }
 
     public boolean hasBets() {
