@@ -63,7 +63,7 @@ GUI:
     CheckOwnBets:
       - "&eNext LotterySix!"
       - "&aDraw Date: {Date}"
-      - "&aTotal Bets: ${TotalBets}"
+      - "&aTurnover: ${TotalBets}"
       - "&aEstimated Prize Pool: ${PrizePool}"
       - "&a"
       - "&bClick to view your placed bets!"
@@ -83,7 +83,7 @@ GUI:
     Title: "&2Last Results"
     LotteryInfo:
       - "&aDraw Date: {Date}"
-      - "&aTotal Bets: ${TotalBets}"
+      - "&aTurnover: ${TotalBets}"
       - "&aTotal Prizes: {TotalPrizes}"
       - "&a"
       - "&a1st Tier Prize: &6${FIRSTPrize} &7x{FIRSTPrizeCount}"
