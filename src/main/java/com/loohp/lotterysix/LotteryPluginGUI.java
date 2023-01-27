@@ -39,6 +39,8 @@ import de.themoep.inventorygui.InventoryGui;
 import de.themoep.inventorygui.StaticGuiElement;
 import io.github.bananapuncher714.nbteditor.NBTEditor;
 import net.md_5.bungee.api.ChatColor;
+import net.md_5.bungee.api.chat.ClickEvent;
+import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
@@ -110,7 +112,7 @@ public class LotteryPluginGUI {
                 " aaaaaaa ",
                 " abacada ",
                 " aaaaaaa ",
-                "         "
+                "        z"
         };
         mainMenu = new InventoryGui(plugin, LotteryUtils.formatPlaceholders(null, instance.guiMainMenuTitle, instance), guiSetup);
         mainMenu.setFiller(XMaterial.YELLOW_STAINED_GLASS_PANE.parseItem());
@@ -142,6 +144,13 @@ public class LotteryPluginGUI {
                 }, LotteryUtils.formatPlaceholders(null, instance.guiMainMenuPlaceNewBets, instance, currentGame));
             }
         }));
+        mainMenu.addElement(new StaticGuiElement('z', XMaterial.LIME_STAINED_GLASS_PANE.parseItem(), click -> {
+            TextComponent message = new TextComponent(LotteryUtils.formatPlaceholders(null, instance.explanationMessage, instance));
+            message.setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, instance.explanationURL));
+            click.getWhoClicked().spigot().sendMessage(message);
+            Bukkit.getScheduler().runTaskLater(plugin, () -> click.getGui().close(click.getWhoClicked(), true), 1);
+            return true;
+        }, LotteryUtils.formatPlaceholders(null, instance.explanationGUIItem, instance)));
     }
 
     public void forceClose(Player player) {

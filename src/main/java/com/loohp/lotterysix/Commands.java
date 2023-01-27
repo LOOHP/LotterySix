@@ -25,6 +25,7 @@ import com.loohp.lotterysix.debug.Debug;
 import com.loohp.lotterysix.game.lottery.PlayableLotterySixGame;
 import com.loohp.lotterysix.game.objects.PlayerPreferenceKey;
 import com.loohp.lotterysix.game.objects.betnumbers.BetNumbersType;
+import com.loohp.lotterysix.updater.Updater;
 import com.loohp.lotterysix.utils.ArrayUtils;
 import com.loohp.lotterysix.utils.ChatColorUtils;
 import com.loohp.lotterysix.utils.CronUtils;
@@ -60,6 +61,26 @@ public class Commands implements CommandExecutor, TabCompleter {
                     LotterySixPlugin.discordSRVHook.reload();
                 }
                 sender.sendMessage(LotterySixPlugin.getInstance().messageReloaded);
+            } else {
+                sender.sendMessage(LotterySixPlugin.getInstance().messageNoPermission);
+            }
+            return true;
+        } else if (args[0].equalsIgnoreCase("update")) {
+            if (sender.hasPermission("lotterysix.update")) {
+                sender.sendMessage(ChatColor.AQUA + "[LotterySix] LotterySix written by LOOHP!");
+                sender.sendMessage(ChatColor.GOLD + "[LotterySix] You are running LotterySix version: " + LotterySixPlugin.plugin.getDescription().getVersion());
+                Bukkit.getScheduler().runTaskAsynchronously(LotterySixPlugin.plugin, () -> {
+                    Updater.UpdaterResponse version = Updater.checkUpdate();
+                    if (version.getResult().equals("latest")) {
+                        if (version.isDevBuildLatest()) {
+                            sender.sendMessage(ChatColor.GREEN + "[LotterySix] You are running the latest version!");
+                        } else {
+                            Updater.sendUpdateMessage(sender, version.getResult(), version.getSpigotPluginId(), true);
+                        }
+                    } else {
+                        Updater.sendUpdateMessage(sender, version.getResult(), version.getSpigotPluginId());
+                    }
+                });
             } else {
                 sender.sendMessage(LotterySixPlugin.getInstance().messageNoPermission);
             }
@@ -254,6 +275,9 @@ public class Commands implements CommandExecutor, TabCompleter {
                 if (sender.hasPermission("lotterysix.reload")) {
                     tab.add("reload");
                 }
+                if (sender.hasPermission("lotterysix.update")) {
+                    tab.add("update");
+                }
                 if (sender.hasPermission("lotterysix.play")) {
                     tab.add("play");
                 }
@@ -280,6 +304,11 @@ public class Commands implements CommandExecutor, TabCompleter {
                 if (sender.hasPermission("lotterysix.reload")) {
                     if ("reload".startsWith(args[0].toLowerCase())) {
                         tab.add("reload");
+                    }
+                }
+                if (sender.hasPermission("lotterysix.update")) {
+                    if ("update".startsWith(args[0].toLowerCase())) {
+                        tab.add("update");
                     }
                 }
                 if (sender.hasPermission("lotterysix.play")) {

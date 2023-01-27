@@ -85,7 +85,13 @@ public class LotterySix implements AutoCloseable {
     public String messageBetLimitReachedSelf;
     public String messageBetLimitReachedPermission;
 
+    public String explanationMessage;
+    public String explanationURL;
+    public String[] explanationGUIItem;
+
     public SimpleDateFormat dateFormat;
+
+    public boolean updaterEnabled;
 
     public Cron runInterval;
     public TimeZone timezone;
@@ -410,6 +416,10 @@ public class LotterySix implements AutoCloseable {
         messageBetLimitReachedSelf = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Messages.BetLimitReachedSelf"));
         messageBetLimitReachedPermission = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Messages.BetLimitReachedPermission"));
 
+        explanationMessage = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Explanation.Message"));
+        explanationURL = config.getConfiguration().getString("Explanation.URL");
+        explanationGUIItem = config.getConfiguration().getStringList("Explanation.GUIItem").stream().map(each -> ChatColorUtils.translateAlternateColorCodes('&', each)).toArray(String[]::new);
+
         String runInternalStr = config.getConfiguration().getString("LotterySix.RunInterval");
         if (runInternalStr.equalsIgnoreCase("Never")) {
             runInterval = null;
@@ -420,6 +430,8 @@ public class LotterySix implements AutoCloseable {
 
         dateFormat = new SimpleDateFormat(ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Formatting.Date")));
         dateFormat.setTimeZone(timezone);
+
+        updaterEnabled = config.getConfiguration().getBoolean("Options.Updater");
 
         betsAcceptDuration = config.getConfiguration().getLong("LotterySix.BetsAcceptDuration") * 1000;
         if (runInterval == null) {

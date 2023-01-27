@@ -28,12 +28,13 @@ import com.loohp.lotterysix.events.LotterySixEvent;
 import com.loohp.lotterysix.events.PlayerBetEvent;
 import com.loohp.lotterysix.game.LotterySix;
 import com.loohp.lotterysix.game.lottery.CompletedLotterySixGame;
+import com.loohp.lotterysix.game.lottery.PlayableLotterySixGame;
 import com.loohp.lotterysix.game.objects.PlayerBets;
 import com.loohp.lotterysix.game.objects.PlayerWinnings;
-import com.loohp.lotterysix.game.lottery.PlayableLotterySixGame;
 import com.loohp.lotterysix.metrics.Charts;
 import com.loohp.lotterysix.metrics.Metrics;
 import com.loohp.lotterysix.placeholderapi.LotteryPlaceholders;
+import com.loohp.lotterysix.updater.Updater;
 import com.loohp.lotterysix.utils.ChatColorUtils;
 import com.loohp.lotterysix.utils.LotteryUtils;
 import me.clip.placeholderapi.PlaceholderAPI;
@@ -47,7 +48,6 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
-import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
@@ -135,6 +135,10 @@ public class LotterySixPlugin extends JavaPlugin implements Listener {
             discordSRVHook = new DiscordSRVHook();
             getServer().getPluginManager().registerEvents(discordSRVHook, this);
             getServer().getConsoleSender().sendMessage(ChatColor.AQUA + "[LotterySix] LotterySix has hooked into DiscordSRV!");
+        }
+
+        if (instance.updaterEnabled) {
+            getServer().getPluginManager().registerEvents(new Updater(), this);
         }
 
         getServer().getConsoleSender().sendMessage(ChatColor.GREEN + "[LotterySix] LotterySix has been Enabled!");
