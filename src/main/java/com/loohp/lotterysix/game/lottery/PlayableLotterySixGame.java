@@ -162,7 +162,7 @@ public class PlayableLotterySixGame {
     }
 
     public long estimatedPrizePool(double taxPercentage) {
-        return Math.max(lowestTopPlacesPrize, carryOverFund + (long) Math.floor(bets.stream().mapToLong(each -> each.getBet()).count() * (1.0 - taxPercentage)));
+        return Math.max(lowestTopPlacesPrize, carryOverFund + (long) Math.floor(bets.stream().mapToLong(each -> each.getBet()).sum() * (1.0 - taxPercentage)));
     }
 
     public synchronized CompletedLotterySixGame runLottery(int maxNumber, long pricePerBet, double taxPercentage) {
@@ -174,7 +174,7 @@ public class PlayableLotterySixGame {
         for (PrizeTier prizeTier : PrizeTier.values()) {
             tiers.put(prizeTier, new ArrayList<>());
         }
-        long totalPrize = carryOverFund + (long) Math.floor(bets.stream().mapToLong(each -> each.getBet()).count() * (1.0 - taxPercentage));
+        long totalPrize = carryOverFund + (long) Math.floor(bets.stream().mapToLong(each -> each.getBet()).sum() * (1.0 - taxPercentage));
         Set<UUID> participants = new HashSet<>();
         for (PlayerBets playerBets : bets) {
             participants.add(playerBets.getPlayer());
