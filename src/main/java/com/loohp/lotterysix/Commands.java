@@ -49,7 +49,7 @@ public class Commands implements CommandExecutor, TabCompleter {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (args.length == 0) {
-            sender.sendMessage(ChatColor.DARK_GREEN + "LotterySix written by LOOHP!");
+            sender.sendMessage(ChatColor.RED + "LotterySix written by LOOHP!");
             sender.sendMessage(ChatColor.GOLD + "You are running LotterySix version: " + LotterySixPlugin.plugin.getDescription().getVersion());
             return true;
         }

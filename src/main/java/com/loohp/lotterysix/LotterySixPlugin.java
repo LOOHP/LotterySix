@@ -37,6 +37,7 @@ import com.loohp.lotterysix.placeholderapi.LotteryPlaceholders;
 import com.loohp.lotterysix.updater.Updater;
 import com.loohp.lotterysix.utils.ChatColorUtils;
 import com.loohp.lotterysix.utils.LotteryUtils;
+import com.loohp.lotterysix.utils.TitleUtils;
 import me.clip.placeholderapi.PlaceholderAPI;
 import net.md_5.bungee.api.ChatColor;
 import net.milkbowl.vault.economy.Economy;
@@ -117,7 +118,7 @@ public class LotterySixPlugin extends JavaPlugin implements Listener {
                 } else if (game instanceof CompletedLotterySixGame) {
                     message = LotteryUtils.formatPlaceholders(player, message, instance, (CompletedLotterySixGame) game);
                 }
-                player.sendTitle(ChatColorUtils.translateAlternateColorCodes('&', PlaceholderAPI.setPlaceholders(player, message)), "", 10, 100, 20);
+                TitleUtils.sendTitle(player, ChatColorUtils.translateAlternateColorCodes('&', PlaceholderAPI.setPlaceholders(player, message)), "", 10, 100, 20);
             }
         }, (uuid, numbers) -> {
             Bukkit.getPluginManager().callEvent(new PlayerBetEvent(Bukkit.getPlayer(uuid), numbers));

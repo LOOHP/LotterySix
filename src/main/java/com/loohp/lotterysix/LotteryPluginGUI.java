@@ -29,6 +29,7 @@ import com.loohp.lotterysix.game.objects.PlayerWinnings;
 import com.loohp.lotterysix.game.objects.betnumbers.BetNumbers;
 import com.loohp.lotterysix.game.objects.betnumbers.BetNumbersBuilder;
 import com.loohp.lotterysix.game.objects.betnumbers.BetNumbersType;
+import com.loohp.lotterysix.utils.BookUtils;
 import com.loohp.lotterysix.utils.ChatColorUtils;
 import com.loohp.lotterysix.utils.LotteryUtils;
 import com.loohp.lotterysix.utils.StringUtils;
@@ -128,7 +129,7 @@ public class LotteryPluginGUI {
             } else {
                 return new StaticGuiElement('c', XMaterial.PAPER.parseItem(), click -> {
                     Bukkit.getScheduler().runTaskLater(plugin, () -> click.getGui().close(click.getWhoClicked(), true), 1);
-                    Bukkit.getScheduler().runTaskLater(plugin, () -> ((Player) click.getWhoClicked()).openBook(getPlacedBets((Player) click.getWhoClicked())), 2);
+                    Bukkit.getScheduler().runTaskLater(plugin, () -> BookUtils.openBook((Player) click.getWhoClicked(), getPlacedBets((Player) click.getWhoClicked())), 2);
                     return true;
                 }, LotteryUtils.formatPlaceholders(null, instance.guiMainMenuCheckOwnBets, instance, currentGame));
             }
@@ -510,7 +511,7 @@ public class LotteryPluginGUI {
 
             gui.addElement(new StaticGuiElement('i', XMaterial.GREEN_WOOL.parseItem(), click -> {
                 Bukkit.getScheduler().runTaskLater(plugin, () -> click.getGui().close(click.getWhoClicked(), true), 1);
-                Bukkit.getScheduler().runTaskLater(plugin, () -> ((Player) click.getWhoClicked()).openBook(itemStack), 2);
+                Bukkit.getScheduler().runTaskLater(plugin, () -> BookUtils.openBook((Player) click.getWhoClicked(), itemStack), 2);
                 return true;
             }, LotteryUtils.formatPlaceholders(player, instance.guiLastResultsYourBets, instance, game)));
         }

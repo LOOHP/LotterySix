@@ -25,7 +25,7 @@
     <groupId>com.loohp</groupId>
     <artifactId>LotterySix</artifactId>
     <name>LotterySix</name>
-    <version>1.2.3.0</version>
+    <version>1.2.4.0</version>
 
     <description>Lottery game in Minecraft inspired by the game 'Mark Six' by the HKJC</description>
     <url>https://github.com/LOOHP/LotterySix/</url>
@@ -95,6 +95,14 @@
                                 <relocation>
                                     <pattern>com.sun.el</pattern>
                                     <shadedPattern>com.loohp.lotterysix.libs.com.sun.el</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>xyz.upperlevel</pattern>
+                                    <shadedPattern>com.loohp.lotterysix.libs.xyz.upperlevel</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>xyz.tozymc</pattern>
+                                    <shadedPattern>com.loohp.lotterysix.libs.xyz.tozymc</shadedPattern>
                                 </relocation>
                             </relocations>
                         </configuration>
@@ -297,6 +305,18 @@
             <artifactId>craftbukkit</artifactId>
             <version>1.19.3-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>xyz.upperlevel.spigot.book</groupId>
+            <artifactId>spigot-book-api</artifactId>
+            <version>1.6</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>xyz.tozymc.spigot</groupId>
+            <artifactId>title-api</artifactId>
+            <version>1.0</version>
+            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>net.milkbowl.vault</groupId>
