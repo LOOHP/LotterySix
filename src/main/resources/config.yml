@@ -41,7 +41,8 @@ LotterySix:
   #A negative value will be treated as positive
   #This is in seconds
   BetsAcceptDuration: -1800
-  #This must be a positive integer
+  #This must be a positive EVEN integer
+  #If it isn't, it would be rounded up
   PricePerBet: 10
   #Number Of Number Choices, Starting from 1, Inclusive
   #The lower the number of choices, the higher the odds
@@ -95,7 +96,7 @@ GUI:
     LotteryInfo:
       - "&aDraw Date: {Date}"
       - "&aTurnover: ${TotalBets}"
-      - "&aTotal Prizes: {TotalPrizes}"
+      - "&aTotal Prizes: ${TotalPrizes}"
       - "&a"
       - "&a1st Tier Prize: &6${FIRSTPrize} &7x{FIRSTPrizeCount}"
       - "&a2nd Tier Prize: &6${SECONDPrize} &7x{SECONDPrizeCount}"
@@ -159,7 +160,9 @@ GUI:
     LotteryInfo:
       - "&ePlease bet responsibly"
     Confirm:
-      - "&aConfirm (${Price})"
+      - "&aConfirm Unit Investment (${Price})"
+    PartialConfirm:
+      - "&aConfirm Partial Unit Investment (${PricePartial})"
     Cancel:
       - "&cCancel"
 

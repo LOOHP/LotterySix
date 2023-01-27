@@ -151,11 +151,11 @@ public class DiscordSRVHook implements Listener, SlashCommandProvider {
                         str.append("\n\n").append(lotterySix.discordSRVSlashCommandsViewPastDrawYourBets).append("\n");
                         List<PlayerWinnings> winningsList = game.getPlayerWinnings(uuid);
                         for (PlayerWinnings winnings : winningsList) {
-                            str.append(StringUtils.wrapAtSpace(winnings.getWinningBet().getChosenNumbers().toString(), 6)).append("\n").append(winnings.getTier().getShortHand()).append(" $").append(winnings.getWinnings()).append("\n");
+                            str.append(StringUtils.wrapAtSpace(winnings.getWinningBet().getChosenNumbers().toString(), 6)).append("\n").append(winnings.getTier().getShortHand()).append(" $").append(winnings.getWinnings()).append(" ($").append(game.getPricePerBet(winnings.getWinningBet().getType())).append(")").append("\n");
                         }
                         for (PlayerBets bets : playerBets) {
                             if (winningsList.stream().noneMatch(each -> each.getWinningBet().getBetId().equals(bets.getBetId()))) {
-                                str.append(StringUtils.wrapAtSpace(bets.getChosenNumbers().toString(), 6)).append("\n").append(lotterySix.discordSRVSlashCommandsViewPastDrawNoWinnings).append(" $0\n");
+                                str.append(StringUtils.wrapAtSpace(bets.getChosenNumbers().toString(), 6)).append("\n").append(lotterySix.discordSRVSlashCommandsViewPastDrawNoWinnings).append(" $0 ($").append(game.getPricePerBet(bets.getType())).append(")\n");
                             }
                         }
                     }

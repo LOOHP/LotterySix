@@ -125,6 +125,7 @@ public class LotterySix implements AutoCloseable {
     public String guiConfirmNewBetTitle;
     public String[] guiConfirmNewBetLotteryInfo;
     public String[] guiConfirmNewBetConfirm;
+    public String[] guiConfirmNewBetPartialConfirm;
     public String[] guiConfirmNewBetCancel;
 
     public String announcerPeriodicMessageMessage;
@@ -438,6 +439,9 @@ public class LotterySix implements AutoCloseable {
             betsAcceptDuration = Math.abs(betsAcceptDuration);
         }
         pricePerBet = config.getConfiguration().getLong("LotterySix.PricePerBet");
+        if (pricePerBet % 2 != 0) {
+            pricePerBet += 1;
+        }
         numberOfChoices = Math.max(7, Math.min(49, config.getConfiguration().getInt("LotterySix.NumberOfChoices")));
         lowestTopPlacesPrize = config.getConfiguration().getLong("LotterySix.LowestTopPlacesPrize");
         taxPercentage = config.getConfiguration().getDouble("LotterySix.TaxPercentage");
@@ -466,6 +470,7 @@ public class LotterySix implements AutoCloseable {
         guiConfirmNewBetTitle = config.getConfiguration().getString("GUI.ConfirmNewBet.Title");
         guiConfirmNewBetLotteryInfo = config.getConfiguration().getStringList("GUI.ConfirmNewBet.LotteryInfo").toArray(new String[0]);
         guiConfirmNewBetConfirm = config.getConfiguration().getStringList("GUI.ConfirmNewBet.Confirm").toArray(new String[0]);
+        guiConfirmNewBetPartialConfirm = config.getConfiguration().getStringList("GUI.ConfirmNewBet.PartialConfirm").toArray(new String[0]);
         guiConfirmNewBetCancel = config.getConfiguration().getStringList("GUI.ConfirmNewBet.Cancel").toArray(new String[0]);
 
         announcerPeriodicMessageMessage = config.getConfiguration().getString("Announcer.PeriodicMessage.Message");

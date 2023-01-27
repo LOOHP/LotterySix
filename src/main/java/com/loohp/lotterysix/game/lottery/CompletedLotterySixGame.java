@@ -20,6 +20,7 @@
 
 package com.loohp.lotterysix.game.lottery;
 
+import com.loohp.lotterysix.game.objects.BetUnitType;
 import com.loohp.lotterysix.game.objects.PlayerBets;
 import com.loohp.lotterysix.game.objects.PlayerWinnings;
 import com.loohp.lotterysix.game.objects.PrizeTier;
@@ -27,6 +28,7 @@ import com.loohp.lotterysix.game.objects.WinningNumbers;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -35,15 +37,19 @@ public class CompletedLotterySixGame {
     private final UUID gameId;
     private final long datetime;
     private final WinningNumbers drawResult;
+    private final long pricePerBet;
+    private final Map<PrizeTier, Long> prizeForTier;
     private final List<PlayerWinnings> winners;
     private final List<PlayerBets> bets;
     private final long totalPrizes;
     private final long remainingFunds;
 
-    public CompletedLotterySixGame(UUID gameId, long datetime, WinningNumbers drawResult, List<PlayerWinnings> winners, List<PlayerBets> bets, long totalPrizes, long remainingFunds) {
+    public CompletedLotterySixGame(UUID gameId, long datetime, WinningNumbers drawResult, long pricePerBet, Map<PrizeTier, Long> prizeForTier, List<PlayerWinnings> winners, List<PlayerBets> bets, long totalPrizes, long remainingFunds) {
         this.gameId = gameId;
         this.datetime = datetime;
         this.drawResult = drawResult;
+        this.pricePerBet = pricePerBet;
+        this.prizeForTier = prizeForTier;
         this.winners = Collections.unmodifiableList(winners);
         this.bets = Collections.unmodifiableList(bets);
         this.totalPrizes = totalPrizes;
@@ -60,6 +66,10 @@ public class CompletedLotterySixGame {
 
     public WinningNumbers getDrawResult() {
         return drawResult;
+    }
+
+    public long getPricePerBet(BetUnitType type) {
+        return pricePerBet / type.getDivisor();
     }
 
     public List<PlayerWinnings> getWinnings() {
@@ -87,11 +97,11 @@ public class CompletedLotterySixGame {
     }
 
     public long getPrizeForTier(PrizeTier prizeTier) {
-        return winners.stream().filter(each -> each.getTier().equals(prizeTier)).mapToLong(each -> each.getWinnings()).findAny().orElse(0);
+        return prizeForTier.getOrDefault(prizeTier, 0L);
     }
 
-    public int getWinnerCountForTier(PrizeTier prizeTier) {
-        return (int) winners.stream().filter(each -> each.getTier().equals(prizeTier)).count();
+    public double getWinnerCountForTier(PrizeTier prizeTier) {
+        return winners.stream().filter(each -> each.getTier().equals(prizeTier)).mapToDouble(each -> each.getWinningBet().getType().getUnit()).sum();
     }
 
     public long getRemainingFunds() {

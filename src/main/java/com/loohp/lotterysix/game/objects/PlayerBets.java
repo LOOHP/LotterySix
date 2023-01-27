@@ -30,12 +30,14 @@ public class PlayerBets {
     private final UUID betId;
     private final UUID player;
     private final long bet;
+    private final BetUnitType type;
     private final BetNumbers chosenNumbers;
 
-    public PlayerBets(UUID player, long bet, BetNumbers chosenNumbers) {
+    public PlayerBets(UUID player, long bet, BetUnitType type, BetNumbers chosenNumbers) {
         this.betId = UUID.randomUUID();
         this.player = player;
         this.bet = bet;
+        this.type = type;
         this.chosenNumbers = chosenNumbers;
     }
 
@@ -49,6 +51,10 @@ public class PlayerBets {
 
     public long getBet() {
         return bet;
+    }
+
+    public BetUnitType getType() {
+        return type;
     }
 
     public BetNumbers getChosenNumbers() {

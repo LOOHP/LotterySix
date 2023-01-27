@@ -38,7 +38,8 @@ import java.util.stream.LongStream;
 public class LotteryUtils {
 
     public static final BigInteger SIX_FACTORIAL = BigInteger.valueOf(720);
-    public static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("0.##");
+    public static final DecimalFormat ODDS_FORMAT = new DecimalFormat("0.##");
+    public static final DecimalFormat BET_COUNT_FORMAT = new DecimalFormat("0.#");
 
     public static String oneSignificantFigure(long value) {
         StringBuilder sb = new StringBuilder(Long.toString(value));
@@ -91,7 +92,7 @@ public class LotteryUtils {
     public static String formatPlaceholders(OfflinePlayer player, String str, LotterySix lotterySix) {
         str = str.replace("{PricePerBet}", lotterySix.pricePerBet + "");
         for (PrizeTier prizeTier : PrizeTier.values()) {
-            str = str.replace("{" + prizeTier.name() + "Odds}", DECIMAL_FORMAT.format(calculateOddsOneOver(lotterySix.numberOfChoices, prizeTier)));
+            str = str.replace("{" + prizeTier.name() + "Odds}", ODDS_FORMAT.format(calculateOddsOneOver(lotterySix.numberOfChoices, prizeTier)));
         }
         return ChatColorUtils.translateAlternateColorCodes('&', player == null ? str : PlaceholderAPI.setPlaceholders(player, str));
     }
@@ -114,7 +115,7 @@ public class LotteryUtils {
                 .replace("{TotalBets}", game.getTotalBets() + "")
                 .replace("{PrizePool}", game.estimatedPrizePool(lotterySix.taxPercentage) + "");
         for (PrizeTier prizeTier : PrizeTier.values()) {
-            str = str.replace("{" + prizeTier.name() + "Odds}", DECIMAL_FORMAT.format(calculateOddsOneOver(lotterySix.numberOfChoices, prizeTier)));
+            str = str.replace("{" + prizeTier.name() + "Odds}", ODDS_FORMAT.format(calculateOddsOneOver(lotterySix.numberOfChoices, prizeTier)));
         }
         return ChatColorUtils.translateAlternateColorCodes('&', player == null ? str : PlaceholderAPI.setPlaceholders(player, str));
     }
@@ -154,7 +155,7 @@ public class LotteryUtils {
             str = str
                     .replace("{" + prizeTier.name() + "Odds}", calculateOddsOneOver(lotterySix.numberOfChoices, prizeTier) + "")
                     .replace("{" + prizeTier.name() + "Prize}", game.getPrizeForTier(prizeTier) + "")
-                    .replace("{" + prizeTier.name() + "PrizeCount}", game.getWinnerCountForTier(prizeTier) + "");
+                    .replace("{" + prizeTier.name() + "PrizeCount}", BET_COUNT_FORMAT.format(game.getWinnerCountForTier(prizeTier)) + "");
         }
         return ChatColorUtils.translateAlternateColorCodes('&', player == null ? str : PlaceholderAPI.setPlaceholders(player, str));
     }

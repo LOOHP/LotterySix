@@ -44,49 +44,49 @@ public class Charts {
         metrics.addCustomChart(new Metrics.SingleLineChart("first_tier_winners", new Callable<Integer>() {
             @Override
             public Integer call() throws Exception {
-                return getLatestGame().map(e -> e.getWinnerCountForTier(PrizeTier.FIRST)).orElse(0);
+                return getLatestGame().map(e -> (int) Math.ceil(e.getWinnerCountForTier(PrizeTier.FIRST))).orElse(0);
             }
         }));
 
         metrics.addCustomChart(new Metrics.SingleLineChart("second_tier_winners", new Callable<Integer>() {
             @Override
             public Integer call() throws Exception {
-                return getLatestGame().map(e -> e.getWinnerCountForTier(PrizeTier.SECOND)).orElse(0);
+                return getLatestGame().map(e -> (int) Math.ceil(e.getWinnerCountForTier(PrizeTier.SECOND))).orElse(0);
             }
         }));
 
         metrics.addCustomChart(new Metrics.SingleLineChart("third_tier_winners", new Callable<Integer>() {
             @Override
             public Integer call() throws Exception {
-                return getLatestGame().map(e -> e.getWinnerCountForTier(PrizeTier.THIRD)).orElse(0);
+                return getLatestGame().map(e -> (int) Math.ceil(e.getWinnerCountForTier(PrizeTier.THIRD))).orElse(0);
             }
         }));
 
         metrics.addCustomChart(new Metrics.SingleLineChart("fourth_tier_winners", new Callable<Integer>() {
             @Override
             public Integer call() throws Exception {
-                return getLatestGame().map(e -> e.getWinnerCountForTier(PrizeTier.FOURTH)).orElse(0);
+                return getLatestGame().map(e -> (int) Math.ceil(e.getWinnerCountForTier(PrizeTier.FOURTH))).orElse(0);
             }
         }));
 
         metrics.addCustomChart(new Metrics.SingleLineChart("fifth_tier_winners", new Callable<Integer>() {
             @Override
             public Integer call() throws Exception {
-                return getLatestGame().map(e -> e.getWinnerCountForTier(PrizeTier.FIFTH)).orElse(0);
+                return getLatestGame().map(e -> (int) Math.ceil(e.getWinnerCountForTier(PrizeTier.FIFTH))).orElse(0);
             }
         }));
 
         metrics.addCustomChart(new Metrics.SingleLineChart("sixth_tier_winners", new Callable<Integer>() {
             @Override
             public Integer call() throws Exception {
-                return getLatestGame().map(e -> e.getWinnerCountForTier(PrizeTier.SIXTH)).orElse(0);
+                return getLatestGame().map(e -> (int) Math.ceil(e.getWinnerCountForTier(PrizeTier.SIXTH))).orElse(0);
             }
         }));
 
         metrics.addCustomChart(new Metrics.SingleLineChart("seventh_tier_winners", new Callable<Integer>() {
             @Override
             public Integer call() throws Exception {
-                return getLatestGame().map(e -> e.getWinnerCountForTier(PrizeTier.SEVENTH)).orElse(0);
+                return getLatestGame().map(e -> (int) Math.ceil(e.getWinnerCountForTier(PrizeTier.SEVENTH))).orElse(0);
             }
         }));
 

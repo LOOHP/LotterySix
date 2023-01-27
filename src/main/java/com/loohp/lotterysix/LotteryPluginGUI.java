@@ -24,6 +24,7 @@ import com.cryptomorin.xseries.XMaterial;
 import com.loohp.lotterysix.game.LotterySix;
 import com.loohp.lotterysix.game.lottery.CompletedLotterySixGame;
 import com.loohp.lotterysix.game.lottery.PlayableLotterySixGame;
+import com.loohp.lotterysix.game.objects.BetUnitType;
 import com.loohp.lotterysix.game.objects.PlayerBets;
 import com.loohp.lotterysix.game.objects.PlayerWinnings;
 import com.loohp.lotterysix.game.objects.betnumbers.BetNumbers;
@@ -180,7 +181,7 @@ public class LotteryPluginGUI {
             pages.add(title + "\n\n" + String.join("\n", LotteryUtils.formatPlaceholders(null, instance.guiYourBetsNothing, instance, game)));
         } else {
             for (PlayerBets bet : bets) {
-                pages.add(title + "\n\n" + bet.getChosenNumbers().toColoredString());
+                pages.add(title + "\n\n" + bet.getChosenNumbers().toColoredString() + "\n" + ChatColor.GOLD + "$" + bet.getBet() + " ($" + (instance.pricePerBet / bet.getType().getDivisor()) + ")");
             }
         }
 
@@ -261,7 +262,7 @@ public class LotteryPluginGUI {
                                             if (betNumbers.getType().equals(BetNumbersType.SINGLE)) {
                                                 getSingleNumberConfirm((Player) change.getWhoClicked(), game, betNumbers).show(change.getWhoClicked());
                                             } else {
-                                                getNumberConfirm((Player) change.getWhoClicked(), game, betNumbers).show(change.getWhoClicked());
+                                                getComplexNumberConfirm((Player) change.getWhoClicked(), game, betNumbers).show(change.getWhoClicked());
                                             }
                                         }, 2);
                                     } else if (isBanker && !((BetNumbersBuilder.BankerBuilder) builder).inSelectionPhase() && ((BetNumbersBuilder.BankerBuilder) builder).bankerCompleted()) {
@@ -283,7 +284,7 @@ public class LotteryPluginGUI {
                                                     if (betNumbers.getType().equals(BetNumbersType.SINGLE)) {
                                                         getSingleNumberConfirm((Player) click.getWhoClicked(), game, betNumbers).show(click.getWhoClicked());
                                                     } else {
-                                                        getNumberConfirm((Player) click.getWhoClicked(), game, betNumbers).show(click.getWhoClicked());
+                                                        getComplexNumberConfirm((Player) click.getWhoClicked(), game, betNumbers).show(click.getWhoClicked());
                                                     }
                                                 }, 2);
                                             } else if (isBanker && !((BetNumbersBuilder.BankerBuilder) builder).inSelectionPhase() && !((BetNumbersBuilder.BankerBuilder) builder).getBankers().isEmpty()) {
@@ -354,29 +355,59 @@ public class LotteryPluginGUI {
         return gui;
     }
 
-    public InventoryGui getNumberConfirm(Player player, PlayableLotterySixGame game, BetNumbers betNumbers) {
+    public InventoryGui getComplexNumberConfirm(Player player, PlayableLotterySixGame game, BetNumbers betNumbers) {
         String[] guiSetup = {
                 "         ",
                 "   a g   ",
                 "         ",
-                "  h   i  ",
+                "  h i j  ",
                 "         "
         };
         long price = LotteryUtils.calculatePrice(betNumbers, instance);
+        long partial = price / BetUnitType.PARTIAL.getDivisor();
         InventoryGui gui = new InventoryGui(plugin, LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetTitle, instance, game), guiSetup);
         gui.addElement(new StaticGuiElement('a', XMaterial.GOLD_BLOCK.parseItem(), StringUtils.wrapAtSpace(betNumbers.toColoredString(), 6)
-                .replace("{Price}", price + "")));
+                .replace("{Price}", price + "").replace("{PricePartial}", partial + "")));
         gui.addElement(new StaticGuiElement('g', XMaterial.BEACON.parseItem(), Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetLotteryInfo, instance, game))
-                .map(each -> each.replace("{Price}", price + "")).toArray(String[]::new)));
-        gui.addElement(new StaticGuiElement('h', XMaterial.GREEN_WOOL.parseItem(), click -> {
+                .map(each -> each.replace("{Price}", price + "").replace("{PricePartial}", partial + "")).toArray(String[]::new)));
+        gui.addElement(new StaticGuiElement('h', XMaterial.YELLOW_WOOL.parseItem(), click -> {
             if (game != null && game.isValid()) {
-                switch (game.addBet(player.getUniqueId(), price, betNumbers)) {
+                switch (game.addBet(player.getUniqueId(), partial, BetUnitType.PARTIAL, betNumbers)) {
+                    case SUCCESS: {
+                        player.sendMessage(instance.messageBetPlaced.replace("{Price}", partial + ""));
+                        break;
+                    }
+                    case GAME_LOCKED: {
+                        player.sendMessage(instance.messageGameLocked.replace("{Price}", partial + ""));
+                        break;
+                    }
+                    case NOT_ENOUGH_MONEY: {
+                        player.sendMessage(instance.messageNotEnoughMoney.replace("{Price}", partial + ""));
+                        break;
+                    }
+                    case LIMIT_SELF: {
+                        player.sendMessage(instance.messageBetLimitReachedSelf.replace("{Price}", partial + ""));
+                        break;
+                    }
+                    case LIMIT_PERMISSION: {
+                        player.sendMessage(instance.messageBetLimitReachedPermission.replace("{Price}", partial + ""));
+                        break;
+                    }
+                }
+                Bukkit.getScheduler().runTaskLater(plugin, () -> click.getGui().close(click.getWhoClicked(), true), 1);
+            }
+            return true;
+        }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetPartialConfirm, instance, game))
+                .map(each -> each.replace("{Price}", price + "").replace("{PricePartial}", partial + "")).toArray(String[]::new)));
+        gui.addElement(new StaticGuiElement('i', XMaterial.GREEN_WOOL.parseItem(), click -> {
+            if (game != null && game.isValid()) {
+                switch (game.addBet(player.getUniqueId(), price, BetUnitType.FULL, betNumbers)) {
                     case SUCCESS: {
                         player.sendMessage(instance.messageBetPlaced.replace("{Price}", price + ""));
                         break;
                     }
                     case GAME_LOCKED: {
-                        player.sendMessage(instance.messageGameLocked.replace("{Price}", instance.pricePerBet + ""));
+                        player.sendMessage(instance.messageGameLocked.replace("{Price}", price + ""));
                         break;
                     }
                     case NOT_ENOUGH_MONEY: {
@@ -396,8 +427,8 @@ public class LotteryPluginGUI {
             }
             return true;
         }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetConfirm, instance, game))
-                .map(each -> each.replace("{Price}", price + "")).toArray(String[]::new)));
-        gui.addElement(new StaticGuiElement('i', XMaterial.BARRIER.parseItem(), click -> {
+                .map(each -> each.replace("{Price}", price + "").replace("{PricePartial}", partial + "")).toArray(String[]::new)));
+        gui.addElement(new StaticGuiElement('j', XMaterial.BARRIER.parseItem(), click -> {
             Bukkit.getScheduler().runTaskLater(plugin, () -> click.getWhoClicked().closeInventory(), 1);
             return true;
         }, LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetCancel, instance, game)));
@@ -422,7 +453,7 @@ public class LotteryPluginGUI {
                 .map(each -> each.replace("{Price}", LotteryUtils.calculatePrice(betNumbers, instance) + "")).toArray(String[]::new)));
         gui.addElement(new StaticGuiElement('h', XMaterial.GREEN_WOOL.parseItem(), click -> {
             if (game != null && game.isValid()) {
-                switch (game.addBet(player.getUniqueId(), LotterySixPlugin.getInstance().pricePerBet, betNumbers)) {
+                switch (game.addBet(player.getUniqueId(), LotterySixPlugin.getInstance().pricePerBet, BetUnitType.FULL, betNumbers)) {
                     case SUCCESS: {
                         player.sendMessage(instance.messageBetPlaced.replace("{Price}", instance.pricePerBet + ""));
                         break;
@@ -492,13 +523,13 @@ public class LotteryPluginGUI {
             List<PlayerWinnings> winningsList = game.getPlayerWinnings(player.getUniqueId());
             for (PlayerWinnings winnings : winningsList) {
                 String str = winningNumberStr + "\n\n" + winnings.getWinningBet().getChosenNumbers().toColoredString() + "\n"
-                        + ChatColor.GOLD + "" + winnings.getTier().getShortHand() + " $" + winnings.getWinnings();
+                        + ChatColor.GOLD + "" + winnings.getTier().getShortHand() + " $" + winnings.getWinnings() + " ($" + game.getPricePerBet(winnings.getWinningBet().getType()) + ")";
                 pages.add(str);
             }
             for (PlayerBets bets : game.getPlayerBets(player.getUniqueId())) {
                 if (winningsList.stream().noneMatch(each -> each.getWinningBet().getBetId().equals(bets.getBetId()))) {
                     String str = winningNumberStr + "\n\n" + bets.getChosenNumbers().toColoredString() + "\n"
-                            + LotteryUtils.formatPlaceholders(player, instance.guiLastResultsNoWinnings, instance, game) + " $0";
+                            + LotteryUtils.formatPlaceholders(player, instance.guiLastResultsNoWinnings, instance, game) + " $0 ($" + game.getPricePerBet(bets.getType()) + ")";
                     pages.add(str);
                 }
             }
