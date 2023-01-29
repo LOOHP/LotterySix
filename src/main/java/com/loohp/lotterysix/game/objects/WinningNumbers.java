@@ -21,6 +21,7 @@
 package com.loohp.lotterysix.game.objects;
 
 import com.loohp.lotterysix.game.objects.betnumbers.BetNumbers;
+import com.loohp.lotterysix.game.objects.betnumbers.BetNumbersType;
 import com.loohp.lotterysix.utils.ChatColorUtils;
 
 import java.util.ArrayList;
@@ -69,16 +70,29 @@ public class WinningNumbers {
 
     public PrizeTier checkWinning(BetNumbers betNumbers) {
         int matches = 0;
-        for (int num : betNumbers.getBankersNumbers()) {
-            if (numbers.contains(num)) {
-                matches++;
+        if (betNumbers.getType().equals(BetNumbersType.BANKER)) {
+            for (int num : betNumbers.getBankersNumbers()) {
+                if (numbers.contains(num)) {
+                    matches++;
+                }
             }
-        }
-        for (int num : betNumbers.getNumbers()) {
-            if (numbers.contains(num)) {
-                matches++;
-                if (matches >= 6) {
-                    break;
+            int selectionMatched = 0;
+            for (int num : betNumbers.getNumbers()) {
+                if (numbers.contains(num)) {
+                    selectionMatched++;
+                    if (selectionMatched >= 6) {
+                        break;
+                    }
+                }
+            }
+            matches += Math.min(selectionMatched, Math.max(0, 6 - betNumbers.getBankersNumbers().size()));
+        } else {
+            for (int num : betNumbers.getNumbers()) {
+                if (numbers.contains(num)) {
+                    matches++;
+                    if (matches >= 6) {
+                        break;
+                    }
                 }
             }
         }
