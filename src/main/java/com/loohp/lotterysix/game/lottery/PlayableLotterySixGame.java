@@ -305,7 +305,7 @@ public class PlayableLotterySixGame {
                 carryOverNext += (firstTierPrize - firstTierTotal);
             }
         } else {
-            carryOverNext += secondTierPrizeTotal;
+            carryOverNext += firstTierPrizeTotal;
         }
 
         this.valid = false;
