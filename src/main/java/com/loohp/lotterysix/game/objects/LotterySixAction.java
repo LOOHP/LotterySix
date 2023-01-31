@@ -25,6 +25,7 @@ public enum LotterySixAction {
     START,
     CANCEL,
     RUN_LOTTERY_BEGIN,
+    RUN_LOTTERY_INTERNAL_DRAWN,
     RUN_LOTTERY_FINISH;
 
 }

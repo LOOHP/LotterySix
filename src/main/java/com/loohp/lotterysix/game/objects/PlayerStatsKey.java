@@ -25,7 +25,8 @@ public enum PlayerStatsKey {
     TOTAL_BETS_PLACED(long.class, 0L),
     TOTAL_ROUNDS_PARTICIPATED(long.class, 0L),
     TOTAL_WINNINGS(long.class, 0L),
-    HIGHEST_WON_TIER(PrizeTier.class, null);
+    HIGHEST_WON_TIER(PrizeTier.class, null),
+    PENDING_TRANSACTION(long.class, 0L);
 
     private final Class<?> valueTypeClass;
     private final Object defaultValue;

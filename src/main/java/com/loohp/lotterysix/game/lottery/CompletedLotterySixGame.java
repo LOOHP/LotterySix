@@ -20,19 +20,25 @@
 
 package com.loohp.lotterysix.game.lottery;
 
+import com.loohp.lotterysix.game.LotterySix;
 import com.loohp.lotterysix.game.objects.BetUnitType;
+import com.loohp.lotterysix.game.objects.LotteryPlayer;
 import com.loohp.lotterysix.game.objects.PlayerBets;
+import com.loohp.lotterysix.game.objects.PlayerStatsKey;
 import com.loohp.lotterysix.game.objects.PlayerWinnings;
 import com.loohp.lotterysix.game.objects.PrizeTier;
 import com.loohp.lotterysix.game.objects.WinningNumbers;
 
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-public class CompletedLotterySixGame {
+public class CompletedLotterySixGame implements IDedGame {
+
+    public static final Comparator<PlayerWinnings> PLAYER_WINNINGS_COMPARATOR = Comparator.comparing(playerWinnings -> playerWinnings.getTier());
 
     private final UUID gameId;
     private final long datetime;
@@ -56,8 +62,17 @@ public class CompletedLotterySixGame {
         this.remainingFunds = remainingFunds;
     }
 
+    @Override
     public UUID getGameId() {
         return gameId;
+    }
+
+    public String getDataFileName() {
+        return datetime + ".json";
+    }
+
+    public CompletedLotterySixGameIndex toGameIndex() {
+        return new CompletedLotterySixGameIndex(gameId, datetime);
     }
 
     public long getDatetime() {
@@ -76,6 +91,10 @@ public class CompletedLotterySixGame {
         return winners;
     }
 
+    public List<PlayerWinnings> getWinnings(PrizeTier prizeTier) {
+        return Collections.unmodifiableList(winners.stream().filter(each -> each.getTier().equals(prizeTier)).collect(Collectors.toList()));
+    }
+
     public List<PlayerBets> getBets() {
         return bets;
     }
@@ -86,6 +105,10 @@ public class CompletedLotterySixGame {
 
     public List<PlayerWinnings> getPlayerWinnings(UUID player) {
         return Collections.unmodifiableList(winners.stream().filter(each -> each.getPlayer().equals(player)).collect(Collectors.toList()));
+    }
+
+    public List<PlayerWinnings> getSortedPlayerWinnings(UUID player) {
+        return Collections.unmodifiableList(winners.stream().filter(each -> each.getPlayer().equals(player)).sorted(PLAYER_WINNINGS_COMPARATOR).collect(Collectors.toList()));
     }
 
     public List<PlayerBets> getPlayerBets(UUID player) {
@@ -106,6 +129,17 @@ public class CompletedLotterySixGame {
 
     public long getRemainingFunds() {
         return remainingFunds;
+    }
+
+    public void givePrizesAndUpdateStats(LotterySix instance) {
+        instance.givePrizes(winners);
+        new Thread(() -> {
+            for (PlayerWinnings winning : winners) {
+                LotteryPlayer lotteryPlayer = instance.getPlayerPreferenceManager().getLotteryPlayer(winning.getPlayer());
+                lotteryPlayer.updateStats(PlayerStatsKey.TOTAL_WINNINGS, long.class, i -> i + winning.getWinnings());
+                lotteryPlayer.updateStats(PlayerStatsKey.HIGHEST_WON_TIER, PrizeTier.class, t -> t == null || winning.getTier().ordinal() < t.ordinal(), winning.getTier());
+            }
+        }).start();
     }
 
 }

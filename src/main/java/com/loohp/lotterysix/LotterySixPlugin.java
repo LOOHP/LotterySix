@@ -34,6 +34,7 @@ import com.loohp.lotterysix.game.objects.PlayerWinnings;
 import com.loohp.lotterysix.metrics.Charts;
 import com.loohp.lotterysix.metrics.Metrics;
 import com.loohp.lotterysix.placeholderapi.LotteryPlaceholders;
+import com.loohp.lotterysix.pluginmessaging.PluginMessageHandler;
 import com.loohp.lotterysix.updater.Updater;
 import com.loohp.lotterysix.utils.ChatColorUtils;
 import com.loohp.lotterysix.utils.LotteryUtils;
@@ -54,6 +55,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
+import java.util.UUID;
 
 public class LotterySixPlugin extends JavaPlugin implements Listener {
 
@@ -63,6 +65,8 @@ public class LotterySixPlugin extends JavaPlugin implements Listener {
     public static LotterySixPlugin plugin;
 
     public static DiscordSRVHook discordSRVHook = null;
+
+    private static PluginMessageHandler pluginMessageHandler;
 
     private static LotterySix instance;
     private static LotteryPluginGUI guiProvider;
@@ -94,13 +98,17 @@ public class LotterySixPlugin extends JavaPlugin implements Listener {
 
         getCommand("lotterysix").setExecutor(new Commands());
 
-        instance = new LotterySix(getDataFolder(), CONFIG_ID, c -> givePrizes(c), c -> refundBets(c), b -> takeMoney(b), (uuid, permission) -> {
+        instance = new LotterySix(true, getDataFolder(), CONFIG_ID, c -> givePrizes(c), c -> refundBets(c), b -> takeMoney(b), (uuid, permission) -> {
             OfflinePlayer player = Bukkit.getOfflinePlayer(uuid);
             if (player.isOnline()) {
                 return player.getPlayer().hasPermission(permission);
             }
             return perms.playerHas(Bukkit.getWorlds().get(0).getName(), Bukkit.getOfflinePlayer(uuid), permission);
-        }, () -> forceCloseAllGui(), () -> Collections2.transform(Bukkit.getOnlinePlayers(), p -> p.getUniqueId()), (uuid, message, game) -> {
+        }, lock -> {
+            if (lock) {
+                forceCloseAllGui();
+            }
+        }, () -> Collections2.transform(Bukkit.getOnlinePlayers(), p -> p.getUniqueId()), (uuid, message, game) -> {
             Player player = Bukkit.getPlayer(uuid);
             if (player != null) {
                 if (game instanceof PlayableLotterySixGame) {
@@ -120,13 +128,20 @@ public class LotterySixPlugin extends JavaPlugin implements Listener {
                 }
                 TitleUtils.sendTitle(player, ChatColorUtils.translateAlternateColorCodes('&', PlaceholderAPI.setPlaceholders(player, message)), "", 10, 100, 20);
             }
-        }, (uuid, numbers) -> {
+        }, (uuid, result, price, numbers) -> {
             Bukkit.getPluginManager().callEvent(new PlayerBetEvent(Bukkit.getPlayer(uuid), numbers));
         }, action -> {
             Bukkit.getPluginManager().callEvent(new LotterySixEvent(instance, action));
-        });
+        }, lotteryPlayer -> {});
         instance.reloadConfig();
-        guiProvider = new LotteryPluginGUI(this);
+
+        if (instance.backendBungeecordMode) {
+            getServer().getConsoleSender().sendMessage(ChatColor.GREEN + "[LotterySix] Registering Plugin Messaging Channels for Bungeecord...");
+            getServer().getMessenger().registerOutgoingPluginChannel(this, "lotterysix:main");
+            getServer().getMessenger().registerIncomingPluginChannel(this, "lotterysix:main", pluginMessageHandler = new PluginMessageHandler(instance));
+        }
+
+        getServer().getPluginManager().registerEvents(guiProvider = new LotteryPluginGUI(this), this);
 
         Charts.setup(metrics);
 
@@ -159,6 +174,10 @@ public class LotterySixPlugin extends JavaPlugin implements Listener {
         return guiProvider;
     }
 
+    public static PluginMessageHandler getPluginMessageHandler() {
+        return pluginMessageHandler;
+    }
+
     public static Economy getEcon() {
         return econ;
     }
@@ -181,6 +200,14 @@ public class LotterySixPlugin extends JavaPlugin implements Listener {
 
     public static boolean takeMoney(PlayerBets bet) {
         return econ.withdrawPlayer(Bukkit.getOfflinePlayer(bet.getPlayer()), bet.getBet()).transactionSuccess();
+    }
+
+    public static boolean giveMoney(UUID uuid, long amount) {
+        return econ.depositPlayer(Bukkit.getOfflinePlayer(uuid), amount).transactionSuccess();
+    }
+
+    public static boolean takeMoney(UUID uuid, long amount) {
+        return econ.withdrawPlayer(Bukkit.getOfflinePlayer(uuid), amount).transactionSuccess();
     }
 
     public static void forceCloseAllGui() {

@@ -23,15 +23,21 @@ package com.loohp.lotterysix.game;
 import com.cronutils.model.Cron;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.loohp.lotterysix.config.Config;
 import com.loohp.lotterysix.game.lottery.CompletedLotterySixGame;
+import com.loohp.lotterysix.game.lottery.CompletedLotterySixGameIndex;
+import com.loohp.lotterysix.game.lottery.IDedGame;
+import com.loohp.lotterysix.game.lottery.LazyCompletedLotterySixGameList;
 import com.loohp.lotterysix.game.lottery.PlayableLotterySixGame;
+import com.loohp.lotterysix.game.objects.BetResultConsumer;
+import com.loohp.lotterysix.game.objects.LotteryPlayer;
 import com.loohp.lotterysix.game.objects.LotterySixAction;
 import com.loohp.lotterysix.game.objects.MessageConsumer;
 import com.loohp.lotterysix.game.objects.PlayerBets;
 import com.loohp.lotterysix.game.objects.PlayerPreferenceKey;
 import com.loohp.lotterysix.game.objects.PlayerWinnings;
-import com.loohp.lotterysix.game.objects.betnumbers.BetNumbers;
 import com.loohp.lotterysix.game.player.LotteryPlayerManager;
 import com.loohp.lotterysix.utils.ChatColorUtils;
 import com.loohp.lotterysix.utils.CronUtils;
@@ -46,18 +52,16 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.text.SimpleDateFormat;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.UUID;
-import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -84,6 +88,9 @@ public class LotterySix implements AutoCloseable {
     public String messageGameSettingsUpdated;
     public String messageBetLimitReachedSelf;
     public String messageBetLimitReachedPermission;
+    public String messagePlayerNotFound;
+    public String messagePendingUnclaimed;
+    public String messagePendingClaimed;
 
     public String explanationMessage;
     public String explanationURL;
@@ -92,6 +99,8 @@ public class LotterySix implements AutoCloseable {
     public SimpleDateFormat dateFormat;
 
     public boolean updaterEnabled;
+
+    public boolean backendBungeecordMode;
 
     public Cron runInterval;
     public TimeZone timezone;
@@ -132,6 +141,8 @@ public class LotterySix implements AutoCloseable {
     public int announcerPeriodicMessageFrequency;
     public boolean announcerPeriodicMessageOneMinuteBefore;
     public String announcerDrawCancelledMessage;
+    public boolean announcerBetPlacedAnnouncementEnabled;
+    public String announcerBetPlacedAnnouncementMessage;
     public boolean liveDrawAnnouncerEnabled;
     public boolean liveDrawAnnouncerSendMessagesTitle;
     public int liveDrawAnnouncerTimeBetween;
@@ -163,20 +174,21 @@ public class LotterySix implements AutoCloseable {
 
     private volatile PlayableLotterySixGame currentGame;
     private volatile boolean gameLocked;
-    private final List<CompletedLotterySixGame> completedGames;
+    private final LazyCompletedLotterySixGameList completedGames;
 
     private final Consumer<Collection<PlayerWinnings>> givePrizesConsumer;
     private final Consumer<Collection<PlayerBets>> refundBetsConsumer;
     private final Predicate<PlayerBets> takeMoneyConsumer;
     private final BiPredicate<UUID, String> hasPermissionPredicate;
-    private final Runnable lockRunnable;
+    private final Consumer<Boolean> lockRunnable;
     private final Supplier<Collection<UUID>> onlinePlayersSupplier;
     private final MessageConsumer messageSendingConsumer;
     private final MessageConsumer titleSendingConsumer;
-    private final BiConsumer<UUID, BetNumbers> playerBetListener;
+    private final BetResultConsumer playerBetListener;
     private final Consumer<LotterySixAction> actionListener;
+    private final Consumer<LotteryPlayer> lotteryPlayerUpdateListener;
 
-    public LotterySix(File dataFolder, String configId, Consumer<Collection<PlayerWinnings>> givePrizesConsumer, Consumer<Collection<PlayerBets>> refundBetsConsumer, Predicate<PlayerBets> takeMoneyConsumer, BiPredicate<UUID, String> hasPermissionPredicate, Runnable lockRunnable, Supplier<Collection<UUID>> onlinePlayersSupplier, MessageConsumer messageSendingConsumer, MessageConsumer titleSendingConsumer, BiConsumer<UUID, BetNumbers> playerBetListener, Consumer<LotterySixAction> actionListener) {
+    public LotterySix(boolean isBackend, File dataFolder, String configId, Consumer<Collection<PlayerWinnings>> givePrizesConsumer, Consumer<Collection<PlayerBets>> refundBetsConsumer, Predicate<PlayerBets> takeMoneyConsumer, BiPredicate<UUID, String> hasPermissionPredicate, Consumer<Boolean> lockRunnable, Supplier<Collection<UUID>> onlinePlayersSupplier, MessageConsumer messageSendingConsumer, MessageConsumer titleSendingConsumer, BetResultConsumer playerBetListener, Consumer<LotterySixAction> actionListener, Consumer<LotteryPlayer> lotteryPlayerUpdateListener) {
         this.dataFolder = dataFolder;
         this.configId = configId;
         this.givePrizesConsumer = givePrizesConsumer;
@@ -189,7 +201,11 @@ public class LotterySix implements AutoCloseable {
         this.titleSendingConsumer = titleSendingConsumer;
         this.playerBetListener = playerBetListener;
         this.actionListener = actionListener;
-        this.completedGames = new ArrayList<>();
+        this.lotteryPlayerUpdateListener = lotteryPlayerUpdateListener;
+
+        File lotteryDataFolder = new File(getDataFolder(), "data");
+        lotteryDataFolder.mkdirs();
+        this.completedGames = new LazyCompletedLotterySixGameList(lotteryDataFolder);
 
         if (!getDataFolder().exists()) {
             getDataFolder().mkdirs();
@@ -198,26 +214,46 @@ public class LotterySix implements AutoCloseable {
         reloadConfig();
         loadData();
 
+        backendBungeecordMode = isBackend && Config.getConfig(configId).getConfiguration().getBoolean("Bungeecord");
+
         this.playerPreferenceManager = new LotteryPlayerManager(this);
 
         new Timer().scheduleAtFixedRate(lotteryTask = new TimerTask() {
             private int counter = 0;
             private int saveInterval = 0;
+            private boolean oneMinuteAnnounced = false;
             @Override
             public void run() {
-                if (currentGame == null) {
-                    if (runInterval != null && CronUtils.satisfyByCurrentMinute(runInterval, timezone)) {
-
-                        startNewGame();
-                        counter = 0;
-                    }
-                } else {
-                    if (currentGame.getScheduledDateTime() <= System.currentTimeMillis()) {
-                        runCurrentGame();
-                    } else if (counter % announcerPeriodicMessageFrequency == 0) {
-                        for (UUID uuid : onlinePlayersSupplier.get()) {
-                            if (!playerPreferenceManager.getLotteryPlayer(uuid).getPreference(PlayerPreferenceKey.HIDE_PERIODIC_ANNOUNCEMENTS, boolean.class)) {
-                                messageSendingConsumer.accept(uuid, announcerPeriodicMessageMessage, currentGame);
+                long now = System.currentTimeMillis();
+                if (!backendBungeecordMode) {
+                    if (currentGame == null) {
+                        if (runInterval != null && CronUtils.satisfyByCurrentMinute(runInterval, timezone)) {
+                            startNewGame();
+                            counter = 0;
+                        }
+                    } else {
+                        boolean announce = false;
+                        if (currentGame.getScheduledDateTime() <= now) {
+                            runCurrentGame();
+                        } else if (counter % announcerPeriodicMessageFrequency == 0) {
+                            announce = true;
+                        } else {
+                            if ((currentGame.getScheduledDateTime() / 1000) - (now / 1000) <= 60) {
+                                if (!oneMinuteAnnounced) {
+                                    oneMinuteAnnounced = true;
+                                    announce = true;
+                                }
+                            } else {
+                                if (oneMinuteAnnounced) {
+                                    oneMinuteAnnounced = false;
+                                }
+                            }
+                        }
+                        if (announce) {
+                            for (UUID uuid : onlinePlayersSupplier.get()) {
+                                if (!playerPreferenceManager.getLotteryPlayer(uuid).getPreference(PlayerPreferenceKey.HIDE_PERIODIC_ANNOUNCEMENTS, boolean.class)) {
+                                    messageSendingConsumer.accept(uuid, announcerPeriodicMessageMessage, currentGame);
+                                }
                             }
                         }
                     }
@@ -228,7 +264,7 @@ public class LotterySix implements AutoCloseable {
                 saveInterval++;
                 counter++;
             }
-        }, 0, 1000);
+        }, 5000, 1000);
     }
 
     @Override
@@ -252,6 +288,18 @@ public class LotterySix implements AutoCloseable {
         return playerPreferenceManager;
     }
 
+    public IDedGame getGame(UUID uuid) {
+        if (currentGame != null && currentGame.getGameId().equals(uuid)) {
+            return currentGame;
+        }
+        for (CompletedLotterySixGame completedLotterySixGame : completedGames) {
+            if (completedLotterySixGame.getGameId().equals(uuid)) {
+                return completedLotterySixGame;
+            }
+        }
+        return null;
+    }
+
     public PlayableLotterySixGame getCurrentGame() {
         return currentGame;
     }
@@ -269,13 +317,19 @@ public class LotterySix implements AutoCloseable {
     }
 
     public synchronized PlayableLotterySixGame startNewGame(long dateTime) {
+        if (backendBungeecordMode) {
+            throw new IllegalStateException("method cannot be ran on backend server while on bungeecord mode");
+        }
         currentGame = PlayableLotterySixGame.createNewGame(this, Math.max(dateTime, System.currentTimeMillis()), completedGames.isEmpty() ? 0 : completedGames.get(0).getRemainingFunds(), lowestTopPlacesPrize);
         saveData(true);
         actionListener.accept(LotterySixAction.START);
         return currentGame;
     }
 
-    public synchronized CompletedLotterySixGame runCurrentGame() {
+    protected synchronized CompletedLotterySixGame runCurrentGame() {
+        if (backendBungeecordMode) {
+            throw new IllegalStateException("method cannot be ran on backend server while on bungeecord mode");
+        }
         if (currentGame.getBets().isEmpty()) {
             cancelCurrentGame();
             return null;
@@ -293,6 +347,7 @@ public class LotterySix implements AutoCloseable {
         completedGames.add(0, completed);
         currentGame = null;
         saveData(false);
+        actionListener.accept(LotterySixAction.RUN_LOTTERY_INTERNAL_DRAWN);
         if (liveDrawAnnouncerEnabled) {
             new Timer().scheduleAtFixedRate(announcementTask = new TimerTask() {
                 private int counter = -liveDrawAnnouncerTimeBetween;
@@ -305,6 +360,7 @@ public class LotterySix implements AutoCloseable {
                                 messageSendingConsumer.accept(uuid, message, completed);
                             }
                         }
+                        completed.givePrizesAndUpdateStats(LotterySix.this);
                         setGameLocked(false);
                         announcementTask = null;
                         this.cancel();
@@ -326,6 +382,7 @@ public class LotterySix implements AutoCloseable {
                 }
             }, 0, 1000);
         } else {
+            completed.givePrizesAndUpdateStats(this);
             setGameLocked(false);
             actionListener.accept(LotterySixAction.RUN_LOTTERY_FINISH);
         }
@@ -333,6 +390,9 @@ public class LotterySix implements AutoCloseable {
     }
 
     public synchronized PlayableLotterySixGame cancelCurrentGame() {
+        if (backendBungeecordMode) {
+            throw new IllegalStateException("method cannot be ran on backend server while on bungeecord mode");
+        }
         for (UUID uuid : onlinePlayersSupplier.get()) {
             messageSendingConsumer.accept(uuid, announcerDrawCancelledMessage, currentGame);
         }
@@ -344,7 +404,26 @@ public class LotterySix implements AutoCloseable {
         return game;
     }
 
-    public List<CompletedLotterySixGame> getCompletedGames() {
+    @Deprecated
+    public void setCurrentGame(PlayableLotterySixGame currentGame) {
+        this.currentGame = currentGame;
+    }
+
+    @Deprecated
+    public void setLastGame(CompletedLotterySixGame game) {
+        Iterator<CompletedLotterySixGame> itr = completedGames.iterator();
+        while (itr.hasNext()) {
+            CompletedLotterySixGame completedLotterySixGame = itr.next();
+            if (completedLotterySixGame.getDatetime() > game.getDatetime()) {
+                itr.remove();
+            } else {
+                break;
+            }
+        }
+        completedGames.add(0, game);
+    }
+
+    public LazyCompletedLotterySixGameList getCompletedGames() {
         return completedGames;
     }
 
@@ -366,15 +445,31 @@ public class LotterySix implements AutoCloseable {
 
     public void setGameLocked(boolean gameLocked) {
         this.gameLocked = gameLocked;
-        lockRunnable.run();
+        lockRunnable.accept(gameLocked);
     }
 
-    public BiConsumer<UUID, BetNumbers> getPlayerBetListener() {
+    public Supplier<Collection<UUID>> getOnlinePlayersSupplier() {
+        return onlinePlayersSupplier;
+    }
+
+    public MessageConsumer getMessageSendingConsumer() {
+        return messageSendingConsumer;
+    }
+
+    public MessageConsumer getTitleSendingConsumer() {
+        return titleSendingConsumer;
+    }
+
+    public BetResultConsumer getPlayerBetListener() {
         return playerBetListener;
     }
 
     public Consumer<LotterySixAction> getActionListener() {
         return actionListener;
+    }
+
+    public Consumer<LotteryPlayer> getLotteryPlayerUpdateListener() {
+        return lotteryPlayerUpdateListener;
     }
 
     public long getPlayerBetLimit(UUID uuid) {
@@ -416,6 +511,9 @@ public class LotterySix implements AutoCloseable {
         messageGameSettingsUpdated = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Messages.GameSettingsUpdated"));
         messageBetLimitReachedSelf = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Messages.BetLimitReachedSelf"));
         messageBetLimitReachedPermission = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Messages.BetLimitReachedPermission"));
+        messagePlayerNotFound = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Messages.PlayerNotFound"));
+        messagePendingUnclaimed = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Messages.PendingUnclaimed"));
+        messagePendingClaimed = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Messages.PendingClaimed"));
 
         explanationMessage = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Explanation.Message"));
         explanationURL = config.getConfiguration().getString("Explanation.URL");
@@ -477,6 +575,8 @@ public class LotterySix implements AutoCloseable {
         announcerPeriodicMessageFrequency = config.getConfiguration().getInt("Announcer.PeriodicMessage.Frequency");
         announcerPeriodicMessageOneMinuteBefore = config.getConfiguration().getBoolean("Announcer.PeriodicMessage.OneMinuteBefore");
         announcerDrawCancelledMessage = config.getConfiguration().getString("Announcer.DrawCancelledMessage");
+        announcerBetPlacedAnnouncementEnabled = config.getConfiguration().getBoolean("Announcer.BetPlacedAnnouncement.Enabled");
+        announcerBetPlacedAnnouncementMessage = config.getConfiguration().getString("Announcer.BetPlacedAnnouncement.Message");
         liveDrawAnnouncerEnabled = config.getConfiguration().getBoolean("Announcer.LiveDrawAnnouncer.Enabled");
         liveDrawAnnouncerSendMessagesTitle = config.getConfiguration().getBoolean("Announcer.LiveDrawAnnouncer.SendMessagesTitle");
         liveDrawAnnouncerTimeBetween = config.getConfiguration().getInt("Announcer.LiveDrawAnnouncer.TimeBetween");
@@ -514,21 +614,49 @@ public class LotterySix implements AutoCloseable {
         lotteryDataFolder.mkdirs();
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
         File currentGameFile = new File(lotteryDataFolder, "current.json");
-        for (File file : lotteryDataFolder.listFiles()) {
-            if (file.getName().endsWith(".json")) {
-                try (BufferedReader reader = new BufferedReader(new InputStreamReader(Files.newInputStream(file.toPath()), StandardCharsets.UTF_8))) {
-                    if (file.equals(currentGameFile)) {
-                        currentGame = gson.fromJson(reader, PlayableLotterySixGame.class);
-                        currentGame.setInstance(this);
-                    } else {
-                        completedGames.add(gson.fromJson(reader, CompletedLotterySixGame.class));
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+        if (currentGameFile.exists()) {
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(Files.newInputStream(currentGameFile.toPath()), StandardCharsets.UTF_8))) {
+                currentGame = gson.fromJson(reader, PlayableLotterySixGame.class);
+                currentGame.setInstance(this);
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         }
-        completedGames.sort(Comparator.comparing((CompletedLotterySixGame game) -> game.getDatetime()).reversed());
+        File completedGameFile = new File(lotteryDataFolder, "completed.json");
+        if (completedGameFile.exists()) {
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(Files.newInputStream(completedGameFile.toPath()), StandardCharsets.UTF_8))) {
+                JsonArray array = gson.fromJson(reader, JsonArray.class);
+                for (JsonElement element : array) {
+                    CompletedLotterySixGameIndex gameIndex = gson.fromJson(element.getAsJsonObject(), CompletedLotterySixGameIndex.class);
+                    if (new File(lotteryDataFolder, gameIndex.getDataFileName()).exists()) {
+                        completedGames.add(gameIndex);
+                    }
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            if (!completedGames.isEmpty()) {
+                //noinspection ResultOfMethodCallIgnored
+                completedGames.get(0);
+            }
+        } else {
+            for (File file : lotteryDataFolder.listFiles()) {
+                if (file.getName().endsWith(".json") && !file.equals(currentGameFile) && !file.equals(completedGameFile)) {
+                    CompletedLotterySixGame game = null;
+                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(Files.newInputStream(file.toPath()), StandardCharsets.UTF_8))) {
+                        game = gson.fromJson(reader, CompletedLotterySixGame.class);
+                        completedGames.add(game);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    if (game != null) {
+                        file.renameTo(new File(lotteryDataFolder, game.getDataFileName()));
+                    }
+                }
+            }
+            completedGames.sort(Comparator.comparing((CompletedLotterySixGame game) -> game.getDatetime()).reversed());
+            saveData(false);
+        }
     }
 
     public synchronized void saveData(boolean onlyCurrent) {
@@ -547,11 +675,22 @@ public class LotterySix implements AutoCloseable {
             currentGameFile.delete();
         }
         if (!onlyCurrent) {
-            for (CompletedLotterySixGame completedLotterySixGame : completedGames) {
-                File file = new File(lotteryDataFolder, new SimpleDateFormat("dd_MM_yyyy_HH_mm_ss_zzz").format(new Date(completedLotterySixGame.getDatetime())) + ".json");
+            File completedGameFile = new File(lotteryDataFolder, "completed.json");
+            JsonArray array = new JsonArray(completedGames.size());
+            for (CompletedLotterySixGameIndex gameIndex : completedGames.indexIterable()) {
+                array.add(gson.toJsonTree(gameIndex));
+            }
+            try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(Files.newOutputStream(completedGameFile.toPath()), StandardCharsets.UTF_8))) {
+                pw.println(gson.toJson(array));
+                pw.flush();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            for (CompletedLotterySixGameIndex gameIndex : completedGames.indexIterable()) {
+                File file = new File(lotteryDataFolder, gameIndex.getDataFileName());
                 if (!file.exists()) {
                     try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(Files.newOutputStream(file.toPath()), StandardCharsets.UTF_8))) {
-                        pw.println(gson.toJson(completedLotterySixGame));
+                        pw.println(gson.toJson(completedGames.get(gameIndex)));
                         pw.flush();
                     } catch (IOException e) {
                         e.printStackTrace();

@@ -13,6 +13,9 @@ Messages:
   GameSettingsUpdated: "&aUpdated current round of LotterySix"
   BetLimitReachedSelf: "&cYou have reached your bet limit, edit player preferences to change this limit. Please bet responsibly."
   BetLimitReachedPermission: "&cYou have reached your bet limit. Please bet responsibly."
+  PlayerNotFound: "&cThat player cannot be found"
+  PendingUnclaimed: "&b&lYou have unclaimed balance from LotterySix, click to receive!"
+  PendingClaimed: "&aPending balance of ${Money} claimed!"
 
 Explanation:
   Message: "&aFor the explanation on how LotterySix works, please visit: &bhttps://github.com/LOOHP/LotterySix/wiki/LotterySix-Draw-&-Prizes-Explanation"
@@ -28,6 +31,12 @@ Explanation:
 Formatting:
   Date: "dd-MM-yyyy HH:mm:ss zzz"
 
+#This option is only used on backend servers
+Bungeecord: false
+
+#If you are using LotterySix on Bungeecord mode
+#THIS SECTION MUST BE THE SAME ACROSS ALL SERVERS AND PROXY
+#Ideally the whole config should be the same across all servers
 LotterySix:
   #CornJob expression, https://crontab.guru/
   #How often should the lottery run
@@ -168,13 +177,19 @@ GUI:
 
 Announcer:
   PeriodicMessage:
-    Message: "&6[LotterySix] Join the next round of LotterySix by placing your bet with [/lottery play]! &eDraw will happen on {Date} with an estimated prize pool of ${PrizePool}!"
+    Message: "&6[LotterySix] Join the next round of LotterySix by placing your bet with [/lottery play]! &eDraw will happen on &a{Date} &ewith an estimated prize pool of &b${PrizePool}&6!"
     #This is in seconds
     Frequency: 900
     #Send this message one more time one minute before scheduled draw
     OneMinuteBefore: true
 
   DrawCancelledMessage: "&e[LotterySix] LotterySix game on {Date} had been cancelled by an admin or because there are no bets submitted"
+
+  BetPlacedAnnouncement:
+    #Whether to announce players placing bets
+    #Might be a security risk depending on the type of your server
+    Enabled: false
+    Message: "&a[LotterySix] &b{Player} &ajust placed a bet worth &b${Price}&a!"
 
   LiveDrawAnnouncer:
     #Announce drawn numbers as it happens

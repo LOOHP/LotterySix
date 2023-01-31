@@ -23,6 +23,8 @@ package com.loohp.lotterysix.utils;
 import com.loohp.lotterysix.game.LotterySix;
 import com.loohp.lotterysix.game.lottery.CompletedLotterySixGame;
 import com.loohp.lotterysix.game.lottery.PlayableLotterySixGame;
+import com.loohp.lotterysix.game.objects.PlayerBets;
+import com.loohp.lotterysix.game.objects.PlayerWinnings;
 import com.loohp.lotterysix.game.objects.PrizeTier;
 import com.loohp.lotterysix.game.objects.betnumbers.BetNumbers;
 import com.loohp.lotterysix.game.objects.betnumbers.BetNumbersBuilder;
@@ -32,7 +34,9 @@ import org.bukkit.OfflinePlayer;
 
 import java.math.BigInteger;
 import java.text.DecimalFormat;
+import java.util.Collection;
 import java.util.Date;
+import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 
 public class LotteryUtils {
@@ -114,6 +118,9 @@ public class LotteryUtils {
                 .replace("{PricePerBet}", lotterySix.pricePerBet + "")
                 .replace("{TotalBets}", game.getTotalBets() + "")
                 .replace("{PrizePool}", game.estimatedPrizePool(lotterySix.taxPercentage) + "");
+        if (str.contains("{BetPlayerNames}")) {
+            str = str.replace("{BetPlayerNames}", chainPlayerBetNames(game.getBets()));
+        }
         for (PrizeTier prizeTier : PrizeTier.values()) {
             str = str.replace("{" + prizeTier.name() + "Odds}", ODDS_FORMAT.format(calculateOddsOneOver(lotterySix.numberOfChoices, prizeTier)));
         }
@@ -151,13 +158,28 @@ public class LotteryUtils {
                 .replace("{FifthNumberOrdered}", ChatColorUtils.applyNumberColor(game.getDrawResult().getNumberOrdered(4)))
                 .replace("{SixthNumberOrdered}", ChatColorUtils.applyNumberColor(game.getDrawResult().getNumberOrdered(5)))
                 .replace("{SpecialNumber}", ChatColorUtils.applyNumberColor(game.getDrawResult().getSpecialNumber()));
+        if (str.contains("{BetPlayerNames}")) {
+            str = str.replace("{BetPlayerNames}", chainPlayerBetNames(game.getBets()));
+        }
         for (PrizeTier prizeTier : PrizeTier.values()) {
+            String prizeTierName = prizeTier.name();
             str = str
-                    .replace("{" + prizeTier.name() + "Odds}", calculateOddsOneOver(lotterySix.numberOfChoices, prizeTier) + "")
-                    .replace("{" + prizeTier.name() + "Prize}", game.getPrizeForTier(prizeTier) + "")
-                    .replace("{" + prizeTier.name() + "PrizeCount}", BET_COUNT_FORMAT.format(game.getWinnerCountForTier(prizeTier)) + "");
+                    .replace("{" + prizeTierName + "Odds}", calculateOddsOneOver(lotterySix.numberOfChoices, prizeTier) + "")
+                    .replace("{" + prizeTierName + "Prize}", game.getPrizeForTier(prizeTier) + "")
+                    .replace("{" + prizeTierName + "PrizeCount}", BET_COUNT_FORMAT.format(game.getWinnerCountForTier(prizeTier)) + "");
+            if (str.contains("{" + prizeTierName + "PlayerNames}")) {
+                str = str.replace("{" + prizeTierName + "PlayerNames}", chainPlayerWinningsNames(game.getWinnings(prizeTier)));
+            }
         }
         return ChatColorUtils.translateAlternateColorCodes('&', player == null ? str : PlaceholderAPI.setPlaceholders(player, str));
+    }
+
+    public static String chainPlayerBetNames(Collection<PlayerBets> bets) {
+        return bets.stream().map(each -> each.getName()).distinct().collect(Collectors.joining(", "));
+    }
+
+    public static String chainPlayerWinningsNames(Collection<PlayerWinnings> winnings) {
+        return winnings.stream().map(each -> each.getName()).distinct().collect(Collectors.joining(", "));
     }
 
     public static double calculateOdds(int numberOfChoices, PrizeTier prizeTier) {

@@ -28,12 +28,14 @@ import java.util.UUID;
 public class PlayerBets {
 
     private final UUID betId;
+    private final String name;
     private final UUID player;
     private final long bet;
     private final BetUnitType type;
     private final BetNumbers chosenNumbers;
 
-    public PlayerBets(UUID player, long bet, BetUnitType type, BetNumbers chosenNumbers) {
+    public PlayerBets(String name, UUID player, long bet, BetUnitType type, BetNumbers chosenNumbers) {
+        this.name = name;
         this.betId = UUID.randomUUID();
         this.player = player;
         this.bet = bet;
@@ -43,6 +45,10 @@ public class PlayerBets {
 
     public UUID getBetId() {
         return betId;
+    }
+
+    public String getName() {
+        return name;
     }
 
     public UUID getPlayer() {

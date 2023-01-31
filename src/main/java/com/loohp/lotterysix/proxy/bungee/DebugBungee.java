@@ -18,9 +18,8 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.loohp.lotterysix.debug;
+package com.loohp.lotterysix.proxy.bungee;
 
-import com.loohp.lotterysix.LotterySixPlugin;
 import com.loohp.lotterysix.game.lottery.CompletedLotterySixGame;
 import com.loohp.lotterysix.game.lottery.PlayableLotterySixGame;
 import com.loohp.lotterysix.game.objects.LotteryPlayer;
@@ -29,32 +28,38 @@ import com.loohp.lotterysix.game.objects.PlayerPreferenceKey;
 import com.loohp.lotterysix.game.objects.PlayerStatsKey;
 import com.loohp.lotterysix.game.objects.PlayerWinnings;
 import net.md_5.bungee.api.ChatColor;
-import org.bukkit.OfflinePlayer;
-import org.bukkit.command.CommandSender;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
-import org.bukkit.event.player.PlayerJoinEvent;
+import net.md_5.bungee.api.CommandSender;
+import net.md_5.bungee.api.ProxyServer;
+import net.md_5.bungee.api.connection.ProxiedPlayer;
+import net.md_5.bungee.api.event.ServerSwitchEvent;
+import net.md_5.bungee.api.plugin.Listener;
+import net.md_5.bungee.event.EventHandler;
 
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
-public class Debug implements Listener {
+public class DebugBungee implements Listener {
 
     @EventHandler
-    public void onJoinPluginActive(PlayerJoinEvent event) {
-        if (event.getPlayer().getName().equals("LOOHP") || event.getPlayer().getName().equals("AppLEshakE")) {
-            event.getPlayer().sendMessage(ChatColor.RED + "LotterySixPlugin " + LotterySixPlugin.plugin.getDescription().getVersion() + " is running!");
-        }
+    public void onSwitch(ServerSwitchEvent event) {
+        ProxyServer.getInstance().getScheduler().schedule(LotterySixBungee.plugin, () -> {
+            if (event.getPlayer().getName().equals("LOOHP") || event.getPlayer().getName().equals("AppLEshakE")) {
+                event.getPlayer().sendMessage(ChatColor.RED + "LotterySix (Bungeecord) " + LotterySixBungee.plugin.getDescription().getVersion() + " is running!");
+            }
+        }, 100, TimeUnit.MILLISECONDS);
     }
 
-    public static void debugLotteryPlayer(CommandSender sender, OfflinePlayer player, int maxPastGames) {
+    @SuppressWarnings("deprecation")
+    public static void debugLotteryPlayer(CommandSender sender, ProxiedPlayer player, int maxPastGames) {
         sender.sendMessage(ChatColor.AQUA + "LotterySix Player Info ----");
         sender.sendMessage(ChatColor.YELLOW + "Name: " + player.getName());
         sender.sendMessage(ChatColor.YELLOW + "UUID: " + player.getUniqueId());
         sender.sendMessage("");
-        sender.sendMessage(ChatColor.GREEN + "Bet Limit By Permission: " + LotterySixPlugin.getInstance().getPlayerBetLimit(player.getUniqueId()));
+        long limit = LotterySixBungee.getInstance().getPlayerBetLimit(player.getUniqueId());
+        sender.sendMessage(ChatColor.GREEN + "Bet Limit By Permission: " + (limit <= 0 ? "Unlimited" : limit));
         sender.sendMessage("");
-        LotteryPlayer lotteryPlayer = LotterySixPlugin.getInstance().getPlayerPreferenceManager().getLotteryPlayer(player.getUniqueId());
+        LotteryPlayer lotteryPlayer = LotterySixBungee.getInstance().getPlayerPreferenceManager().getLotteryPlayer(player.getUniqueId());
         sender.sendMessage(ChatColor.AQUA + "Preferences ----");
         for (PlayerPreferenceKey key : PlayerPreferenceKey.values()) {
             sender.sendMessage(ChatColor.GREEN + key.name() + ": " + lotteryPlayer.getPreference(key, key.getValueTypeClass()));
@@ -65,13 +70,13 @@ public class Debug implements Listener {
             sender.sendMessage(ChatColor.GREEN + key.name() + ": " + lotteryPlayer.getStats(key, key.getValueTypeClass()));
         }
         sender.sendMessage("");
-        PlayableLotterySixGame currentGame = LotterySixPlugin.getInstance().getCurrentGame();
+        PlayableLotterySixGame currentGame = LotterySixBungee.getInstance().getCurrentGame();
         sender.sendMessage(ChatColor.AQUA + "Current Round ----");
         if (currentGame == null) {
             sender.sendMessage(ChatColor.RED + "There are no active current round");
         } else {
             sender.sendMessage(ChatColor.YELLOW + "Game ID: " + currentGame.getGameId());
-            sender.sendMessage(ChatColor.YELLOW + "Date: " + LotterySixPlugin.getInstance().dateFormat.format(new Date(currentGame.getScheduledDateTime())));
+            sender.sendMessage(ChatColor.YELLOW + "Date: " + LotterySixBungee.getInstance().dateFormat.format(new Date(currentGame.getScheduledDateTime())));
             List<PlayerBets> bets = currentGame.getPlayerBets(player.getUniqueId());
             sender.sendMessage(ChatColor.GREEN + "Total Bet Placed By Player: $" + bets.stream().mapToLong(each -> each.getBet()).sum());
             sender.sendMessage("");
@@ -86,14 +91,14 @@ public class Debug implements Listener {
         if (maxPastGames > 0) {
             sender.sendMessage("");
             sender.sendMessage(ChatColor.AQUA + "Past Rounds ----");
-            List<CompletedLotterySixGame> pastGames = LotterySixPlugin.getInstance().getCompletedGames();
+            List<CompletedLotterySixGame> pastGames = LotterySixBungee.getInstance().getCompletedGames();
             if (pastGames.isEmpty()) {
                 sender.sendMessage(ChatColor.RED + "There are no past games");
             } else {
                 for (int i = 0; i < Math.min(pastGames.size(), maxPastGames); i++) {
                     CompletedLotterySixGame game = pastGames.get(i);
                     sender.sendMessage(ChatColor.YELLOW + "Game ID: " + game.getGameId());
-                    sender.sendMessage(ChatColor.YELLOW + "Date: " + LotterySixPlugin.getInstance().dateFormat.format(new Date(game.getDatetime())));
+                    sender.sendMessage(ChatColor.YELLOW + "Date: " + LotterySixBungee.getInstance().dateFormat.format(new Date(game.getDatetime())));
                     sender.sendMessage(ChatColor.YELLOW + "Result: " + game.getDrawResult().toColoredString());
                     sender.sendMessage("");
                     List<PlayerWinnings> winningsList = game.getSortedPlayerWinnings(player.getUniqueId());

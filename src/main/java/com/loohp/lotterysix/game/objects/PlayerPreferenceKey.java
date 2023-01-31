@@ -20,23 +20,28 @@
 
 package com.loohp.lotterysix.game.objects;
 
+import com.loohp.lotterysix.game.LotterySix;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 public enum PlayerPreferenceKey {
 
-    HIDE_TITLES(boolean.class, false, Arrays.asList("true", "false"), s -> Boolean.parseBoolean(s)),
-    HIDE_PERIODIC_ANNOUNCEMENTS(boolean.class, false, Arrays.asList("true", "false"), s -> Boolean.parseBoolean(s)),
-    BET_LIMIT_PER_ROUND(long.class, 100000L, Arrays.asList("0", "100", "1000", "100000", "10000000"), s -> Long.parseLong(s));
+    HIDE_TITLES(boolean.class, (i, p) -> false, Arrays.asList("true", "false"), s -> Boolean.parseBoolean(s)),
+    HIDE_PERIODIC_ANNOUNCEMENTS(boolean.class, (i, p) -> false, Arrays.asList("true", "false"), s -> Boolean.parseBoolean(s)),
+    BET_LIMIT_PER_ROUND(long.class, (i, p) -> i == null || p == null ? Long.MAX_VALUE : i.getPlayerBetLimit(p), Arrays.asList("0", "100", "1000", "100000", "10000000"), s -> Long.parseLong(s)),
+    REOPEN_MENU_ON_PURCHASE(boolean.class, (i, p) -> true, Arrays.asList("true", "false"), s -> Boolean.parseBoolean(s));
 
     private final Class<?> valueTypeClass;
-    private final Object defaultValue;
+    private final BiFunction<LotterySix, UUID, ?> defaultValue;
     private final List<String> suggestedValues;
     private final Function<String, ?> reader;
 
-    <T> PlayerPreferenceKey(Class<T> valueTypeClass, T defaultValue, List<String> suggestedValues, Function<String, T> reader) {
+    <T> PlayerPreferenceKey(Class<T> valueTypeClass, BiFunction<LotterySix, UUID, T> defaultValue, List<String> suggestedValues, Function<String, T> reader) {
         this.valueTypeClass = valueTypeClass;
         this.defaultValue = defaultValue;
         this.suggestedValues = Collections.unmodifiableList(suggestedValues);
@@ -56,15 +61,15 @@ public enum PlayerPreferenceKey {
         return valueTypeClass;
     }
 
-    public Object getDefaultValue() {
-        return defaultValue;
+    public Object getDefaultValue(LotterySix instance, UUID player) {
+        return defaultValue.apply(instance, player);
     }
 
     public List<String> getSuggestedValues() {
         return suggestedValues;
     }
 
-    public Function<String, ?> getReader() {
-        return reader;
+    public Object getReader(String input) {
+        return reader.apply(input);
     }
 }

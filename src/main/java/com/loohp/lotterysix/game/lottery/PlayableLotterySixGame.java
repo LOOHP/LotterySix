@@ -43,7 +43,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-public class PlayableLotterySixGame {
+public class PlayableLotterySixGame implements IDedGame {
 
     public static PlayableLotterySixGame createNewGame(LotterySix instance, long scheduledDateTime, long carryOverFund, long lowestTopPlacesPrize) {
         return new PlayableLotterySixGame(instance, UUID.randomUUID(), scheduledDateTime, new ArrayList<>(), lowestTopPlacesPrize, carryOverFund, true);
@@ -76,12 +76,15 @@ public class PlayableLotterySixGame {
         this.instance = instance;
     }
 
+    @Override
     public UUID getGameId() {
         return gameId;
     }
 
     public void setScheduledDateTime(long scheduledDateTime) {
-        this.scheduledDateTime = scheduledDateTime;
+        if (instance == null || !instance.backendBungeecordMode) {
+            this.scheduledDateTime = scheduledDateTime;
+        }
     }
 
     public long getScheduledDateTime() {
@@ -97,7 +100,9 @@ public class PlayableLotterySixGame {
     }
 
     public void setLowestTopPlacesPrize(long lowestTopPlacesPrize) {
-        this.lowestTopPlacesPrize = lowestTopPlacesPrize;
+        if (instance == null || !instance.backendBungeecordMode) {
+            this.lowestTopPlacesPrize = lowestTopPlacesPrize;
+        }
     }
 
     public boolean isValid() {
@@ -106,7 +111,7 @@ public class PlayableLotterySixGame {
 
     public void cancelGame() {
         this.valid = false;
-        if (instance != null) {
+        if (instance != null && !instance.backendBungeecordMode) {
             instance.refundBets(bets);
             for (PlayerBets bet : bets) {
                 instance.getPlayerPreferenceManager().getLotteryPlayer(bet.getPlayer()).updateStats(PlayerStatsKey.TOTAL_BETS_PLACED, long.class, i -> i - bet.getBet());
@@ -122,35 +127,48 @@ public class PlayableLotterySixGame {
         return bets.stream().mapToLong(each -> each.getBet()).sum();
     }
 
-    public AddBetResult addBet(UUID player, long bet, BetUnitType unitType, BetNumbers chosenNumbers) {
-        return addBet(new PlayerBets(player, bet, unitType, chosenNumbers));
+    public AddBetResult addBet(String name, UUID player, long bet, BetUnitType unitType, BetNumbers chosenNumbers) {
+        return addBet(new PlayerBets(name, player, bet, unitType, chosenNumbers));
     }
 
     public synchronized AddBetResult addBet(PlayerBets bet) {
         if (instance.isGameLocked()) {
-            return AddBetResult.GAME_LOCKED;
+            return betResult0(bet, AddBetResult.GAME_LOCKED);
         }
-        if (instance != null) {
+        if (instance != null && !instance.backendBungeecordMode) {
             LotteryPlayer lotteryPlayer = instance.getPlayerPreferenceManager().getLotteryPlayer(bet.getPlayer());
-            instance.getPlayerBetListener().accept(bet.getPlayer(), bet.getChosenNumbers());
             long totalBets = getPlayerBets(bet.getPlayer()).stream().mapToLong(each -> each.getBet()).sum() + bet.getBet();
-            if (lotteryPlayer.getPreference(PlayerPreferenceKey.BET_LIMIT_PER_ROUND, long.class) < totalBets) {
-                return AddBetResult.LIMIT_SELF;
+            long playerLimit = lotteryPlayer.getPreference(PlayerPreferenceKey.BET_LIMIT_PER_ROUND, long.class);
+            if (playerLimit >= 0 && playerLimit < totalBets) {
+                return betResult0(bet, AddBetResult.LIMIT_SELF);
             }
             long permissionLimit = instance.getPlayerBetLimit(bet.getPlayer());
             if (permissionLimit >= 0 && permissionLimit < totalBets) {
-                return AddBetResult.LIMIT_PERMISSION;
+                return betResult0(bet, AddBetResult.LIMIT_PERMISSION);
             }
             if (!instance.takeMoney(bet)) {
-                return AddBetResult.NOT_ENOUGH_MONEY;
+                return betResult0(bet, AddBetResult.NOT_ENOUGH_MONEY);
             }
             lotteryPlayer.updateStats(PlayerStatsKey.TOTAL_BETS_PLACED, long.class, i -> i + bet.getBet());
         }
         bets.add(bet);
         if (instance != null) {
             instance.saveData(true);
+            if (!instance.backendBungeecordMode && instance.announcerBetPlacedAnnouncementEnabled) {
+                for (UUID uuid : instance.getOnlinePlayersSupplier().get()) {
+                    instance.getMessageSendingConsumer().accept(uuid, instance.announcerBetPlacedAnnouncementMessage
+                            .replace("{Player}", bet.getName()).replace("{Price}", bet.getBet() + ""), this);
+                }
+            }
         }
-        return AddBetResult.SUCCESS;
+        return betResult0(bet, AddBetResult.SUCCESS);
+    }
+
+    private AddBetResult betResult0(PlayerBets bet, AddBetResult result) {
+        if (instance != null && !instance.backendBungeecordMode) {
+            instance.getPlayerBetListener().accept(bet.getPlayer(), result, bet.getBet(), bet.getChosenNumbers());
+        }
+        return result;
     }
 
     public boolean hasBets() {
@@ -166,7 +184,9 @@ public class PlayableLotterySixGame {
     }
 
     public synchronized CompletedLotterySixGame runLottery(int maxNumber, long pricePerBet, double taxPercentage) {
-        long now = System.currentTimeMillis();
+        if (instance != null && instance.backendBungeecordMode) {
+            throw new IllegalStateException("lottery cannot be run on backend server while on bungeecord mode");
+        }
         SecureRandom random = new SecureRandom();
         int[] num = random.ints(1, maxNumber + 1).distinct().limit(7).toArray();
         WinningNumbers winningNumbers = new WinningNumbers(num[0], num[1], num[2], num[3], num[4], num[5], num[6]);
@@ -199,7 +219,7 @@ public class PlayableLotterySixGame {
             prizeForTier.put(PrizeTier.SEVENTH, pricePerBet * 4);
         }
         for (PlayerBets playerBets : tiers.get(PrizeTier.SEVENTH)) {
-            PlayerWinnings playerWinnings = new PlayerWinnings(playerBets.getPlayer(), PrizeTier.SEVENTH, playerBets, (pricePerBet * 4) / playerBets.getType().getDivisor());
+            PlayerWinnings playerWinnings = new PlayerWinnings(playerBets.getName(), playerBets.getPlayer(), PrizeTier.SEVENTH, playerBets, (pricePerBet * 4) / playerBets.getType().getDivisor());
             totalPrizes += playerWinnings.getWinnings();
             totalFourthToSeventh += playerWinnings.getWinnings();
             winnings.add(playerWinnings);
@@ -208,7 +228,7 @@ public class PlayableLotterySixGame {
             prizeForTier.put(PrizeTier.SIXTH, pricePerBet * 32);
         }
         for (PlayerBets playerBets : tiers.get(PrizeTier.SIXTH)) {
-            PlayerWinnings playerWinnings = new PlayerWinnings(playerBets.getPlayer(), PrizeTier.SIXTH, playerBets, (pricePerBet * 32) / playerBets.getType().getDivisor());
+            PlayerWinnings playerWinnings = new PlayerWinnings(playerBets.getName(), playerBets.getPlayer(), PrizeTier.SIXTH, playerBets, (pricePerBet * 32) / playerBets.getType().getDivisor());
             totalPrizes += playerWinnings.getWinnings();
             totalFourthToSeventh += playerWinnings.getWinnings();
             winnings.add(playerWinnings);
@@ -217,7 +237,7 @@ public class PlayableLotterySixGame {
             prizeForTier.put(PrizeTier.FIFTH, pricePerBet * 64);
         }
         for (PlayerBets playerBets : tiers.get(PrizeTier.FIFTH)) {
-            PlayerWinnings playerWinnings = new PlayerWinnings(playerBets.getPlayer(), PrizeTier.FIFTH, playerBets, (pricePerBet * 64) / playerBets.getType().getDivisor());
+            PlayerWinnings playerWinnings = new PlayerWinnings(playerBets.getName(), playerBets.getPlayer(), PrizeTier.FIFTH, playerBets, (pricePerBet * 64) / playerBets.getType().getDivisor());
             totalPrizes += playerWinnings.getWinnings();
             totalFourthToSeventh += playerWinnings.getWinnings();
             winnings.add(playerWinnings);
@@ -226,7 +246,7 @@ public class PlayableLotterySixGame {
             prizeForTier.put(PrizeTier.FOURTH, pricePerBet * 960);
         }
         for (PlayerBets playerBets : tiers.get(PrizeTier.FOURTH)) {
-            PlayerWinnings playerWinnings = new PlayerWinnings(playerBets.getPlayer(), PrizeTier.FOURTH, playerBets, (pricePerBet * 960) / playerBets.getType().getDivisor());
+            PlayerWinnings playerWinnings = new PlayerWinnings(playerBets.getName(), playerBets.getPlayer(), PrizeTier.FOURTH, playerBets, (pricePerBet * 960) / playerBets.getType().getDivisor());
             totalPrizes += playerWinnings.getWinnings();
             totalFourthToSeventh += playerWinnings.getWinnings();
             winnings.add(playerWinnings);
@@ -246,7 +266,7 @@ public class PlayableLotterySixGame {
             prizeForTier.put(PrizeTier.THIRD, thirdTierPrize);
             long thirdTierTotal = 0;
             for (PlayerBets playerBets : tiers.get(PrizeTier.THIRD)) {
-                PlayerWinnings playerWinnings = new PlayerWinnings(playerBets.getPlayer(), PrizeTier.THIRD, playerBets, thirdTierPrize / playerBets.getType().getDivisor());
+                PlayerWinnings playerWinnings = new PlayerWinnings(playerBets.getName(), playerBets.getPlayer(), PrizeTier.THIRD, playerBets, thirdTierPrize / playerBets.getType().getDivisor());
                 totalPrizes += playerWinnings.getWinnings();
                 thirdTierTotal += playerWinnings.getWinnings();
                 winnings.add(playerWinnings);
@@ -271,7 +291,7 @@ public class PlayableLotterySixGame {
             prizeForTier.put(PrizeTier.SECOND, secondTierPrize);
             long secondTierTotal = 0;
             for (PlayerBets playerBets : tiers.get(PrizeTier.SECOND)) {
-                PlayerWinnings playerWinnings = new PlayerWinnings(playerBets.getPlayer(), PrizeTier.SECOND, playerBets, secondTierPrize / playerBets.getType().getDivisor());
+                PlayerWinnings playerWinnings = new PlayerWinnings(playerBets.getName(), playerBets.getPlayer(), PrizeTier.SECOND, playerBets, secondTierPrize / playerBets.getType().getDivisor());
                 totalPrizes += playerWinnings.getWinnings();
                 secondTierTotal += playerWinnings.getWinnings();
                 winnings.add(playerWinnings);
@@ -296,7 +316,7 @@ public class PlayableLotterySixGame {
             prizeForTier.put(PrizeTier.FIRST, firstTierPrize);
             long firstTierTotal = 0;
             for (PlayerBets playerBets : tiers.get(PrizeTier.FIRST)) {
-                PlayerWinnings playerWinnings = new PlayerWinnings(playerBets.getPlayer(), PrizeTier.FIRST, playerBets, firstTierPrize / playerBets.getType().getDivisor());
+                PlayerWinnings playerWinnings = new PlayerWinnings(playerBets.getName(), playerBets.getPlayer(), PrizeTier.FIRST, playerBets, firstTierPrize / playerBets.getType().getDivisor());
                 totalPrizes += playerWinnings.getWinnings();
                 firstTierTotal += playerWinnings.getWinnings();
                 winnings.add(playerWinnings);
@@ -310,18 +330,7 @@ public class PlayableLotterySixGame {
 
         this.valid = false;
 
-        if (instance != null) {
-            instance.givePrizes(winnings);
-            new Thread(() -> {
-                for (PlayerWinnings winning : winnings) {
-                    LotteryPlayer lotteryPlayer = instance.getPlayerPreferenceManager().getLotteryPlayer(winning.getPlayer());
-                    lotteryPlayer.updateStats(PlayerStatsKey.TOTAL_WINNINGS, long.class, i -> i + winning.getWinnings());
-                    lotteryPlayer.updateStats(PlayerStatsKey.HIGHEST_WON_TIER, PrizeTier.class, t -> t == null || winning.getTier().ordinal() < t.ordinal(), winning.getTier());
-                }
-            }).start();
-        }
-
-        return new CompletedLotterySixGame(gameId, now, winningNumbers, pricePerBet, prizeForTier, winnings, bets, totalPrizes, (long) Math.floor(carryOverNext * (1 - taxPercentage)));
+        return new CompletedLotterySixGame(gameId, scheduledDateTime, winningNumbers, pricePerBet, prizeForTier, winnings, bets, totalPrizes, (long) Math.floor(carryOverNext * (1 - taxPercentage)));
     }
 
 }

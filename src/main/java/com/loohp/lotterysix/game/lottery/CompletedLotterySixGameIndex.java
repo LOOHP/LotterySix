@@ -18,57 +18,44 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.loohp.lotterysix.game.objects;
+package com.loohp.lotterysix.game.lottery;
 
 import java.util.Objects;
 import java.util.UUID;
 
-public class PlayerWinnings {
+public class CompletedLotterySixGameIndex implements IDedGame {
 
-    private final String name;
-    private final UUID player;
-    private final PrizeTier tier;
-    private final PlayerBets winningBet;
-    private final long winnings;
+    private final UUID gameId;
+    private final long datetime;
 
-    public PlayerWinnings(String name, UUID player, PrizeTier tier, PlayerBets winningBet, long winnings) {
-        this.name = name;
-        this.player = player;
-        this.tier = tier;
-        this.winningBet = winningBet;
-        this.winnings = winnings;
+    public CompletedLotterySixGameIndex(UUID gameId, long datetime) {
+        this.gameId = gameId;
+        this.datetime = datetime;
     }
 
-    public String getName() {
-        return name;
+    @Override
+    public UUID getGameId() {
+        return gameId;
     }
 
-    public UUID getPlayer() {
-        return player;
+    public long getDatetime() {
+        return datetime;
     }
 
-    public PrizeTier getTier() {
-        return tier;
-    }
-
-    public PlayerBets getWinningBet() {
-        return winningBet;
-    }
-
-    public long getWinnings() {
-        return winnings;
+    public String getDataFileName() {
+        return datetime + ".json";
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        PlayerWinnings that = (PlayerWinnings) o;
-        return winnings == that.winnings && player.equals(that.player) && tier == that.tier && winningBet.equals(that.winningBet);
+        CompletedLotterySixGameIndex gameIndex = (CompletedLotterySixGameIndex) o;
+        return gameId.equals(gameIndex.gameId);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(player, tier, winningBet, winnings);
+        return Objects.hash(gameId);
     }
 }

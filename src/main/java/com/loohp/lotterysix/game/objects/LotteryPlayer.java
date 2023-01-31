@@ -22,10 +22,10 @@ package com.loohp.lotterysix.game.objects;
 
 import com.loohp.lotterysix.game.player.LotteryPlayerManager;
 
-import java.util.Collections;
-import java.util.EnumMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 
@@ -34,21 +34,21 @@ public class LotteryPlayer {
     private transient LotteryPlayerManager manager;
 
     private final UUID player;
-    private final Map<PlayerPreferenceKey, Object> preferences;
-    private final Map<PlayerStatsKey, Object> stats;
+    private final ConcurrentHashMap<PlayerPreferenceKey, Object> preferences;
+    private final ConcurrentHashMap<PlayerStatsKey, Object> stats;
 
     public LotteryPlayer(LotteryPlayerManager manager, UUID player) {
         this.manager = manager;
         this.player = player;
-        this.preferences = Collections.synchronizedMap(new EnumMap<>(PlayerPreferenceKey.class));
-        this.stats = Collections.synchronizedMap(new EnumMap<>(PlayerStatsKey.class));
+        this.preferences = new ConcurrentHashMap<>();
+        this.stats = new ConcurrentHashMap<>();
     }
 
     public LotteryPlayer(LotteryPlayerManager manager, UUID player, Map<PlayerPreferenceKey, Object> preferences, Map<PlayerStatsKey, Object> stats) {
         this.manager = manager;
         this.player = player;
-        this.preferences = Collections.synchronizedMap(new EnumMap<>(preferences));
-        this.stats = Collections.synchronizedMap(new EnumMap<>(stats));
+        this.preferences = new ConcurrentHashMap<>(preferences);
+        this.stats = new ConcurrentHashMap<>(stats);
     }
 
     public LotteryPlayerManager getManager() {
@@ -60,6 +60,9 @@ public class LotteryPlayer {
     }
 
     public void save() {
+        if (!manager.getInstance().backendBungeecordMode) {
+            manager.getInstance().getLotteryPlayerUpdateListener().accept(this);
+        }
         manager.saveLotteryPlayer(player);
     }
 
@@ -67,8 +70,18 @@ public class LotteryPlayer {
         return player;
     }
 
+    public void bulkSet(Map<PlayerPreferenceKey, Object> preferences, Map<PlayerStatsKey, Object> stats) {
+        for (PlayerPreferenceKey key : PlayerPreferenceKey.values()) {
+            this.preferences.compute(key, (k, v) -> preferences.get(key));
+        }
+        for (PlayerStatsKey key : PlayerStatsKey.values()) {
+            this.stats.compute(key, (k, v) -> stats.get(key));
+        }
+        save();
+    }
+
     public Object getPreference(PlayerPreferenceKey key) {
-        return preferences.getOrDefault(key, key.getDefaultValue());
+        return preferences.getOrDefault(key, key.getDefaultValue(manager.getInstance(), player));
     }
 
     @SuppressWarnings("unchecked")
@@ -95,12 +108,21 @@ public class LotteryPlayer {
         save();
     }
 
-    public <T> void updateStats(PlayerStatsKey key, Class<T> type, Predicate<T> predicate, T newValue) {
-        updateStats(key, type, t -> predicate.test(t) ? newValue : t);
+    public <T> T updateStats(PlayerStatsKey key, Class<T> type, Predicate<T> predicate, T newValue) {
+        return updateStats(key, type, t -> predicate.test(t) ? newValue : t);
     }
 
-    public synchronized <T> void updateStats(PlayerStatsKey key, Class<T> type, UnaryOperator<T> updateFunction) {
-        T t = getStats(key, type);
-        setStats(key, updateFunction.apply(t));
+    @SuppressWarnings("unchecked")
+    public <T> T updateStats(PlayerStatsKey key, Class<T> type, UnaryOperator<T> updateFunction) {
+        AtomicReference<T> ref = new AtomicReference<>(null);
+        T defaultValue = (T) key.getDefaultValue();
+        stats.compute(key, (k, v) -> {
+            T t = (T) v;
+            ref.set(t);
+            return updateFunction.apply(v == null ? defaultValue : t);
+        });
+        save();
+        T t = ref.get();
+        return t == null ? defaultValue : t;
     }
 }

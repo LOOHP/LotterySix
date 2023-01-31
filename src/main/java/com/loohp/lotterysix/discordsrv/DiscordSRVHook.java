@@ -149,7 +149,7 @@ public class DiscordSRVHook implements Listener, SlashCommandProvider {
                     List<PlayerBets> playerBets = game.getPlayerBets(uuid);
                     if (!playerBets.isEmpty()) {
                         str.append("\n\n").append(lotterySix.discordSRVSlashCommandsViewPastDrawYourBets).append("\n");
-                        List<PlayerWinnings> winningsList = game.getPlayerWinnings(uuid);
+                        List<PlayerWinnings> winningsList = game.getSortedPlayerWinnings(uuid);
                         for (PlayerWinnings winnings : winningsList) {
                             str.append(StringUtils.wrapAtSpace(winnings.getWinningBet().getChosenNumbers().toString(), 6)).append("\n").append(winnings.getTier().getShortHand()).append(" $").append(winnings.getWinnings()).append(" ($").append(game.getPricePerBet(winnings.getWinningBet().getType())).append(")").append("\n");
                         }

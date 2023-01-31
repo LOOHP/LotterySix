@@ -22,6 +22,7 @@ package com.loohp.lotterysix.metrics;
 
 import com.loohp.lotterysix.LotterySixPlugin;
 import com.loohp.lotterysix.game.lottery.CompletedLotterySixGame;
+import com.loohp.lotterysix.game.lottery.PlayableLotterySixGame;
 import com.loohp.lotterysix.game.objects.PlayerBets;
 import com.loohp.lotterysix.game.objects.PrizeTier;
 
@@ -37,6 +38,10 @@ public class Charts {
     private static Optional<CompletedLotterySixGame> getLatestGame() {
         List<CompletedLotterySixGame> games = LotterySixPlugin.getInstance().getCompletedGames();
         return games.isEmpty() ? Optional.empty() : Optional.of(games.get(0));
+    }
+
+    private static Optional<PlayableLotterySixGame> getCurrentGame() {
+        return Optional.ofNullable(LotterySixPlugin.getInstance().getCurrentGame());
     }
 
     public static void setup(Metrics metrics) {
@@ -125,7 +130,7 @@ public class Charts {
             private long lastCall = System.currentTimeMillis();
             @Override
             public Integer call() throws Exception {
-                int counts = (int) LotterySixPlugin.getInstance().getCompletedGames().stream().filter(each -> each.getDatetime() >= lastCall).count();
+                int counts = (int) LotterySixPlugin.getInstance().getCompletedGames().indexStream().filter(each -> each.getDatetime() >= lastCall).count();
                 lastCall = System.currentTimeMillis();
                 return counts;
             }
@@ -142,6 +147,41 @@ public class Charts {
                     }
                 }
                 return valueMap;
+            }
+        }));
+
+        metrics.addCustomChart(new Metrics.SingleLineChart("on-going_lottery_six_games", new Callable<Integer>() {
+            @Override
+            public Integer call() throws Exception {
+                return getCurrentGame().map(each -> 1).orElse(0);
+            }
+        }));
+
+        metrics.addCustomChart(new Metrics.SimplePie("number_of_choices", new Callable<String>() {
+            @Override
+            public String call() throws Exception {
+                return LotterySixPlugin.getInstance().numberOfChoices + "";
+            }
+        }));
+
+        metrics.addCustomChart(new Metrics.SimplePie("price_per_unit_bet", new Callable<String>() {
+            @Override
+            public String call() throws Exception {
+                return LotterySixPlugin.getInstance().pricePerBet + "";
+            }
+        }));
+
+        metrics.addCustomChart(new Metrics.SingleLineChart("global_total_current_turnover", new Callable<Integer>() {
+            @Override
+            public Integer call() throws Exception {
+                return getCurrentGame().map(each -> (int) each.getTotalBets()).orElse(0);
+            }
+        }));
+
+        metrics.addCustomChart(new Metrics.SingleLineChart("global_total_previous_winnings", new Callable<Integer>() {
+            @Override
+            public Integer call() throws Exception {
+                return getLatestGame().map(each -> (int) each.getWinnings().stream().mapToLong(w -> w.getWinnings()).sum()).orElse(0);
             }
         }));
 

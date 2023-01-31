@@ -56,6 +56,10 @@ public class LotteryPlayerManager {
         this.persistentReferences = ConcurrentHashMap.newKeySet();
     }
 
+    public LotterySix getInstance() {
+        return instance;
+    }
+
     public LotteryPlayer getLotteryPlayer(UUID player) {
         return getLotteryPlayer(player, true);
     }
@@ -116,38 +120,38 @@ public class LotteryPlayerManager {
                     }
                 }
 
-                LotteryPlayer preference = new LotteryPlayer(this, UUID.fromString(json.get("player").getAsString()), preferences, stats);
+                LotteryPlayer lotteryPlayer = new LotteryPlayer(this, UUID.fromString(json.get("player").getAsString()), preferences, stats);
 
-                preference.setManager(this);
-                loadedPlayers.put(player, new WeakReference<>(preference));
+                lotteryPlayer.setManager(this);
+                loadedPlayers.put(player, new WeakReference<>(lotteryPlayer));
                 if (persist) {
-                    persistentReferences.add(preference);
+                    persistentReferences.add(lotteryPlayer);
                 }
-                return preference;
+                return lotteryPlayer;
             } catch (IOException e) {
                 e.printStackTrace();
             }
         } else {
-            LotteryPlayer preference = new LotteryPlayer(this, player);
-            loadedPlayers.put(player, new WeakReference<>(preference));
+            LotteryPlayer lotteryPlayer = new LotteryPlayer(this, player);
+            loadedPlayers.put(player, new WeakReference<>(lotteryPlayer));
             if (persist) {
-                persistentReferences.add(preference);
+                persistentReferences.add(lotteryPlayer);
             }
             saveLotteryPlayer(player);
-            return preference;
+            return lotteryPlayer;
         }
         return null;
     }
 
     public synchronized void saveLotteryPlayer(UUID player) {
-        LotteryPlayer preference = getLotteryPlayer(player, false);
-        if (preference != null) {
+        LotteryPlayer lotteryPlayer = getLotteryPlayer(player, false);
+        if (lotteryPlayer != null) {
             File playerFolder = new File(instance.getDataFolder(), "player");
             playerFolder.mkdirs();
             Gson gson = new GsonBuilder().setPrettyPrinting().create();
             File file = new File(playerFolder, player + ".json");
             try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(Files.newOutputStream(file.toPath()), StandardCharsets.UTF_8))) {
-                pw.println(gson.toJson(preference));
+                pw.println(gson.toJson(lotteryPlayer));
                 pw.flush();
             } catch (IOException e) {
                 e.printStackTrace();

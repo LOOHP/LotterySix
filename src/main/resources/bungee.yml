@@ -1,0 +1,4 @@
+name: LotterySix
+main: com.loohp.lotterysix.proxy.bungee.LotterySixBungee
+version: ${project.version}
+author: LOOHP

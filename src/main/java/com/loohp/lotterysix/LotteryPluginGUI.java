@@ -24,8 +24,10 @@ import com.cryptomorin.xseries.XMaterial;
 import com.loohp.lotterysix.game.LotterySix;
 import com.loohp.lotterysix.game.lottery.CompletedLotterySixGame;
 import com.loohp.lotterysix.game.lottery.PlayableLotterySixGame;
+import com.loohp.lotterysix.game.objects.AddBetResult;
 import com.loohp.lotterysix.game.objects.BetUnitType;
 import com.loohp.lotterysix.game.objects.PlayerBets;
+import com.loohp.lotterysix.game.objects.PlayerPreferenceKey;
 import com.loohp.lotterysix.game.objects.PlayerWinnings;
 import com.loohp.lotterysix.game.objects.betnumbers.BetNumbers;
 import com.loohp.lotterysix.game.objects.betnumbers.BetNumbersBuilder;
@@ -46,7 +48,15 @@ import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
+import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta;
@@ -54,9 +64,10 @@ import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Deque;
 import java.util.List;
 
-public class LotteryPluginGUI {
+public class LotteryPluginGUI implements Listener {
 
     private static String[] fillChars(int arrays) {
         String[] strings = new String[arrays];
@@ -104,55 +115,10 @@ public class LotteryPluginGUI {
 
     private final LotterySixPlugin plugin;
     private final LotterySix instance;
-    private final InventoryGui mainMenu;
 
     public LotteryPluginGUI(LotterySixPlugin plugin) {
         this.plugin = plugin;
         this.instance = LotterySixPlugin.getInstance();
-        String[] guiSetup = {
-                "         ",
-                " aaaaaaa ",
-                " abacada ",
-                " aaaaaaa ",
-                "        z"
-        };
-        mainMenu = new InventoryGui(plugin, LotteryUtils.formatPlaceholders(null, instance.guiMainMenuTitle, instance), guiSetup);
-        mainMenu.setFiller(XMaterial.YELLOW_STAINED_GLASS_PANE.parseItem());
-        mainMenu.addElement(new StaticGuiElement('a', new ItemStack(Material.AIR), ChatColor.LIGHT_PURPLE.toString()));
-        mainMenu.addElement(new StaticGuiElement('b', XMaterial.CLOCK.parseItem(), click -> {
-            Bukkit.getScheduler().runTaskLater(plugin, () -> getPastResults((Player) click.getWhoClicked()).show(click.getWhoClicked()), 1);
-            return true;
-        }, LotteryUtils.formatPlaceholders(null, instance.guiMainMenuCheckPastResults, instance)));
-        mainMenu.addElement(new DynamicGuiElement('c', player -> {
-            PlayableLotterySixGame currentGame = LotterySixPlugin.getInstance().getCurrentGame();
-            if (currentGame == null) {
-                return new StaticGuiElement('c', XMaterial.BARRIER.parseItem(), LotteryUtils.formatPlaceholders(null, instance.guiMainMenuNoLotteryGamesScheduled, instance));
-            } else {
-                return new StaticGuiElement('c', XMaterial.PAPER.parseItem(), click -> {
-                    Bukkit.getScheduler().runTaskLater(plugin, () -> click.getGui().close(click.getWhoClicked(), true), 1);
-                    Bukkit.getScheduler().runTaskLater(plugin, () -> BookUtils.openBook((Player) click.getWhoClicked(), getPlacedBets((Player) click.getWhoClicked())), 2);
-                    return true;
-                }, LotteryUtils.formatPlaceholders(null, instance.guiMainMenuCheckOwnBets, instance, currentGame));
-            }
-        }));
-        mainMenu.addElement(new DynamicGuiElement('d', player -> {
-            PlayableLotterySixGame currentGame = LotterySixPlugin.getInstance().getCurrentGame();
-            if (currentGame == null) {
-                return new StaticGuiElement('d', XMaterial.RED_WOOL.parseItem(), LotteryUtils.formatPlaceholders(null, instance.guiMainMenuNoLotteryGamesScheduled, instance));
-            } else {
-                return new StaticGuiElement('d', XMaterial.GOLD_INGOT.parseItem(), click -> {
-                    Bukkit.getScheduler().runTaskLater(plugin, () -> getBetTypeChooser((Player) click.getWhoClicked(), LotterySixPlugin.getInstance().getCurrentGame()).show(click.getWhoClicked()), 1);
-                    return true;
-                }, LotteryUtils.formatPlaceholders(null, instance.guiMainMenuPlaceNewBets, instance, currentGame));
-            }
-        }));
-        mainMenu.addElement(new StaticGuiElement('z', XMaterial.LIME_STAINED_GLASS_PANE.parseItem(), click -> {
-            TextComponent message = new TextComponent(LotteryUtils.formatPlaceholders(null, instance.explanationMessage, instance));
-            message.setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, instance.explanationURL));
-            click.getWhoClicked().spigot().sendMessage(message);
-            Bukkit.getScheduler().runTaskLater(plugin, () -> click.getGui().close(click.getWhoClicked(), true), 1);
-            return true;
-        }, LotteryUtils.formatPlaceholders(null, instance.explanationGUIItem, instance)));
     }
 
     public void forceClose(Player player) {
@@ -162,12 +128,103 @@ public class LotteryPluginGUI {
         }
     }
 
-    public InventoryGui getMainMenu() {
-        return mainMenu;
+    @EventHandler
+    public void onPlayerQuit(PlayerQuitEvent event) {
+        Deque<InventoryGui> guis = InventoryGui.clearHistory(event.getPlayer());
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            InventoryGui gui;
+            while ((gui = guis.poll()) != null) {
+                gui.destroy();
+            }
+        }, 1);
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onInventoryClick(InventoryClickEvent event) {
+        Inventory inventory = event.getView().getTopInventory();
+        if (inventory.getHolder() instanceof InventoryGui.Holder && InventoryGui.getOpen(event.getWhoClicked()) == null) {
+            event.setCancelled(true);
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                InventoryGui.clearHistory(event.getWhoClicked());
+                event.getWhoClicked().closeInventory();
+            }, 1);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onInventoryDrag(InventoryDragEvent event) {
+        Inventory inventory = event.getView().getTopInventory();
+        if (inventory.getHolder() instanceof InventoryGui.Holder && InventoryGui.getOpen(event.getWhoClicked()) == null) {
+            event.setCancelled(true);
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                InventoryGui.clearHistory(event.getWhoClicked());
+                event.getWhoClicked().closeInventory();
+            }, 1);
+        }
+    }
+
+    public void close(HumanEntity player, InventoryGui inventoryGui, boolean back) {
+        inventoryGui.close(player, !back);
+        Bukkit.getScheduler().runTaskLater(plugin, () -> inventoryGui.destroy(), 1);
+    }
+
+    public void checkReopen(HumanEntity player) {
+        if (instance.getPlayerPreferenceManager().getLotteryPlayer(player.getUniqueId()).getPreference(PlayerPreferenceKey.REOPEN_MENU_ON_PURCHASE, boolean.class)) {
+            getMainMenu((Player) player).show(player);
+        }
+    }
+
+    public InventoryGui getMainMenu(Player player) {
+        String[] guiSetup = {
+                "         ",
+                " aaaaaaa ",
+                " abacada ",
+                " aaaaaaa ",
+                "        z"
+        };
+        InventoryGui gui = new InventoryGui(plugin, LotteryUtils.formatPlaceholders(player, instance.guiMainMenuTitle, instance), guiSetup);
+        gui.setFiller(XMaterial.YELLOW_STAINED_GLASS_PANE.parseItem());
+        gui.addElement(new StaticGuiElement('a', new ItemStack(Material.AIR), ChatColor.LIGHT_PURPLE.toString()));
+        gui.addElement(new StaticGuiElement('b', XMaterial.CLOCK.parseItem(), click -> {
+            Bukkit.getScheduler().runTaskLater(plugin, () -> getPastResults((Player) click.getWhoClicked()).show(click.getWhoClicked()), 1);
+            return true;
+        }, LotteryUtils.formatPlaceholders(player, instance.guiMainMenuCheckPastResults, instance)));
+        gui.addElement(new DynamicGuiElement('c', viewer -> {
+            PlayableLotterySixGame currentGame = instance.getCurrentGame();
+            if (currentGame == null) {
+                return new StaticGuiElement('c', XMaterial.BARRIER.parseItem(), LotteryUtils.formatPlaceholders(player, instance.guiMainMenuNoLotteryGamesScheduled, instance));
+            } else {
+                return new StaticGuiElement('c', XMaterial.PAPER.parseItem(), click -> {
+                    Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), true), 1);
+                    Bukkit.getScheduler().runTaskLater(plugin, () -> BookUtils.openBook((Player) click.getWhoClicked(), getPlacedBets((Player) click.getWhoClicked())), 2);
+                    return true;
+                }, LotteryUtils.formatPlaceholders(player, instance.guiMainMenuCheckOwnBets, instance, currentGame));
+            }
+        }));
+        gui.addElement(new DynamicGuiElement('d', viewer -> {
+            PlayableLotterySixGame currentGame = instance.getCurrentGame();
+            if (currentGame == null) {
+                return new StaticGuiElement('d', XMaterial.RED_WOOL.parseItem(), LotteryUtils.formatPlaceholders(player, instance.guiMainMenuNoLotteryGamesScheduled, instance));
+            } else {
+                return new StaticGuiElement('d', XMaterial.GOLD_INGOT.parseItem(), click -> {
+                    Bukkit.getScheduler().runTaskLater(plugin, () -> getBetTypeChooser((Player) click.getWhoClicked(), instance.getCurrentGame()).show(click.getWhoClicked()), 1);
+                    return true;
+                }, LotteryUtils.formatPlaceholders(player, instance.guiMainMenuPlaceNewBets, instance, currentGame));
+            }
+        }));
+        gui.addElement(new StaticGuiElement('z', XMaterial.LIME_STAINED_GLASS_PANE.parseItem(), click -> {
+            TextComponent message = new TextComponent(LotteryUtils.formatPlaceholders(player, instance.explanationMessage, instance));
+            message.setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, instance.explanationURL));
+            click.getWhoClicked().spigot().sendMessage(message);
+            Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), true), 1);
+            return true;
+        }, LotteryUtils.formatPlaceholders(player, instance.explanationGUIItem, instance)));
+        gui.setCloseAction(close -> false);
+        return gui;
     }
 
     public ItemStack getPlacedBets(Player player) {
-        PlayableLotterySixGame game = LotterySixPlugin.getInstance().getCurrentGame();
+        PlayableLotterySixGame game = instance.getCurrentGame();
         List<PlayerBets> bets = game.getPlayerBets(player.getUniqueId());
 
         ItemStack itemStack = XMaterial.WRITTEN_BOOK.parseItem();
@@ -222,7 +279,7 @@ public class LotteryPluginGUI {
     }
 
     public InventoryGui getNumberChooser(Player player, PlayableLotterySixGame game, BetNumbersBuilder builder) {
-        int num = LotterySixPlugin.getInstance().numberOfChoices;
+        int num = instance.numberOfChoices;
         String[] guiSetup = fillChars((num + 1) / 9 + 1);
         String last = guiSetup[guiSetup.length - 1];
         guiSetup[guiSetup.length - 1] = last.substring(0, last.length() - 1) + "\0";
@@ -256,7 +313,7 @@ public class LotteryPluginGUI {
                                 builder.addNumber(number);
                                 if (builder.completed() || (isBanker && !((BetNumbersBuilder.BankerBuilder) builder).getBankers().isEmpty())) {
                                     if (isFixed) {
-                                        Bukkit.getScheduler().runTaskLater(plugin, () -> change.getWhoClicked().closeInventory(), 1);
+                                        Bukkit.getScheduler().runTaskLater(plugin, () -> close(change.getWhoClicked(), change.getGui(), false), 1);
                                         Bukkit.getScheduler().runTaskLater(plugin, () -> {
                                             BetNumbers betNumbers = builder.build();
                                             if (betNumbers.getType().equals(BetNumbersType.SINGLE)) {
@@ -278,7 +335,7 @@ public class LotteryPluginGUI {
                                         gui.removeElement('\0');
                                         gui.addElement(new StaticGuiElement('\0', isBanker && !((BetNumbersBuilder.BankerBuilder) builder).inSelectionPhase() ? XMaterial.EMERALD_BLOCK.parseItem() : XMaterial.GOLD_BLOCK.parseItem(), click -> {
                                             if (builder.completed()) {
-                                                Bukkit.getScheduler().runTaskLater(plugin, () -> click.getWhoClicked().closeInventory(), 1);
+                                                Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
                                                 Bukkit.getScheduler().runTaskLater(plugin, () -> {
                                                     BetNumbers betNumbers = builder.build();
                                                     if (betNumbers.getType().equals(BetNumbersType.SINGLE)) {
@@ -372,64 +429,80 @@ public class LotteryPluginGUI {
                 .map(each -> each.replace("{Price}", price + "").replace("{PricePartial}", partial + "")).toArray(String[]::new)));
         gui.addElement(new StaticGuiElement('h', XMaterial.YELLOW_WOOL.parseItem(), click -> {
             if (game != null && game.isValid()) {
-                switch (game.addBet(player.getUniqueId(), partial, BetUnitType.PARTIAL, betNumbers)) {
-                    case SUCCESS: {
-                        player.sendMessage(instance.messageBetPlaced.replace("{Price}", partial + ""));
-                        break;
+                if (instance.backendBungeecordMode) {
+                    LotterySixPlugin.getPluginMessageHandler().requestAddBet(player.getName(), player.getUniqueId(), partial, BetUnitType.PARTIAL, betNumbers);
+                } else {
+                    AddBetResult result = game.addBet(player.getName(), player.getUniqueId(), partial, BetUnitType.PARTIAL, betNumbers);
+                    switch (result) {
+                        case SUCCESS: {
+                            player.sendMessage(instance.messageBetPlaced.replace("{Price}", partial + ""));
+                            break;
+                        }
+                        case GAME_LOCKED: {
+                            player.sendMessage(instance.messageGameLocked.replace("{Price}", partial + ""));
+                            break;
+                        }
+                        case NOT_ENOUGH_MONEY: {
+                            player.sendMessage(instance.messageNotEnoughMoney.replace("{Price}", partial + ""));
+                            break;
+                        }
+                        case LIMIT_SELF: {
+                            player.sendMessage(instance.messageBetLimitReachedSelf.replace("{Price}", partial + ""));
+                            break;
+                        }
+                        case LIMIT_PERMISSION: {
+                            player.sendMessage(instance.messageBetLimitReachedPermission.replace("{Price}", partial + ""));
+                            break;
+                        }
                     }
-                    case GAME_LOCKED: {
-                        player.sendMessage(instance.messageGameLocked.replace("{Price}", partial + ""));
-                        break;
-                    }
-                    case NOT_ENOUGH_MONEY: {
-                        player.sendMessage(instance.messageNotEnoughMoney.replace("{Price}", partial + ""));
-                        break;
-                    }
-                    case LIMIT_SELF: {
-                        player.sendMessage(instance.messageBetLimitReachedSelf.replace("{Price}", partial + ""));
-                        break;
-                    }
-                    case LIMIT_PERMISSION: {
-                        player.sendMessage(instance.messageBetLimitReachedPermission.replace("{Price}", partial + ""));
-                        break;
+                    if (result.isSuccess()) {
+                        Bukkit.getScheduler().runTaskLater(plugin, () -> checkReopen(click.getWhoClicked()), 5);
                     }
                 }
-                Bukkit.getScheduler().runTaskLater(plugin, () -> click.getGui().close(click.getWhoClicked(), true), 1);
+                Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
             }
             return true;
         }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetPartialConfirm, instance, game))
                 .map(each -> each.replace("{Price}", price + "").replace("{PricePartial}", partial + "")).toArray(String[]::new)));
         gui.addElement(new StaticGuiElement('i', XMaterial.GREEN_WOOL.parseItem(), click -> {
             if (game != null && game.isValid()) {
-                switch (game.addBet(player.getUniqueId(), price, BetUnitType.FULL, betNumbers)) {
-                    case SUCCESS: {
-                        player.sendMessage(instance.messageBetPlaced.replace("{Price}", price + ""));
-                        break;
+                if (instance.backendBungeecordMode) {
+                    LotterySixPlugin.getPluginMessageHandler().requestAddBet(player.getName(), player.getUniqueId(), price, BetUnitType.FULL, betNumbers);
+                } else {
+                    AddBetResult result = game.addBet(player.getName(), player.getUniqueId(), price, BetUnitType.FULL, betNumbers);
+                    switch (result) {
+                        case SUCCESS: {
+                            player.sendMessage(instance.messageBetPlaced.replace("{Price}", price + ""));
+                            break;
+                        }
+                        case GAME_LOCKED: {
+                            player.sendMessage(instance.messageGameLocked.replace("{Price}", price + ""));
+                            break;
+                        }
+                        case NOT_ENOUGH_MONEY: {
+                            player.sendMessage(instance.messageNotEnoughMoney.replace("{Price}", price + ""));
+                            break;
+                        }
+                        case LIMIT_SELF: {
+                            player.sendMessage(instance.messageBetLimitReachedSelf.replace("{Price}", price + ""));
+                            break;
+                        }
+                        case LIMIT_PERMISSION: {
+                            player.sendMessage(instance.messageBetLimitReachedPermission.replace("{Price}", price + ""));
+                            break;
+                        }
                     }
-                    case GAME_LOCKED: {
-                        player.sendMessage(instance.messageGameLocked.replace("{Price}", price + ""));
-                        break;
-                    }
-                    case NOT_ENOUGH_MONEY: {
-                        player.sendMessage(instance.messageNotEnoughMoney.replace("{Price}", price + ""));
-                        break;
-                    }
-                    case LIMIT_SELF: {
-                        player.sendMessage(instance.messageBetLimitReachedSelf.replace("{Price}", price + ""));
-                        break;
-                    }
-                    case LIMIT_PERMISSION: {
-                        player.sendMessage(instance.messageBetLimitReachedPermission.replace("{Price}", price + ""));
-                        break;
+                    if (result.isSuccess()) {
+                        Bukkit.getScheduler().runTaskLater(plugin, () -> checkReopen(click.getWhoClicked()), 5);
                     }
                 }
-                Bukkit.getScheduler().runTaskLater(plugin, () -> click.getGui().close(click.getWhoClicked(), true), 1);
+                Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
             }
             return true;
         }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetConfirm, instance, game))
                 .map(each -> each.replace("{Price}", price + "").replace("{PricePartial}", partial + "")).toArray(String[]::new)));
         gui.addElement(new StaticGuiElement('j', XMaterial.BARRIER.parseItem(), click -> {
-            Bukkit.getScheduler().runTaskLater(plugin, () -> click.getWhoClicked().closeInventory(), 1);
+            Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
             return true;
         }, LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetCancel, instance, game)));
 
@@ -453,35 +526,43 @@ public class LotteryPluginGUI {
                 .map(each -> each.replace("{Price}", LotteryUtils.calculatePrice(betNumbers, instance) + "")).toArray(String[]::new)));
         gui.addElement(new StaticGuiElement('h', XMaterial.GREEN_WOOL.parseItem(), click -> {
             if (game != null && game.isValid()) {
-                switch (game.addBet(player.getUniqueId(), LotterySixPlugin.getInstance().pricePerBet, BetUnitType.FULL, betNumbers)) {
-                    case SUCCESS: {
-                        player.sendMessage(instance.messageBetPlaced.replace("{Price}", instance.pricePerBet + ""));
-                        break;
+                if (instance.backendBungeecordMode) {
+                    LotterySixPlugin.getPluginMessageHandler().requestAddBet(player.getName(), player.getUniqueId(), instance.pricePerBet, BetUnitType.FULL, betNumbers);
+                } else {
+                    AddBetResult result = game.addBet(player.getName(), player.getUniqueId(), instance.pricePerBet, BetUnitType.FULL, betNumbers);
+                    switch (result) {
+                        case SUCCESS: {
+                            player.sendMessage(instance.messageBetPlaced.replace("{Price}", instance.pricePerBet + ""));
+                            break;
+                        }
+                        case GAME_LOCKED: {
+                            player.sendMessage(instance.messageGameLocked.replace("{Price}", instance.pricePerBet + ""));
+                            break;
+                        }
+                        case NOT_ENOUGH_MONEY: {
+                            player.sendMessage(instance.messageNotEnoughMoney.replace("{Price}", instance.pricePerBet + ""));
+                            break;
+                        }
+                        case LIMIT_SELF: {
+                            player.sendMessage(instance.messageBetLimitReachedSelf.replace("{Price}", instance.pricePerBet + ""));
+                            break;
+                        }
+                        case LIMIT_PERMISSION: {
+                            player.sendMessage(instance.messageBetLimitReachedPermission.replace("{Price}", instance.pricePerBet + ""));
+                            break;
+                        }
                     }
-                    case GAME_LOCKED: {
-                        player.sendMessage(instance.messageGameLocked.replace("{Price}", instance.pricePerBet + ""));
-                        break;
-                    }
-                    case NOT_ENOUGH_MONEY: {
-                        player.sendMessage(instance.messageNotEnoughMoney.replace("{Price}", instance.pricePerBet + ""));
-                        break;
-                    }
-                    case LIMIT_SELF: {
-                        player.sendMessage(instance.messageBetLimitReachedSelf.replace("{Price}", instance.pricePerBet + ""));
-                        break;
-                    }
-                    case LIMIT_PERMISSION: {
-                        player.sendMessage(instance.messageBetLimitReachedPermission.replace("{Price}", instance.pricePerBet + ""));
-                        break;
+                    if (result.isSuccess()) {
+                        Bukkit.getScheduler().runTaskLater(plugin, () -> checkReopen(click.getWhoClicked()), 5);
                     }
                 }
-                Bukkit.getScheduler().runTaskLater(plugin, () -> click.getGui().close(click.getWhoClicked(), true), 1);
+                Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
             }
             return true;
         }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetConfirm, instance, game))
                 .map(each -> each.replace("{Price}", LotteryUtils.calculatePrice(betNumbers, instance) + "")).toArray(String[]::new)));
         gui.addElement(new StaticGuiElement('i', XMaterial.BARRIER.parseItem(), click -> {
-            Bukkit.getScheduler().runTaskLater(plugin, () -> click.getWhoClicked().closeInventory(), 1);
+            Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
             return true;
         }, LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetCancel, instance, game)));
 
@@ -489,7 +570,7 @@ public class LotteryPluginGUI {
     }
 
     public InventoryGui getPastResults(Player player) {
-        List<CompletedLotterySixGame> games = LotterySixPlugin.getInstance().getCompletedGames();
+        List<CompletedLotterySixGame> games = instance.getCompletedGames();
         InventoryGui gui;
         if (games.isEmpty()) {
             String[] guiSetup = {
@@ -520,7 +601,7 @@ public class LotteryPluginGUI {
             String winningNumberStr = game.getDrawResult().toColoredString();
 
             List<String> pages = new ArrayList<>();
-            List<PlayerWinnings> winningsList = game.getPlayerWinnings(player.getUniqueId());
+            List<PlayerWinnings> winningsList = game.getSortedPlayerWinnings(player.getUniqueId());
             for (PlayerWinnings winnings : winningsList) {
                 String str = winningNumberStr + "\n\n" + winnings.getWinningBet().getChosenNumbers().toColoredString() + "\n"
                         + ChatColor.GOLD + "" + winnings.getTier().getShortHand() + " $" + winnings.getWinnings() + " ($" + game.getPricePerBet(winnings.getWinningBet().getType()) + ")";
@@ -541,7 +622,7 @@ public class LotteryPluginGUI {
             itemStack.setItemMeta(meta);
 
             gui.addElement(new StaticGuiElement('i', XMaterial.GREEN_WOOL.parseItem(), click -> {
-                Bukkit.getScheduler().runTaskLater(plugin, () -> click.getGui().close(click.getWhoClicked(), true), 1);
+                Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), true), 1);
                 Bukkit.getScheduler().runTaskLater(plugin, () -> BookUtils.openBook((Player) click.getWhoClicked(), itemStack), 2);
                 return true;
             }, LotteryUtils.formatPlaceholders(player, instance.guiLastResultsYourBets, instance, game)));

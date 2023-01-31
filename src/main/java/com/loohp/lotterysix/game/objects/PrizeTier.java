@@ -44,4 +44,5 @@ public enum PrizeTier {
     public String toString() {
         return getShortHand();
     }
+
 }

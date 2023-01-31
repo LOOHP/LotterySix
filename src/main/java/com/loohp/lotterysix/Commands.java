@@ -85,14 +85,23 @@ public class Commands implements CommandExecutor, TabCompleter {
                 sender.sendMessage(LotterySixPlugin.getInstance().messageNoPermission);
             }
             return true;
-        } else if (args[0].equalsIgnoreCase("play")) {
+        }
+
+        if (LotterySixPlugin.getInstance().backendBungeecordMode) {
+            sender.sendMessage(ChatColor.RED + "LotterySix written by LOOHP!");
+            sender.sendMessage(ChatColor.GOLD + "You are running LotterySix version: " + LotterySixPlugin.plugin.getDescription().getVersion());
+            return true;
+        }
+
+        if (args[0].equalsIgnoreCase("play")) {
             if (sender.hasPermission("lotterysix.play")) {
                 if (LotterySixPlugin.getInstance().isGameLocked()) {
                     sender.sendMessage(LotterySixPlugin.getInstance().messageGameLocked);
                     return true;
                 }
                 if (sender instanceof Player) {
-                    LotterySixPlugin.getGuiProvider().getMainMenu().show((Player) sender);
+                    Player player = (Player) sender;
+                    LotterySixPlugin.getGuiProvider().getMainMenu(player).show(player);
                 } else {
                     sender.sendMessage(LotterySixPlugin.getInstance().messageNoConsole);
                 }
@@ -110,6 +119,7 @@ public class Commands implements CommandExecutor, TabCompleter {
                     if (args.length > 1) {
                         try {
                             LotterySixPlugin.getInstance().startNewGame(Long.parseLong(args[1]));
+                            sender.sendMessage(LotterySixPlugin.getInstance().messageGameStarted);
                         } catch (NumberFormatException e) {
                             sender.sendMessage(LotterySixPlugin.getInstance().messageInvalidUsage);
                         }
@@ -133,7 +143,7 @@ public class Commands implements CommandExecutor, TabCompleter {
                 if (LotterySixPlugin.getInstance().getCurrentGame() == null) {
                     sender.sendMessage(LotterySixPlugin.getInstance().messageNoGameRunning);
                 } else {
-                    LotterySixPlugin.getInstance().runCurrentGame();
+                    LotterySixPlugin.getInstance().getCurrentGame().setScheduledDateTime(System.currentTimeMillis());
                 }
             } else {
                 sender.sendMessage(LotterySixPlugin.getInstance().messageNoPermission);
@@ -177,7 +187,7 @@ public class Commands implements CommandExecutor, TabCompleter {
                         sender.sendMessage(LotterySixPlugin.getInstance().messageInvalidUsage);
                     } else {
                         String valueStr = args[2];
-                        Object value = preferenceKey.getReader().apply(valueStr);
+                        Object value = preferenceKey.getReader(valueStr);
                         if (value == null) {
                             sender.sendMessage(LotterySixPlugin.getInstance().messageInvalidUsage);
                         } else {

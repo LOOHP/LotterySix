@@ -18,19 +18,12 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.loohp.lotterysix.game.objects;
-
-import com.loohp.lotterysix.game.lottery.IDedGame;
+package com.loohp.lotterysix.game.lottery;
 
 import java.util.UUID;
 
-@FunctionalInterface
-public interface MessageConsumer {
+public interface IDedGame {
 
-    void accept(UUID uuid, String message, IDedGame game);
-
-    default void accept(UUID uuid, String message) {
-        accept(uuid, message, null);
-    }
+    UUID getGameId();
 
 }

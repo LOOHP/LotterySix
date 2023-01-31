@@ -20,6 +20,7 @@
 
 package com.loohp.lotterysix.utils;
 
+import java.util.Arrays;
 import java.util.Optional;
 
 public class ArrayUtils {
@@ -36,6 +37,21 @@ public class ArrayUtils {
             return Optional.empty();
         }
         return Optional.of(array[index]);
+    }
+
+    public static byte[][] divideArray(byte[] source, int chunksize) {
+        int length = (int) Math.ceil(source.length / (double) chunksize);
+        if (length <= 1) {
+            return new byte[][] {source};
+        }
+        byte[][] ret = new byte[length][];
+        int start = 0;
+        for (int i = 0; i < ret.length; i++) {
+            int end = start + chunksize;
+            ret[i] = Arrays.copyOfRange(source, start, Math.min(end, source.length));
+            start += chunksize;
+        }
+        return ret;
     }
 
 }
