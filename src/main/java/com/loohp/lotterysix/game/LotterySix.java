@@ -676,7 +676,7 @@ public class LotterySix implements AutoCloseable {
         }
         if (!onlyCurrent) {
             File completedGameFile = new File(lotteryDataFolder, "completed.json");
-            JsonArray array = new JsonArray(completedGames.size());
+            JsonArray array = new JsonArray();
             for (CompletedLotterySixGameIndex gameIndex : completedGames.indexIterable()) {
                 array.add(gson.toJsonTree(gameIndex));
             }
