@@ -46,7 +46,7 @@ import java.util.stream.Collectors;
 public class PlayableLotterySixGame {
 
     public static PlayableLotterySixGame createNewGame(LotterySix instance, long scheduledDateTime, long carryOverFund, long lowestTopPlacesPrize) {
-        return new PlayableLotterySixGame(instance, UUID.randomUUID(), scheduledDateTime, new ArrayList<>(), carryOverFund, lowestTopPlacesPrize, true);
+        return new PlayableLotterySixGame(instance, UUID.randomUUID(), scheduledDateTime, new ArrayList<>(), lowestTopPlacesPrize, carryOverFund, true);
     }
 
     private transient LotterySix instance;
