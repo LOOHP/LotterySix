@@ -29,7 +29,6 @@ import com.loohp.lotterysix.game.objects.LotterySixAction;
 import com.loohp.lotterysix.game.objects.PlayerBets;
 import com.loohp.lotterysix.game.objects.PlayerWinnings;
 import com.loohp.lotterysix.utils.LotteryUtils;
-import com.loohp.lotterysix.utils.StringUtils;
 import com.loohp.lotterysix.utils.SyncUtils;
 import github.scarsz.discordsrv.DiscordSRV;
 import github.scarsz.discordsrv.api.Subscribe;
@@ -150,12 +149,16 @@ public class DiscordSRVHook implements Listener, SlashCommandProvider {
                     if (!playerBets.isEmpty()) {
                         str.append("\n\n").append(lotterySix.discordSRVSlashCommandsViewPastDrawYourBets).append("\n");
                         List<PlayerWinnings> winningsList = game.getSortedPlayerWinnings(uuid);
-                        for (PlayerWinnings winnings : winningsList) {
-                            str.append(StringUtils.wrapAtSpace(winnings.getWinningBet().getChosenNumbers().toString(), 6)).append("\n").append(winnings.getTier().getShortHand()).append(" $").append(winnings.getWinnings()).append(" ($").append(game.getPricePerBet(winnings.getWinningBet().getType())).append(")").append("\n");
+                        for (PlayerWinnings winnings : winningsList.subList(0, Math.min(50, winningsList.size()))) {
+                            str.append(winnings.getWinningBet(game).getChosenNumbers().toString()).append("\n");
+                            if (winnings.isCombination(game)) {
+                                str.append("(").append(winnings.getWinningCombination().toString()).append(")\n");
+                            }
+                            str.append(winnings.getTier().getShortHand()).append(" $").append(winnings.getWinnings()).append(" ($").append(game.getPricePerBet(winnings.getWinningBet(game).getType())).append(")").append("\n");
                         }
                         for (PlayerBets bets : playerBets) {
-                            if (winningsList.stream().noneMatch(each -> each.getWinningBet().getBetId().equals(bets.getBetId()))) {
-                                str.append(StringUtils.wrapAtSpace(bets.getChosenNumbers().toString(), 6)).append("\n").append(lotterySix.discordSRVSlashCommandsViewPastDrawNoWinnings).append(" $0 ($").append(game.getPricePerBet(bets.getType())).append(")\n");
+                            if (winningsList.stream().noneMatch(each -> each.getWinningBet(game).getBetId().equals(bets.getBetId()))) {
+                                str.append(bets.getChosenNumbers().toString()).append("\n").append(lotterySix.discordSRVSlashCommandsViewPastDrawNoWinnings).append(" $0 ($").append(game.getPricePerBet(bets.getType())).append(")\n");
                             }
                         }
                     }
@@ -188,7 +191,7 @@ public class DiscordSRVHook implements Listener, SlashCommandProvider {
                     StringBuilder str = new StringBuilder();
 
                     for (PlayerBets bet : bets) {
-                        str.append("**").append(StringUtils.wrapAtSpace(bet.getChosenNumbers().toString(), 6)).append("**\n");
+                        str.append("**").append(bet.getChosenNumbers().toString()).append("**\n");
                     }
 
                     EmbedBuilder builder = new EmbedBuilder()

@@ -45,8 +45,11 @@ import net.md_5.bungee.event.EventHandler;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -111,6 +114,8 @@ public class LotterySixBungee extends Plugin implements Listener {
             callLotterySixEvent(action);
         }, lotteryPlayer -> {
             pluginMessageBungee.syncPlayerData(lotteryPlayer);
+        }, message -> {
+            ProxyServer.getInstance().getConsole().sendMessage(message);
         });
         instance.reloadConfig();
 
@@ -162,23 +167,31 @@ public class LotterySixBungee extends Plugin implements Listener {
     }
 
     public static void givePrizes(Collection<PlayerWinnings> winnings) {
-        for (PlayerWinnings playerWinnings : winnings) {
-            ProxiedPlayer player = ProxyServer.getInstance().getPlayer(playerWinnings.getPlayer());
+        Map<UUID, Long> transactions = new HashMap<>();
+        for (PlayerWinnings winning : winnings) {
+            transactions.merge(winning.getPlayer(), winning.getWinnings(), (a, b) -> a + b);
+        }
+        for (Map.Entry<UUID, Long> entry : transactions.entrySet()) {
+            ProxiedPlayer player = ProxyServer.getInstance().getPlayer(entry.getKey());
             if (player == null) {
-                instance.getPlayerPreferenceManager().getLotteryPlayer(playerWinnings.getPlayer()).updateStats(PlayerStatsKey.PENDING_TRANSACTION, long.class, i -> i + playerWinnings.getWinnings());
+                instance.getPlayerPreferenceManager().getLotteryPlayer(entry.getKey()).updateStats(PlayerStatsKey.PENDING_TRANSACTION, long.class, i -> i + entry.getValue());
             } else {
-                pluginMessageBungee.giveMoney(player, playerWinnings.getWinnings());
+                pluginMessageBungee.giveMoney(player, entry.getValue());
             }
         }
     }
 
     public static void refundBets(Collection<PlayerBets> bets) {
-        for (PlayerBets playerBets : bets) {
-            ProxiedPlayer player = ProxyServer.getInstance().getPlayer(playerBets.getPlayer());
+        Map<UUID, Long> transactions = new HashMap<>();
+        for (PlayerBets bet : bets) {
+            transactions.merge(bet.getPlayer(), bet.getBet(), (a, b) -> a + b);
+        }
+        for (Map.Entry<UUID, Long> entry : transactions.entrySet()) {
+            ProxiedPlayer player = ProxyServer.getInstance().getPlayer(entry.getKey());
             if (player == null) {
-                instance.getPlayerPreferenceManager().getLotteryPlayer(playerBets.getPlayer()).updateStats(PlayerStatsKey.PENDING_TRANSACTION, long.class, i -> i + playerBets.getBet());
+                instance.getPlayerPreferenceManager().getLotteryPlayer(entry.getKey()).updateStats(PlayerStatsKey.PENDING_TRANSACTION, long.class, i -> i + entry.getValue());
             } else {
-                pluginMessageBungee.giveMoney(player, playerBets.getBet());
+                pluginMessageBungee.giveMoney(player, entry.getValue());
             }
         }
     }

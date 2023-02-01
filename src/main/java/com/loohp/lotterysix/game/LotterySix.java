@@ -187,8 +187,9 @@ public class LotterySix implements AutoCloseable {
     private final BetResultConsumer playerBetListener;
     private final Consumer<LotterySixAction> actionListener;
     private final Consumer<LotteryPlayer> lotteryPlayerUpdateListener;
+    private final Consumer<String> consoleMessageConsumer;
 
-    public LotterySix(boolean isBackend, File dataFolder, String configId, Consumer<Collection<PlayerWinnings>> givePrizesConsumer, Consumer<Collection<PlayerBets>> refundBetsConsumer, Predicate<PlayerBets> takeMoneyConsumer, BiPredicate<UUID, String> hasPermissionPredicate, Consumer<Boolean> lockRunnable, Supplier<Collection<UUID>> onlinePlayersSupplier, MessageConsumer messageSendingConsumer, MessageConsumer titleSendingConsumer, BetResultConsumer playerBetListener, Consumer<LotterySixAction> actionListener, Consumer<LotteryPlayer> lotteryPlayerUpdateListener) {
+    public LotterySix(boolean isBackend, File dataFolder, String configId, Consumer<Collection<PlayerWinnings>> givePrizesConsumer, Consumer<Collection<PlayerBets>> refundBetsConsumer, Predicate<PlayerBets> takeMoneyConsumer, BiPredicate<UUID, String> hasPermissionPredicate, Consumer<Boolean> lockRunnable, Supplier<Collection<UUID>> onlinePlayersSupplier, MessageConsumer messageSendingConsumer, MessageConsumer titleSendingConsumer, BetResultConsumer playerBetListener, Consumer<LotterySixAction> actionListener, Consumer<LotteryPlayer> lotteryPlayerUpdateListener, Consumer<String> consoleMessageConsumer) {
         this.dataFolder = dataFolder;
         this.configId = configId;
         this.givePrizesConsumer = givePrizesConsumer;
@@ -202,6 +203,7 @@ public class LotterySix implements AutoCloseable {
         this.playerBetListener = playerBetListener;
         this.actionListener = actionListener;
         this.lotteryPlayerUpdateListener = lotteryPlayerUpdateListener;
+        this.consoleMessageConsumer = consoleMessageConsumer;
 
         File lotteryDataFolder = new File(getDataFolder(), "data");
         lotteryDataFolder.mkdirs();
@@ -343,7 +345,11 @@ public class LotterySix implements AutoCloseable {
                 }
             }
         }
+        consoleMessageConsumer.accept("Calculating Lottery Wins, this might take a while...");
+        long start = System.currentTimeMillis();
         CompletedLotterySixGame completed = currentGame.runLottery(numberOfChoices, pricePerBet, taxPercentage);
+        long end = System.currentTimeMillis();
+        consoleMessageConsumer.accept("Lottery Wins Calculation Completed! (" + (end - start) + "ms)");
         completedGames.add(0, completed);
         currentGame = null;
         saveData(false);

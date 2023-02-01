@@ -29,8 +29,10 @@ import com.loohp.lotterysix.game.objects.PlayerWinnings;
 import com.loohp.lotterysix.game.objects.PrizeTier;
 import com.loohp.lotterysix.game.objects.WinningNumbers;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -46,18 +48,18 @@ public class CompletedLotterySixGame implements IDedGame {
     private final long pricePerBet;
     private final Map<PrizeTier, Long> prizeForTier;
     private final List<PlayerWinnings> winners;
-    private final List<PlayerBets> bets;
+    private final Map<UUID, PlayerBets> bets;
     private final long totalPrizes;
     private final long remainingFunds;
 
-    public CompletedLotterySixGame(UUID gameId, long datetime, WinningNumbers drawResult, long pricePerBet, Map<PrizeTier, Long> prizeForTier, List<PlayerWinnings> winners, List<PlayerBets> bets, long totalPrizes, long remainingFunds) {
+    public CompletedLotterySixGame(UUID gameId, long datetime, WinningNumbers drawResult, long pricePerBet, Map<PrizeTier, Long> prizeForTier, List<PlayerWinnings> winners, Map<UUID, PlayerBets> bets, long totalPrizes, long remainingFunds) {
         this.gameId = gameId;
         this.datetime = datetime;
         this.drawResult = drawResult;
         this.pricePerBet = pricePerBet;
         this.prizeForTier = prizeForTier;
         this.winners = Collections.unmodifiableList(winners);
-        this.bets = Collections.unmodifiableList(bets);
+        this.bets = Collections.unmodifiableMap(bets);
         this.totalPrizes = totalPrizes;
         this.remainingFunds = remainingFunds;
     }
@@ -95,12 +97,16 @@ public class CompletedLotterySixGame implements IDedGame {
         return Collections.unmodifiableList(winners.stream().filter(each -> each.getTier().equals(prizeTier)).collect(Collectors.toList()));
     }
 
-    public List<PlayerBets> getBets() {
-        return bets;
+    public Collection<PlayerBets> getBets() {
+        return bets.values();
+    }
+
+    public PlayerBets getBet(UUID betId) {
+        return bets.get(betId);
     }
 
     public long getTotalBets() {
-        return bets.stream().mapToLong(each -> each.getBet()).sum();
+        return bets.values().stream().mapToLong(each -> each.getBet()).sum();
     }
 
     public List<PlayerWinnings> getPlayerWinnings(UUID player) {
@@ -112,7 +118,7 @@ public class CompletedLotterySixGame implements IDedGame {
     }
 
     public List<PlayerBets> getPlayerBets(UUID player) {
-        return Collections.unmodifiableList(bets.stream().filter(each -> each.getPlayer().equals(player)).collect(Collectors.toList()));
+        return Collections.unmodifiableList(bets.values().stream().filter(each -> each.getPlayer().equals(player)).collect(Collectors.toList()));
     }
 
     public long getTotalPrizes() {
@@ -124,7 +130,7 @@ public class CompletedLotterySixGame implements IDedGame {
     }
 
     public double getWinnerCountForTier(PrizeTier prizeTier) {
-        return winners.stream().filter(each -> each.getTier().equals(prizeTier)).mapToDouble(each -> each.getWinningBet().getType().getUnit()).sum();
+        return winners.stream().filter(each -> each.getTier().equals(prizeTier)).mapToDouble(each -> each.getWinningBet(this).getType().getUnit()).sum();
     }
 
     public long getRemainingFunds() {
@@ -134,10 +140,17 @@ public class CompletedLotterySixGame implements IDedGame {
     public void givePrizesAndUpdateStats(LotterySix instance) {
         instance.givePrizes(winners);
         new Thread(() -> {
+            Map<UUID, Long> transactions = new HashMap<>();
+            Map<UUID, PrizeTier> prizeTiers = new HashMap<>();
             for (PlayerWinnings winning : winners) {
-                LotteryPlayer lotteryPlayer = instance.getPlayerPreferenceManager().getLotteryPlayer(winning.getPlayer());
-                lotteryPlayer.updateStats(PlayerStatsKey.TOTAL_WINNINGS, long.class, i -> i + winning.getWinnings());
-                lotteryPlayer.updateStats(PlayerStatsKey.HIGHEST_WON_TIER, PrizeTier.class, t -> t == null || winning.getTier().ordinal() < t.ordinal(), winning.getTier());
+                transactions.merge(winning.getPlayer(), winning.getWinnings(), (a, b) -> a + b);
+                prizeTiers.merge(winning.getPlayer(), winning.getTier(), (a, b) -> a.ordinal() < b.ordinal() ? a : b);
+            }
+            for (Map.Entry<UUID, Long> entry : transactions.entrySet()) {
+                LotteryPlayer lotteryPlayer = instance.getPlayerPreferenceManager().getLotteryPlayer(entry.getKey());
+                PrizeTier prizeTier = prizeTiers.get(entry.getKey());
+                lotteryPlayer.updateStats(PlayerStatsKey.TOTAL_WINNINGS, long.class, i -> i + entry.getValue());
+                lotteryPlayer.updateStats(PlayerStatsKey.HIGHEST_WON_TIER, PrizeTier.class, t -> t == null || prizeTier.ordinal() < t.ordinal(), prizeTier);
             }
         }).start();
     }

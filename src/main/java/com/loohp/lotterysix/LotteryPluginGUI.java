@@ -602,13 +602,16 @@ public class LotteryPluginGUI implements Listener {
 
             List<String> pages = new ArrayList<>();
             List<PlayerWinnings> winningsList = game.getSortedPlayerWinnings(player.getUniqueId());
-            for (PlayerWinnings winnings : winningsList) {
-                String str = winningNumberStr + "\n\n" + winnings.getWinningBet().getChosenNumbers().toColoredString() + "\n"
-                        + ChatColor.GOLD + "" + winnings.getTier().getShortHand() + " $" + winnings.getWinnings() + " ($" + game.getPricePerBet(winnings.getWinningBet().getType()) + ")";
+            for (PlayerWinnings winnings : winningsList.subList(0, Math.min(50, winningsList.size()))) {
+                String str = winningNumberStr + "\n\n" + winnings.getWinningBet(game).getChosenNumbers().toColoredString() + "\n";
+                if (winnings.isCombination(game)) {
+                    str += ChatColor.BLACK + "(" + winnings.getWinningCombination().toColoredString() + ChatColor.BLACK + ")\n";
+                }
+                str += ChatColor.GOLD + "" + winnings.getTier().getShortHand() + " $" + winnings.getWinnings() + " ($" + game.getPricePerBet(winnings.getWinningBet(game).getType()) + ")";
                 pages.add(str);
             }
             for (PlayerBets bets : game.getPlayerBets(player.getUniqueId())) {
-                if (winningsList.stream().noneMatch(each -> each.getWinningBet().getBetId().equals(bets.getBetId()))) {
+                if (winningsList.stream().noneMatch(each -> each.getWinningBet(game).getBetId().equals(bets.getBetId()))) {
                     String str = winningNumberStr + "\n\n" + bets.getChosenNumbers().toColoredString() + "\n"
                             + LotteryUtils.formatPlaceholders(player, instance.guiLastResultsNoWinnings, instance, game) + " $0 ($" + game.getPricePerBet(bets.getType()) + ")";
                     pages.add(str);

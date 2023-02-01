@@ -58,8 +58,10 @@ LotterySix:
   #Minimum is 7, Maximum is 49
   NumberOfChoices: 39
   #The lowest prize allocation for winning the top three tiers
-  #Ideally you want this value to be lower than
-  #the price for betting all numbers divided by 0.45
+  #Ideally you want this value to be MUCH LOWER than
+  #the price for betting all numbers divided by 0.45,
+  #so you don't win more if you bet every number
+  #(MUCH LOWER is still pretty high for high number of choices)
   LowestTopPlacesPrize: 8000000
   #This percentage of total bets acquired will be taken from the prize pool
   TaxPercentage: 0.25

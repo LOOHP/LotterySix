@@ -20,6 +20,9 @@
 
 package com.loohp.lotterysix.game.objects;
 
+import com.loohp.lotterysix.game.lottery.CompletedLotterySixGame;
+import com.loohp.lotterysix.game.objects.betnumbers.BetNumbersType;
+
 import java.util.Objects;
 import java.util.UUID;
 
@@ -28,14 +31,16 @@ public class PlayerWinnings {
     private final String name;
     private final UUID player;
     private final PrizeTier tier;
-    private final PlayerBets winningBet;
+    private final UUID winningBetId;
+    private final WinningCombination winningCombination;
     private final long winnings;
 
-    public PlayerWinnings(String name, UUID player, PrizeTier tier, PlayerBets winningBet, long winnings) {
+    public PlayerWinnings(String name, UUID player, PrizeTier tier, PlayerBets winningBet, WinningCombination winningCombination, long winnings) {
         this.name = name;
         this.player = player;
         this.tier = tier;
-        this.winningBet = winningBet;
+        this.winningBetId = winningBet.getBetId();
+        this.winningCombination = winningCombination;
         this.winnings = winnings;
     }
 
@@ -51,8 +56,17 @@ public class PlayerWinnings {
         return tier;
     }
 
-    public PlayerBets getWinningBet() {
-        return winningBet;
+    public PlayerBets getWinningBet(CompletedLotterySixGame game) {
+        return game.getBet(winningBetId);
+    }
+
+    public WinningCombination getWinningCombination() {
+        return winningCombination;
+    }
+
+    public boolean isCombination(CompletedLotterySixGame game) {
+        BetNumbersType type = getWinningBet(game).getChosenNumbers().getType();
+        return type.equals(BetNumbersType.MULTIPLE) || type.equals(BetNumbersType.BANKER);
     }
 
     public long getWinnings() {
@@ -64,11 +78,11 @@ public class PlayerWinnings {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         PlayerWinnings that = (PlayerWinnings) o;
-        return winnings == that.winnings && player.equals(that.player) && tier == that.tier && winningBet.equals(that.winningBet);
+        return winnings == that.winnings && name.equals(that.name) && player.equals(that.player) && tier == that.tier && winningBetId.equals(that.winningBetId) && winningCombination.equals(that.winningCombination);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(player, tier, winningBet, winnings);
+        return Objects.hash(name, player, tier, winningBetId, winningCombination, winnings);
     }
 }

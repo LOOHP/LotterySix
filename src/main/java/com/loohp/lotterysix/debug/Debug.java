@@ -98,15 +98,18 @@ public class Debug implements Listener {
                     sender.sendMessage("");
                     List<PlayerWinnings> winningsList = game.getSortedPlayerWinnings(player.getUniqueId());
                     int u = 1;
-                    for (PlayerWinnings winnings : winningsList) {
-                        sender.sendMessage(u++ + ". " + winnings.getWinningBet().getChosenNumbers().toColoredString());
+                    for (PlayerWinnings winnings : winningsList.subList(0, Math.min(50, winningsList.size()))) {
+                        sender.sendMessage(u++ + ". " + winnings.getWinningBet(game).getChosenNumbers().toColoredString());
+                        if (winnings.isCombination(game)) {
+                            sender.sendMessage("    (" + winnings.getWinningCombination().toColoredString() + ")");
+                        }
                         sender.sendMessage("    " + ChatColor.GOLD + "" + winnings.getTier().getShortHand() + " $" + winnings.getWinnings());
-                        sender.sendMessage("    " + ChatColor.GOLD + "Type: " + winnings.getWinningBet().getChosenNumbers().getType().name());
-                        sender.sendMessage("    " + ChatColor.GOLD + "Price: $" + winnings.getWinningBet().getBet());
+                        sender.sendMessage("    " + ChatColor.GOLD + "Type: " + winnings.getWinningBet(game).getChosenNumbers().getType().name());
+                        sender.sendMessage("    " + ChatColor.GOLD + "Price: $" + winnings.getWinningBet(game).getBet());
                         sender.sendMessage("");
                     }
                     for (PlayerBets bet : game.getPlayerBets(player.getUniqueId())) {
-                        if (winningsList.stream().noneMatch(each -> each.getWinningBet().getBetId().equals(bet.getBetId()))) {
+                        if (winningsList.stream().noneMatch(each -> each.getWinningBet(game).getBetId().equals(bet.getBetId()))) {
                             sender.sendMessage(u++ + ". " + bet.getChosenNumbers().toColoredString());
                             sender.sendMessage("    " + ChatColor.GOLD + "No Winnings $0");
                             sender.sendMessage("    " + ChatColor.GOLD + "Type: " + bet.getChosenNumbers().getType().name());

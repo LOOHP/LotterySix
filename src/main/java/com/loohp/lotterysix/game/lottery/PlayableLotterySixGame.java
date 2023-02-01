@@ -23,7 +23,9 @@ package com.loohp.lotterysix.game.lottery;
 import com.loohp.lotterysix.game.LotterySix;
 import com.loohp.lotterysix.game.objects.AddBetResult;
 import com.loohp.lotterysix.game.objects.BetUnitType;
+import com.loohp.lotterysix.game.objects.Pair;
 import com.loohp.lotterysix.game.objects.PlayerPreferenceKey;
+import com.loohp.lotterysix.game.objects.WinningCombination;
 import com.loohp.lotterysix.game.objects.betnumbers.BetNumbers;
 import com.loohp.lotterysix.game.objects.LotteryPlayer;
 import com.loohp.lotterysix.game.objects.PlayerBets;
@@ -34,8 +36,10 @@ import com.loohp.lotterysix.game.objects.WinningNumbers;
 
 import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -46,23 +50,23 @@ import java.util.stream.Collectors;
 public class PlayableLotterySixGame implements IDedGame {
 
     public static PlayableLotterySixGame createNewGame(LotterySix instance, long scheduledDateTime, long carryOverFund, long lowestTopPlacesPrize) {
-        return new PlayableLotterySixGame(instance, UUID.randomUUID(), scheduledDateTime, new ArrayList<>(), lowestTopPlacesPrize, carryOverFund, true);
+        return new PlayableLotterySixGame(instance, UUID.randomUUID(), scheduledDateTime, lowestTopPlacesPrize, carryOverFund, true);
     }
 
     private transient LotterySix instance;
 
     private final UUID gameId;
     private long scheduledDateTime;
-    private final List<PlayerBets> bets;
+    private final Map<UUID, PlayerBets> bets;
     private final long carryOverFund;
     private long lowestTopPlacesPrize;
     private volatile boolean valid;
 
-    private PlayableLotterySixGame(LotterySix instance, UUID gameId, long scheduledDateTime, List<PlayerBets> bets, long lowestTopPlacesPrize, long carryOverFund, boolean valid) {
+    private PlayableLotterySixGame(LotterySix instance, UUID gameId, long scheduledDateTime, long lowestTopPlacesPrize, long carryOverFund, boolean valid) {
         this.instance = instance;
         this.gameId = gameId;
         this.scheduledDateTime = scheduledDateTime;
-        this.bets = bets;
+        this.bets = new HashMap<>();
         this.carryOverFund = carryOverFund;
         this.lowestTopPlacesPrize = lowestTopPlacesPrize;
         this.valid = valid;
@@ -112,19 +116,19 @@ public class PlayableLotterySixGame implements IDedGame {
     public void cancelGame() {
         this.valid = false;
         if (instance != null && !instance.backendBungeecordMode) {
-            instance.refundBets(bets);
-            for (PlayerBets bet : bets) {
+            instance.refundBets(bets.values());
+            for (PlayerBets bet : bets.values()) {
                 instance.getPlayerPreferenceManager().getLotteryPlayer(bet.getPlayer()).updateStats(PlayerStatsKey.TOTAL_BETS_PLACED, long.class, i -> i - bet.getBet());
             }
         }
     }
 
-    public List<PlayerBets> getBets() {
-        return Collections.unmodifiableList(bets);
+    public Collection<PlayerBets> getBets() {
+        return Collections.unmodifiableCollection(bets.values());
     }
 
     public long getTotalBets() {
-        return bets.stream().mapToLong(each -> each.getBet()).sum();
+        return bets.values().stream().mapToLong(each -> each.getBet()).sum();
     }
 
     public AddBetResult addBet(String name, UUID player, long bet, BetUnitType unitType, BetNumbers chosenNumbers) {
@@ -151,7 +155,7 @@ public class PlayableLotterySixGame implements IDedGame {
             }
             lotteryPlayer.updateStats(PlayerStatsKey.TOTAL_BETS_PLACED, long.class, i -> i + bet.getBet());
         }
-        bets.add(bet);
+        bets.put(bet.getBetId(), bet);
         if (instance != null) {
             instance.saveData(true);
             if (!instance.backendBungeecordMode && instance.announcerBetPlacedAnnouncementEnabled) {
@@ -176,11 +180,11 @@ public class PlayableLotterySixGame implements IDedGame {
     }
 
     public List<PlayerBets> getPlayerBets(UUID player) {
-        return Collections.unmodifiableList(bets.stream().filter(each -> each.getPlayer().equals(player)).collect(Collectors.toList()));
+        return Collections.unmodifiableList(bets.values().stream().filter(each -> each.getPlayer().equals(player)).collect(Collectors.toList()));
     }
 
     public long estimatedPrizePool(double taxPercentage) {
-        return Math.max(lowestTopPlacesPrize, carryOverFund + (long) Math.floor(bets.stream().mapToLong(each -> each.getBet()).sum() * (1.0 - taxPercentage)));
+        return Math.max(lowestTopPlacesPrize, carryOverFund + (long) Math.floor(bets.values().stream().mapToLong(each -> each.getBet()).sum() * (1.0 - taxPercentage)));
     }
 
     public synchronized CompletedLotterySixGame runLottery(int maxNumber, long pricePerBet, double taxPercentage) {
@@ -190,17 +194,17 @@ public class PlayableLotterySixGame implements IDedGame {
         SecureRandom random = new SecureRandom();
         int[] num = random.ints(1, maxNumber + 1).distinct().limit(7).toArray();
         WinningNumbers winningNumbers = new WinningNumbers(num[0], num[1], num[2], num[3], num[4], num[5], num[6]);
-        Map<PrizeTier, List<PlayerBets>> tiers = new EnumMap<>(PrizeTier.class);
+        Map<PrizeTier, List<Pair<PlayerBets, WinningCombination>>> tiers = new EnumMap<>(PrizeTier.class);
         for (PrizeTier prizeTier : PrizeTier.values()) {
             tiers.put(prizeTier, new ArrayList<>());
         }
-        long totalPrize = carryOverFund + (long) Math.floor(bets.stream().mapToLong(each -> each.getBet()).sum() * (1.0 - taxPercentage));
+        long totalPrize = carryOverFund + (long) Math.floor(bets.values().stream().mapToLong(each -> each.getBet()).sum() * (1.0 - taxPercentage));
         Set<UUID> participants = new HashSet<>();
-        for (PlayerBets playerBets : bets) {
+        for (PlayerBets playerBets : bets.values()) {
             participants.add(playerBets.getPlayer());
-            PrizeTier prizeTier = winningNumbers.checkWinning(playerBets.getChosenNumbers());
-            if (prizeTier != null) {
-                tiers.get(prizeTier).add(playerBets);
+            List<Pair<PrizeTier, WinningCombination>> prizeTiersPairs = winningNumbers.checkWinning(playerBets.getChosenNumbers());
+            for (Pair<PrizeTier, WinningCombination> prizeTiersPair : prizeTiersPairs) {
+                tiers.get(prizeTiersPair.getFirst()).add(Pair.of(playerBets, prizeTiersPair.getSecond()));
             }
         }
         if (instance != null) {
@@ -218,8 +222,9 @@ public class PlayableLotterySixGame implements IDedGame {
         if (!tiers.get(PrizeTier.SEVENTH).isEmpty()) {
             prizeForTier.put(PrizeTier.SEVENTH, pricePerBet * 4);
         }
-        for (PlayerBets playerBets : tiers.get(PrizeTier.SEVENTH)) {
-            PlayerWinnings playerWinnings = new PlayerWinnings(playerBets.getName(), playerBets.getPlayer(), PrizeTier.SEVENTH, playerBets, (pricePerBet * 4) / playerBets.getType().getDivisor());
+        for (Pair<PlayerBets, WinningCombination> pair : tiers.get(PrizeTier.SEVENTH)) {
+            PlayerBets playerBets = pair.getFirst();
+            PlayerWinnings playerWinnings = new PlayerWinnings(playerBets.getName(), playerBets.getPlayer(), PrizeTier.SEVENTH, playerBets, pair.getSecond(), (pricePerBet * 4) / playerBets.getType().getDivisor());
             totalPrizes += playerWinnings.getWinnings();
             totalFourthToSeventh += playerWinnings.getWinnings();
             winnings.add(playerWinnings);
@@ -227,8 +232,9 @@ public class PlayableLotterySixGame implements IDedGame {
         if (!tiers.get(PrizeTier.SIXTH).isEmpty()) {
             prizeForTier.put(PrizeTier.SIXTH, pricePerBet * 32);
         }
-        for (PlayerBets playerBets : tiers.get(PrizeTier.SIXTH)) {
-            PlayerWinnings playerWinnings = new PlayerWinnings(playerBets.getName(), playerBets.getPlayer(), PrizeTier.SIXTH, playerBets, (pricePerBet * 32) / playerBets.getType().getDivisor());
+        for (Pair<PlayerBets, WinningCombination> pair : tiers.get(PrizeTier.SIXTH)) {
+            PlayerBets playerBets = pair.getFirst();
+            PlayerWinnings playerWinnings = new PlayerWinnings(playerBets.getName(), playerBets.getPlayer(), PrizeTier.SIXTH, playerBets, pair.getSecond(), (pricePerBet * 32) / playerBets.getType().getDivisor());
             totalPrizes += playerWinnings.getWinnings();
             totalFourthToSeventh += playerWinnings.getWinnings();
             winnings.add(playerWinnings);
@@ -236,8 +242,9 @@ public class PlayableLotterySixGame implements IDedGame {
         if (!tiers.get(PrizeTier.FIFTH).isEmpty()) {
             prizeForTier.put(PrizeTier.FIFTH, pricePerBet * 64);
         }
-        for (PlayerBets playerBets : tiers.get(PrizeTier.FIFTH)) {
-            PlayerWinnings playerWinnings = new PlayerWinnings(playerBets.getName(), playerBets.getPlayer(), PrizeTier.FIFTH, playerBets, (pricePerBet * 64) / playerBets.getType().getDivisor());
+        for (Pair<PlayerBets, WinningCombination> pair : tiers.get(PrizeTier.FIFTH)) {
+            PlayerBets playerBets = pair.getFirst();
+            PlayerWinnings playerWinnings = new PlayerWinnings(playerBets.getName(), playerBets.getPlayer(), PrizeTier.FIFTH, playerBets, pair.getSecond(), (pricePerBet * 64) / playerBets.getType().getDivisor());
             totalPrizes += playerWinnings.getWinnings();
             totalFourthToSeventh += playerWinnings.getWinnings();
             winnings.add(playerWinnings);
@@ -245,8 +252,9 @@ public class PlayableLotterySixGame implements IDedGame {
         if (!tiers.get(PrizeTier.FOURTH).isEmpty()) {
             prizeForTier.put(PrizeTier.FOURTH, pricePerBet * 960);
         }
-        for (PlayerBets playerBets : tiers.get(PrizeTier.FOURTH)) {
-            PlayerWinnings playerWinnings = new PlayerWinnings(playerBets.getName(), playerBets.getPlayer(), PrizeTier.FOURTH, playerBets, (pricePerBet * 960) / playerBets.getType().getDivisor());
+        for (Pair<PlayerBets, WinningCombination> pair : tiers.get(PrizeTier.FOURTH)) {
+            PlayerBets playerBets = pair.getFirst();
+            PlayerWinnings playerWinnings = new PlayerWinnings(playerBets.getName(), playerBets.getPlayer(), PrizeTier.FOURTH, playerBets, pair.getSecond(), (pricePerBet * 960) / playerBets.getType().getDivisor());
             totalPrizes += playerWinnings.getWinnings();
             totalFourthToSeventh += playerWinnings.getWinnings();
             winnings.add(playerWinnings);
@@ -262,11 +270,12 @@ public class PlayableLotterySixGame implements IDedGame {
 
         long thirdTierPrizeTotal = (long) Math.floor(totalRemaining * 0.4);
         if (!thirdPlaceEmpty) {
-            long thirdTierPrize = (long) Math.floor(thirdTierPrizeTotal / Math.max(1.0, tiers.get(PrizeTier.THIRD).stream().mapToDouble(each -> each.getType().getUnit()).sum()));
+            long thirdTierPrize = (long) Math.floor(thirdTierPrizeTotal / Math.max(1.0, tiers.get(PrizeTier.THIRD).stream().mapToDouble(each -> each.getFirst().getType().getUnit()).sum()));
             prizeForTier.put(PrizeTier.THIRD, thirdTierPrize);
             long thirdTierTotal = 0;
-            for (PlayerBets playerBets : tiers.get(PrizeTier.THIRD)) {
-                PlayerWinnings playerWinnings = new PlayerWinnings(playerBets.getName(), playerBets.getPlayer(), PrizeTier.THIRD, playerBets, thirdTierPrize / playerBets.getType().getDivisor());
+            for (Pair<PlayerBets, WinningCombination> pair : tiers.get(PrizeTier.THIRD)) {
+                PlayerBets playerBets = pair.getFirst();
+                PlayerWinnings playerWinnings = new PlayerWinnings(playerBets.getName(), playerBets.getPlayer(), PrizeTier.THIRD, playerBets, pair.getSecond(), thirdTierPrize / playerBets.getType().getDivisor());
                 totalPrizes += playerWinnings.getWinnings();
                 thirdTierTotal += playerWinnings.getWinnings();
                 winnings.add(playerWinnings);
@@ -287,11 +296,12 @@ public class PlayableLotterySixGame implements IDedGame {
                     secondTierPrizeTotal += thirdTierPrizeTotal * 0.25;
                 }
             }
-            long secondTierPrize = (long) Math.floor(secondTierPrizeTotal / Math.max(1.0, tiers.get(PrizeTier.SECOND).stream().mapToDouble(each -> each.getType().getUnit()).sum()));
+            long secondTierPrize = (long) Math.floor(secondTierPrizeTotal / Math.max(1.0, tiers.get(PrizeTier.SECOND).stream().mapToDouble(each -> each.getFirst().getType().getUnit()).sum()));
             prizeForTier.put(PrizeTier.SECOND, secondTierPrize);
             long secondTierTotal = 0;
-            for (PlayerBets playerBets : tiers.get(PrizeTier.SECOND)) {
-                PlayerWinnings playerWinnings = new PlayerWinnings(playerBets.getName(), playerBets.getPlayer(), PrizeTier.SECOND, playerBets, secondTierPrize / playerBets.getType().getDivisor());
+            for (Pair<PlayerBets, WinningCombination> pair : tiers.get(PrizeTier.SECOND)) {
+                PlayerBets playerBets = pair.getFirst();
+                PlayerWinnings playerWinnings = new PlayerWinnings(playerBets.getName(), playerBets.getPlayer(), PrizeTier.SECOND, playerBets, pair.getSecond(), secondTierPrize / playerBets.getType().getDivisor());
                 totalPrizes += playerWinnings.getWinnings();
                 secondTierTotal += playerWinnings.getWinnings();
                 winnings.add(playerWinnings);
@@ -312,11 +322,12 @@ public class PlayableLotterySixGame implements IDedGame {
                     firstTierPrizeTotal += thirdTierPrizeTotal * 0.75;
                 }
             }
-            long firstTierPrize = (long) Math.floor(firstTierPrizeTotal / Math.max(1.0, tiers.get(PrizeTier.FIRST).stream().mapToDouble(each -> each.getType().getUnit()).sum()));
+            long firstTierPrize = (long) Math.floor(firstTierPrizeTotal / Math.max(1.0, tiers.get(PrizeTier.FIRST).stream().mapToDouble(each -> each.getFirst().getType().getUnit()).sum()));
             prizeForTier.put(PrizeTier.FIRST, firstTierPrize);
             long firstTierTotal = 0;
-            for (PlayerBets playerBets : tiers.get(PrizeTier.FIRST)) {
-                PlayerWinnings playerWinnings = new PlayerWinnings(playerBets.getName(), playerBets.getPlayer(), PrizeTier.FIRST, playerBets, firstTierPrize / playerBets.getType().getDivisor());
+            for (Pair<PlayerBets, WinningCombination> pair : tiers.get(PrizeTier.FIRST)) {
+                PlayerBets playerBets = pair.getFirst();
+                PlayerWinnings playerWinnings = new PlayerWinnings(playerBets.getName(), playerBets.getPlayer(), PrizeTier.FIRST, playerBets, pair.getSecond(), firstTierPrize / playerBets.getType().getDivisor());
                 totalPrizes += playerWinnings.getWinnings();
                 firstTierTotal += playerWinnings.getWinnings();
                 winnings.add(playerWinnings);

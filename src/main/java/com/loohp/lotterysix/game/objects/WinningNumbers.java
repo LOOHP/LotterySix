@@ -21,7 +21,6 @@
 package com.loohp.lotterysix.game.objects;
 
 import com.loohp.lotterysix.game.objects.betnumbers.BetNumbers;
-import com.loohp.lotterysix.game.objects.betnumbers.BetNumbersType;
 import com.loohp.lotterysix.utils.ChatColorUtils;
 
 import java.util.ArrayList;
@@ -68,52 +67,36 @@ public class WinningNumbers {
         return specialNumber;
     }
 
-    public PrizeTier checkWinning(BetNumbers betNumbers) {
-        int matches = 0;
-        if (betNumbers.getType().equals(BetNumbersType.BANKER)) {
-            for (int num : betNumbers.getBankersNumbers()) {
-                if (numbers.contains(num)) {
-                    matches++;
-                }
-            }
-            int selectionMatched = 0;
-            for (int num : betNumbers.getNumbers()) {
-                if (numbers.contains(num)) {
-                    selectionMatched++;
-                    if (selectionMatched >= 6) {
-                        break;
-                    }
-                }
-            }
-            matches += Math.min(selectionMatched, Math.max(0, 6 - betNumbers.getBankersNumbers().size()));
-        } else {
-            for (int num : betNumbers.getNumbers()) {
-                if (numbers.contains(num)) {
+    public List<Pair<PrizeTier, WinningCombination>> checkWinning(BetNumbers betNumbers) {
+        return betNumbers.combinations().map(numbers -> {
+            int matches = 0;
+            for (int num : numbers) {
+                if (this.numbers.contains(num)) {
                     matches++;
                     if (matches >= 6) {
                         break;
                     }
                 }
             }
-        }
-        boolean matchSpecial = betNumbers.getAllNumbers().contains(specialNumber);
-        switch (matches) {
-            case 6: {
-                return PrizeTier.FIRST;
+            boolean matchSpecial = numbers.contains(specialNumber);
+            switch (matches) {
+                case 6: {
+                    return Pair.of(PrizeTier.FIRST, new WinningCombination(numbers));
+                }
+                case 5: {
+                    return Pair.of(matchSpecial ? PrizeTier.SECOND : PrizeTier.THIRD, new WinningCombination(numbers));
+                }
+                case 4: {
+                    return Pair.of(matchSpecial ? PrizeTier.FOURTH : PrizeTier.FIFTH, new WinningCombination(numbers));
+                }
+                case 3: {
+                    return Pair.of(matchSpecial ? PrizeTier.SIXTH : PrizeTier.SEVENTH, new WinningCombination(numbers));
+                }
+                default: {
+                    return null;
+                }
             }
-            case 5: {
-                return matchSpecial ? PrizeTier.SECOND : PrizeTier.THIRD;
-            }
-            case 4: {
-                return matchSpecial ? PrizeTier.FOURTH : PrizeTier.FIFTH;
-            }
-            case 3: {
-                return matchSpecial ? PrizeTier.SIXTH : PrizeTier.SEVENTH;
-            }
-            default: {
-                return null;
-            }
-        }
+        }).filter(each -> each != null).collect(Collectors.toList());
     }
 
     public Iterator<Integer> iterator() {

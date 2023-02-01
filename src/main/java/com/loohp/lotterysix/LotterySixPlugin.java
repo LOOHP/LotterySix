@@ -55,6 +55,8 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 public class LotterySixPlugin extends JavaPlugin implements Listener {
@@ -132,7 +134,10 @@ public class LotterySixPlugin extends JavaPlugin implements Listener {
             Bukkit.getPluginManager().callEvent(new PlayerBetEvent(Bukkit.getPlayer(uuid), numbers));
         }, action -> {
             Bukkit.getPluginManager().callEvent(new LotterySixEvent(instance, action));
-        }, lotteryPlayer -> {});
+        }, lotteryPlayer -> {
+        }, message -> {
+            Bukkit.getConsoleSender().sendMessage(message);
+        });
         instance.reloadConfig();
 
         if (instance.backendBungeecordMode) {
@@ -187,14 +192,22 @@ public class LotterySixPlugin extends JavaPlugin implements Listener {
     }
 
     public static void givePrizes(Collection<PlayerWinnings> winnings) {
+        Map<UUID, Long> transactions = new HashMap<>();
         for (PlayerWinnings winning : winnings) {
-            econ.depositPlayer(Bukkit.getOfflinePlayer(winning.getPlayer()), winning.getWinnings());
+            transactions.merge(winning.getPlayer(), winning.getWinnings(), (a, b) -> a + b);
+        }
+        for (Map.Entry<UUID, Long> entry : transactions.entrySet()) {
+            econ.depositPlayer(Bukkit.getOfflinePlayer(entry.getKey()), entry.getValue());
         }
     }
 
     public static void refundBets(Collection<PlayerBets> bets) {
+        Map<UUID, Long> transactions = new HashMap<>();
         for (PlayerBets bet : bets) {
-            econ.depositPlayer(Bukkit.getOfflinePlayer(bet.getPlayer()), bet.getBet());
+            transactions.merge(bet.getPlayer(), bet.getBet(), (a, b) -> a + b);
+        }
+        for (Map.Entry<UUID, Long> entry : transactions.entrySet()) {
+            econ.depositPlayer(Bukkit.getOfflinePlayer(entry.getKey()), entry.getValue());
         }
     }
 
