@@ -191,7 +191,7 @@ public class DiscordSRVHook implements Listener, SlashCommandProvider {
                     StringBuilder str = new StringBuilder();
 
                     for (PlayerBets bet : bets) {
-                        str.append("**").append(bet.getChosenNumbers().toString()).append("**\n");
+                        str.append("**").append(bet.getChosenNumbers().toString()).append("** $").append(bet.getBet()).append(" ($").append(lotterySix.pricePerBet / bet.getType().getDivisor()).append(")\n");
                     }
 
                     EmbedBuilder builder = new EmbedBuilder()
