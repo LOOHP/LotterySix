@@ -22,8 +22,8 @@ package com.loohp.lotterysix.game.objects.betnumbers;
 
 import com.google.common.collect.Sets;
 import com.loohp.lotterysix.utils.ChatColorUtils;
+import org.paukov.combinatorics3.Generator;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -36,20 +36,6 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public class BetNumbers {
-
-    public static <T> Stream<List<T>> combinations(List<T> list, int size) {
-        if (size == 0) {
-            return Stream.of(Collections.emptyList());
-        } else {
-            return IntStream.range(0, list.size()).boxed().flatMap(i -> combinations(list.subList(i + 1, list.size()), size - 1).map(t -> pipe(list.get(i), t)));
-        }
-    }
-
-    private static <T> List<T> pipe(T head, List<T> tail) {
-        List<T> newList = new ArrayList<>(tail);
-        newList.add(0, head);
-        return newList;
-    }
 
     private final Set<Integer> bankers;
     private final Set<Integer> numbers;
@@ -84,10 +70,11 @@ public class BetNumbers {
     }
 
     public Stream<List<Integer>> combinations() {
+        Stream<List<Integer>> stream = Generator.combination(numbers).simple(6 - bankers.size()).stream();
         if (bankers.isEmpty()) {
-            return combinations(new ArrayList<>(numbers), 6);
+            return stream;
         } else {
-            return combinations(new ArrayList<>(numbers), 6 - bankers.size()).peek(list -> list.addAll(0, bankers));
+            return stream.peek(list -> list.addAll(bankers));
         }
     }
 
