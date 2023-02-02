@@ -43,6 +43,7 @@ import github.scarsz.discordsrv.dependencies.jda.api.events.interaction.SlashCom
 import github.scarsz.discordsrv.dependencies.jda.api.interactions.commands.build.CommandData;
 import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 
@@ -188,16 +189,22 @@ public class DiscordSRVHook implements Listener, SlashCommandProvider {
                 if (bets.isEmpty()) {
                     event.reply(lotterySix.discordSRVSlashCommandsViewCurrentBetsNoBets).setEphemeral(true).queue();
                 } else {
-                    StringBuilder str = new StringBuilder();
-
+                    OfflinePlayer player = Bukkit.getOfflinePlayer(uuid);
+                    StringBuilder sb = new StringBuilder();
+                    for (String line : lotterySix.discordSRVSlashCommandsViewCurrentBetsSubTitle) {
+                        sb.append(ChatColor.stripColor(LotteryUtils.formatPlaceholders(player, line, lotterySix, game))).append("\n");
+                    }
+                    if (sb.length() > 0) {
+                        sb.append("\n");
+                    }
                     for (PlayerBets bet : bets) {
-                        str.append("**").append(bet.getChosenNumbers().toString()).append("** $").append(bet.getBet()).append(" ($").append(lotterySix.pricePerBet / bet.getType().getDivisor()).append(")\n");
+                        sb.append("**").append(bet.getChosenNumbers().toString()).append("** $").append(bet.getBet()).append(" ($").append(lotterySix.pricePerBet / bet.getType().getDivisor()).append(")\n");
                     }
 
                     EmbedBuilder builder = new EmbedBuilder()
                             .setColor(Color.YELLOW)
-                            .setTitle(ChatColor.stripColor(LotteryUtils.formatPlaceholders(Bukkit.getOfflinePlayer(uuid), lotterySix.discordSRVSlashCommandsViewCurrentBetsTitle, lotterySix, game)))
-                            .setDescription(str.substring(0, str.length() - 1))
+                            .setTitle(ChatColor.stripColor(LotteryUtils.formatPlaceholders(player, lotterySix.discordSRVSlashCommandsViewCurrentBetsTitle, lotterySix, game)))
+                            .setDescription(sb.substring(0, sb.length() - 1))
                             .setThumbnail(lotterySix.discordSRVSlashCommandsViewCurrentBetsThumbnailURL);
                     event.replyEmbeds(builder.build()).setEphemeral(true).queue();
                 }

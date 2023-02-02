@@ -164,6 +164,7 @@ public class LotterySix implements AutoCloseable {
     public boolean discordSRVSlashCommandsViewCurrentBetsEnabled;
     public String discordSRVSlashCommandsViewCurrentBetsDescription;
     public String discordSRVSlashCommandsViewCurrentBetsTitle;
+    public List<String> discordSRVSlashCommandsViewCurrentBetsSubTitle;
     public String discordSRVSlashCommandsViewCurrentBetsNoBets;
     public String discordSRVSlashCommandsViewCurrentBetsNoGame;
     public String discordSRVSlashCommandsViewCurrentBetsThumbnailURL;
@@ -604,6 +605,7 @@ public class LotterySix implements AutoCloseable {
         discordSRVSlashCommandsViewCurrentBetsEnabled = config.getConfiguration().getBoolean("DiscordSRV.SlashCommands.ViewCurrentBets.Enabled");
         discordSRVSlashCommandsViewCurrentBetsDescription = config.getConfiguration().getString("DiscordSRV.SlashCommands.ViewCurrentBets.Description");
         discordSRVSlashCommandsViewCurrentBetsTitle = config.getConfiguration().getString("DiscordSRV.SlashCommands.ViewCurrentBets.Title");
+        discordSRVSlashCommandsViewCurrentBetsSubTitle = config.getConfiguration().getStringList("DiscordSRV.SlashCommands.ViewCurrentBets.SubTitle");
         discordSRVSlashCommandsViewCurrentBetsNoBets = config.getConfiguration().getString("DiscordSRV.SlashCommands.ViewCurrentBets.NoBets");
         discordSRVSlashCommandsViewCurrentBetsNoGame = config.getConfiguration().getString("DiscordSRV.SlashCommands.ViewCurrentBets.NoGame");
         discordSRVSlashCommandsViewCurrentBetsThumbnailURL = config.getConfiguration().getString("DiscordSRV.SlashCommands.ViewPastDraw.ThumbnailURL");

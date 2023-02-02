@@ -264,7 +264,11 @@ DiscordSRV:
     ViewCurrentBets:
       Enabled: true
       Description: "View my bets for the current round of LotterySix"
-      Title: "Your Bets for {Date}"
+      Title: "Your Bets"
+      SubTitle:
+        - "Draw Date: {Date}"
+        - "Turnover: ${TotalBets}"
+        - "Estimated Prize Pool: ${PrizePool}"
       NoBets: "You haven't placed any bets"
       NoGame: "There are no LotterySix games scheduled"
       ThumbnailURL: "https://static.wikia.nocookie.net/minecraft_gamepedia/images/8/8a/Gold_Ingot_JE4_BE2.png"
