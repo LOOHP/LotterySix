@@ -114,6 +114,7 @@ public class LotterySixBungee extends Plugin implements Listener {
             }
         }, action -> {
             callLotterySixEvent(action);
+            forceCloseAllGui();
         }, lotteryPlayer -> {
             pluginMessageBungee.syncPlayerData(lotteryPlayer);
         }, message -> {

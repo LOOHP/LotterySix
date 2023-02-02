@@ -136,6 +136,7 @@ public class LotterySixPlugin extends JavaPlugin implements Listener {
             }
         }, action -> {
             Bukkit.getPluginManager().callEvent(new LotterySixEvent(instance, action));
+            forceCloseAllGui();
         }, lotteryPlayer -> {
         }, message -> {
             Bukkit.getConsoleSender().sendMessage(message);
@@ -222,8 +223,18 @@ public class LotterySixPlugin extends JavaPlugin implements Listener {
     }
 
     public static void forceCloseAllGui() {
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            guiProvider.forceClose(player);
+        runOrScheduleSync(() -> {
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                guiProvider.forceClose(player);
+            }
+        });
+    }
+
+    public static void runOrScheduleSync(Runnable runnable) {
+        if (Bukkit.isPrimaryThread()) {
+            runnable.run();
+        } else {
+            Bukkit.getScheduler().runTask(LotterySixPlugin.plugin, runnable);
         }
     }
 
