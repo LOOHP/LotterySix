@@ -64,7 +64,6 @@ import java.util.TimerTask;
 import java.util.UUID;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 public class LotterySix implements AutoCloseable {
@@ -131,6 +130,8 @@ public class LotterySix implements AutoCloseable {
     public String guiNewBetBankerTitle;
     public String[] guiNewBetFinish;
     public String[] guiNewBetFinishBankers;
+    public String guiRandomEntryCountTitle;
+    public String guiRandomEntryCountValue;
     public String guiConfirmNewBetTitle;
     public String[] guiConfirmNewBetLotteryInfo;
     public String[] guiConfirmNewBetConfirm;
@@ -179,7 +180,7 @@ public class LotterySix implements AutoCloseable {
 
     private final Consumer<Collection<PlayerWinnings>> givePrizesConsumer;
     private final Consumer<Collection<PlayerBets>> refundBetsConsumer;
-    private final Predicate<PlayerBets> takeMoneyConsumer;
+    private final BiPredicate<UUID, Long> takeMoneyConsumer;
     private final BiPredicate<UUID, String> hasPermissionPredicate;
     private final Consumer<Boolean> lockRunnable;
     private final Supplier<Collection<UUID>> onlinePlayersSupplier;
@@ -190,7 +191,7 @@ public class LotterySix implements AutoCloseable {
     private final Consumer<LotteryPlayer> lotteryPlayerUpdateListener;
     private final Consumer<String> consoleMessageConsumer;
 
-    public LotterySix(boolean isBackend, File dataFolder, String configId, Consumer<Collection<PlayerWinnings>> givePrizesConsumer, Consumer<Collection<PlayerBets>> refundBetsConsumer, Predicate<PlayerBets> takeMoneyConsumer, BiPredicate<UUID, String> hasPermissionPredicate, Consumer<Boolean> lockRunnable, Supplier<Collection<UUID>> onlinePlayersSupplier, MessageConsumer messageSendingConsumer, MessageConsumer titleSendingConsumer, BetResultConsumer playerBetListener, Consumer<LotterySixAction> actionListener, Consumer<LotteryPlayer> lotteryPlayerUpdateListener, Consumer<String> consoleMessageConsumer) {
+    public LotterySix(boolean isBackend, File dataFolder, String configId, Consumer<Collection<PlayerWinnings>> givePrizesConsumer, Consumer<Collection<PlayerBets>> refundBetsConsumer, BiPredicate<UUID, Long> takeMoneyConsumer, BiPredicate<UUID, String> hasPermissionPredicate, Consumer<Boolean> lockRunnable, Supplier<Collection<UUID>> onlinePlayersSupplier, MessageConsumer messageSendingConsumer, MessageConsumer titleSendingConsumer, BetResultConsumer playerBetListener, Consumer<LotterySixAction> actionListener, Consumer<LotteryPlayer> lotteryPlayerUpdateListener, Consumer<String> consoleMessageConsumer) {
         this.dataFolder = dataFolder;
         this.configId = configId;
         this.givePrizesConsumer = givePrizesConsumer;
@@ -442,8 +443,8 @@ public class LotterySix implements AutoCloseable {
         refundBetsConsumer.accept(bets);
     }
 
-    public boolean takeMoney(PlayerBets bet) {
-        return takeMoneyConsumer.test(bet);
+    public boolean takeMoney(UUID player, long amount) {
+        return takeMoneyConsumer.test(player, amount);
     }
 
     public boolean isGameLocked() {
@@ -572,6 +573,8 @@ public class LotterySix implements AutoCloseable {
         guiNewBetBankerTitle = config.getConfiguration().getString("GUI.NewBet.BankerTitle");
         guiNewBetFinish = config.getConfiguration().getStringList("GUI.NewBet.Finish").toArray(new String[0]);
         guiNewBetFinishBankers = config.getConfiguration().getStringList("GUI.NewBet.FinishBankers").toArray(new String[0]);
+        guiRandomEntryCountTitle = config.getConfiguration().getString("GUI.RandomEntryCount.Title");
+        guiRandomEntryCountValue = config.getConfiguration().getString("GUI.RandomEntryCount.Value");
         guiConfirmNewBetTitle = config.getConfiguration().getString("GUI.ConfirmNewBet.Title");
         guiConfirmNewBetLotteryInfo = config.getConfiguration().getStringList("GUI.ConfirmNewBet.LotteryInfo").toArray(new String[0]);
         guiConfirmNewBetConfirm = config.getConfiguration().getStringList("GUI.ConfirmNewBet.Confirm").toArray(new String[0]);

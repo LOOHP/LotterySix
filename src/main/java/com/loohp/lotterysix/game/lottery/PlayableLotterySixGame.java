@@ -23,24 +23,24 @@ package com.loohp.lotterysix.game.lottery;
 import com.loohp.lotterysix.game.LotterySix;
 import com.loohp.lotterysix.game.objects.AddBetResult;
 import com.loohp.lotterysix.game.objects.BetUnitType;
-import com.loohp.lotterysix.game.objects.Pair;
-import com.loohp.lotterysix.game.objects.PlayerPreferenceKey;
-import com.loohp.lotterysix.game.objects.WinningCombination;
-import com.loohp.lotterysix.game.objects.betnumbers.BetNumbers;
 import com.loohp.lotterysix.game.objects.LotteryPlayer;
+import com.loohp.lotterysix.game.objects.Pair;
 import com.loohp.lotterysix.game.objects.PlayerBets;
+import com.loohp.lotterysix.game.objects.PlayerPreferenceKey;
 import com.loohp.lotterysix.game.objects.PlayerStatsKey;
 import com.loohp.lotterysix.game.objects.PlayerWinnings;
 import com.loohp.lotterysix.game.objects.PrizeTier;
+import com.loohp.lotterysix.game.objects.WinningCombination;
 import com.loohp.lotterysix.game.objects.WinningNumbers;
+import com.loohp.lotterysix.game.objects.betnumbers.BetNumbers;
 
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
-import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -56,17 +56,17 @@ public class PlayableLotterySixGame implements IDedGame {
     private transient LotterySix instance;
 
     private final UUID gameId;
-    private long scheduledDateTime;
+    private volatile long scheduledDateTime;
     private final Map<UUID, PlayerBets> bets;
     private final long carryOverFund;
-    private long lowestTopPlacesPrize;
+    private volatile long lowestTopPlacesPrize;
     private volatile boolean valid;
 
     private PlayableLotterySixGame(LotterySix instance, UUID gameId, long scheduledDateTime, long lowestTopPlacesPrize, long carryOverFund, boolean valid) {
         this.instance = instance;
         this.gameId = gameId;
         this.scheduledDateTime = scheduledDateTime;
-        this.bets = new HashMap<>();
+        this.bets = new LinkedHashMap<>();
         this.carryOverFund = carryOverFund;
         this.lowestTopPlacesPrize = lowestTopPlacesPrize;
         this.valid = valid;
@@ -132,45 +132,60 @@ public class PlayableLotterySixGame implements IDedGame {
     }
 
     public AddBetResult addBet(String name, UUID player, long bet, BetUnitType unitType, BetNumbers chosenNumbers) {
-        return addBet(new PlayerBets(name, player, bet, unitType, chosenNumbers));
+        return addBet(new PlayerBets(name, player, System.currentTimeMillis(), bet, unitType, chosenNumbers));
     }
 
-    public synchronized AddBetResult addBet(PlayerBets bet) {
+    public AddBetResult addBet(String name, UUID player, long betPerUnit, BetUnitType unitType, Collection<BetNumbers> chosenNumbers) {
+        if (chosenNumbers.isEmpty()) {
+            throw new IllegalArgumentException("chosenNumbers cannot be empty");
+        }
+        long now = System.currentTimeMillis();
+        return addBet(name, player, chosenNumbers.stream().map(each -> new PlayerBets(name, player, now, betPerUnit, unitType, each)).collect(Collectors.toList()));
+    }
+
+    public AddBetResult addBet(PlayerBets bet) {
+        return addBet(bet.getName(), bet.getPlayer(), Collections.singleton(bet));
+    }
+
+    private synchronized AddBetResult addBet(String name, UUID player, Collection<PlayerBets> bets) {
+        long price = bets.stream().mapToLong(each -> each.getBet()).sum();
         if (instance.isGameLocked()) {
-            return betResult0(bet, AddBetResult.GAME_LOCKED);
+            return betResult0(player, price, bets, AddBetResult.GAME_LOCKED);
         }
         if (instance != null && !instance.backendBungeecordMode) {
-            LotteryPlayer lotteryPlayer = instance.getPlayerPreferenceManager().getLotteryPlayer(bet.getPlayer());
-            long totalBets = getPlayerBets(bet.getPlayer()).stream().mapToLong(each -> each.getBet()).sum() + bet.getBet();
+            LotteryPlayer lotteryPlayer = instance.getPlayerPreferenceManager().getLotteryPlayer(player);
+            long totalBets = getPlayerBets(player).stream().mapToLong(each -> each.getBet()).sum() + price;
             long playerLimit = lotteryPlayer.getPreference(PlayerPreferenceKey.BET_LIMIT_PER_ROUND, long.class);
             if (playerLimit >= 0 && playerLimit < totalBets) {
-                return betResult0(bet, AddBetResult.LIMIT_SELF);
+                return betResult0(player, price, bets, AddBetResult.LIMIT_SELF);
             }
-            long permissionLimit = instance.getPlayerBetLimit(bet.getPlayer());
+            long permissionLimit = instance.getPlayerBetLimit(player);
             if (permissionLimit >= 0 && permissionLimit < totalBets) {
-                return betResult0(bet, AddBetResult.LIMIT_PERMISSION);
+                return betResult0(player, price, bets, AddBetResult.LIMIT_PERMISSION);
             }
-            if (!instance.takeMoney(bet)) {
-                return betResult0(bet, AddBetResult.NOT_ENOUGH_MONEY);
+            if (!instance.takeMoney(player, price)) {
+                return betResult0(player, price, bets, AddBetResult.NOT_ENOUGH_MONEY);
             }
-            lotteryPlayer.updateStats(PlayerStatsKey.TOTAL_BETS_PLACED, long.class, i -> i + bet.getBet());
+            lotteryPlayer.updateStats(PlayerStatsKey.TOTAL_BETS_PLACED, long.class, i -> i + price);
         }
-        bets.put(bet.getBetId(), bet);
+        for (PlayerBets bet : bets) {
+            this.bets.put(bet.getBetId(), bet);
+        }
         if (instance != null) {
             instance.saveData(true);
             if (!instance.backendBungeecordMode && instance.announcerBetPlacedAnnouncementEnabled) {
                 for (UUID uuid : instance.getOnlinePlayersSupplier().get()) {
                     instance.getMessageSendingConsumer().accept(uuid, instance.announcerBetPlacedAnnouncementMessage
-                            .replace("{Player}", bet.getName()).replace("{Price}", bet.getBet() + ""), this);
+                            .replace("{Player}", name).replace("{Price}", price + ""), this);
                 }
             }
         }
-        return betResult0(bet, AddBetResult.SUCCESS);
+        return betResult0(player, price, bets, AddBetResult.SUCCESS);
     }
 
-    private AddBetResult betResult0(PlayerBets bet, AddBetResult result) {
+    private AddBetResult betResult0(UUID player, long price, Collection<PlayerBets> bets, AddBetResult result) {
         if (instance != null && !instance.backendBungeecordMode) {
-            instance.getPlayerBetListener().accept(bet.getPlayer(), result, bet.getBet(), bet.getChosenNumbers());
+            instance.getPlayerBetListener().accept(player, result, price, bets);
         }
         return result;
     }

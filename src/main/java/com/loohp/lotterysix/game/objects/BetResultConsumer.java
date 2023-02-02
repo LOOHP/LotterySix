@@ -20,13 +20,12 @@
 
 package com.loohp.lotterysix.game.objects;
 
-import com.loohp.lotterysix.game.objects.betnumbers.BetNumbers;
-
+import java.util.Collection;
 import java.util.UUID;
 
 @FunctionalInterface
 public interface BetResultConsumer {
 
-    void accept(UUID uuid, AddBetResult result, long price, BetNumbers numbers);
+    void accept(UUID uuid, AddBetResult result, long price, Collection<PlayerBets> bets);
 
 }

@@ -58,6 +58,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.Map;
@@ -376,6 +377,10 @@ public class PluginMessageHandler implements PluginMessageListener {
     }
 
     public void requestAddBet(String name, UUID player, long bet, BetUnitType unitType, BetNumbers chosenNumbers) {
+        requestAddBet(name, player, bet, unitType, Collections.singleton(chosenNumbers));
+    }
+
+    public void requestAddBet(String name, UUID player, long bet, BetUnitType unitType, Collection<BetNumbers> chosenNumbers) {
         try {
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             DataOutputStream out = new DataOutputStream(outputStream);
@@ -383,7 +388,10 @@ public class PluginMessageHandler implements PluginMessageListener {
             DataTypeIO.writeUUID(out, player);
             out.writeLong(bet);
             out.writeInt(unitType.ordinal());
-            DataTypeIO.writeString(out, GSON.toJson(chosenNumbers), StandardCharsets.UTF_8);
+            out.writeInt(chosenNumbers.size());
+            for (BetNumbers numbers : chosenNumbers) {
+                DataTypeIO.writeString(out, GSON.toJson(numbers), StandardCharsets.UTF_8);
+            }
             sendData(0x00, outputStream.toByteArray());
         } catch (IOException e) {
             e.printStackTrace();

@@ -88,7 +88,7 @@ public class LotterySixBungee extends Plugin implements Listener {
         getProxy().getPluginManager().registerListener(this, pluginMessageBungee = new PluginMessageBungee(null));
         getProxy().registerChannel("lotterysix:main");
 
-        instance = new LotterySix(false, getDataFolder(), CONFIG_ID, c -> givePrizes(c), c -> refundBets(c), b -> takeMoney(b), (uuid, permission) -> {
+        instance = new LotterySix(false, getDataFolder(), CONFIG_ID, c -> givePrizes(c), c -> refundBets(c), (p, a) -> takeMoney(p, a), (uuid, permission) -> {
             ProxiedPlayer player = getProxy().getPlayer(uuid);
             if (player != null) {
                 return player.hasPermission(permission);
@@ -106,10 +106,12 @@ public class LotterySixBungee extends Plugin implements Listener {
             if (player != null) {
                 sendFormattedTitle(player, game, message, 10, 100, 20);
             }
-        }, (uuid, result, price, numbers) -> {
+        }, (uuid, result, price, bets) -> {
             ProxiedPlayer player = getProxy().getPlayer(uuid);
             pluginMessageBungee.addBetResult(player, result, price);
-            callPlayerBetEvent(player, numbers);
+            for (PlayerBets bet : bets) {
+                callPlayerBetEvent(player, bet.getChosenNumbers());
+            }
         }, action -> {
             callLotterySixEvent(action);
         }, lotteryPlayer -> {
@@ -196,13 +198,13 @@ public class LotterySixBungee extends Plugin implements Listener {
         }
     }
 
-    public static boolean takeMoney(PlayerBets bet) {
-        ProxiedPlayer player = ProxyServer.getInstance().getPlayer(bet.getPlayer());
+    public static boolean takeMoney(UUID uuid, long amount) {
+        ProxiedPlayer player = ProxyServer.getInstance().getPlayer(uuid);
         if (player == null) {
             return false;
         } else {
             try {
-                return pluginMessageBungee.takeMoney(player, bet.getBet()).get(2000, TimeUnit.MILLISECONDS);
+                return pluginMessageBungee.takeMoney(player, amount).get(2000, TimeUnit.MILLISECONDS);
             } catch (InterruptedException | ExecutionException | TimeoutException e) {
                 e.printStackTrace();
                 return false;

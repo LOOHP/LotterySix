@@ -47,8 +47,10 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -132,8 +134,12 @@ public class PluginMessageBungee implements Listener {
                                 UUID player = DataTypeIO.readUUID(in);
                                 long bet = in.readLong();
                                 BetUnitType type = BetUnitType.values()[in.readInt()];
-                                BetNumbers numbers = GSON.fromJson(DataTypeIO.readString(in, StandardCharsets.UTF_8), BetNumbers.class);
-                                game.addBet(name, player, bet, type, numbers);
+                                int size = in.readInt();
+                                List<BetNumbers> betNumbers = new ArrayList<>(size);
+                                for (int i = 0; i < size; i++) {
+                                    betNumbers.add(GSON.fromJson(DataTypeIO.readString(in, StandardCharsets.UTF_8), BetNumbers.class));
+                                }
+                                game.addBet(name, player, bet, type, betNumbers);
                             }
                             break;
                         }

@@ -100,7 +100,7 @@ public class LotterySixPlugin extends JavaPlugin implements Listener {
 
         getCommand("lotterysix").setExecutor(new Commands());
 
-        instance = new LotterySix(true, getDataFolder(), CONFIG_ID, c -> givePrizes(c), c -> refundBets(c), b -> takeMoney(b), (uuid, permission) -> {
+        instance = new LotterySix(true, getDataFolder(), CONFIG_ID, c -> givePrizes(c), c -> refundBets(c), (p, a) -> takeMoney(p, a), (uuid, permission) -> {
             OfflinePlayer player = Bukkit.getOfflinePlayer(uuid);
             if (player.isOnline()) {
                 return player.getPlayer().hasPermission(permission);
@@ -130,8 +130,10 @@ public class LotterySixPlugin extends JavaPlugin implements Listener {
                 }
                 TitleUtils.sendTitle(player, ChatColorUtils.translateAlternateColorCodes('&', PlaceholderAPI.setPlaceholders(player, message)), "", 10, 100, 20);
             }
-        }, (uuid, result, price, numbers) -> {
-            Bukkit.getPluginManager().callEvent(new PlayerBetEvent(Bukkit.getPlayer(uuid), numbers));
+        }, (uuid, result, price, bets) -> {
+            for (PlayerBets bet : bets) {
+                Bukkit.getPluginManager().callEvent(new PlayerBetEvent(Bukkit.getPlayer(uuid), bet.getChosenNumbers()));
+            }
         }, action -> {
             Bukkit.getPluginManager().callEvent(new LotterySixEvent(instance, action));
         }, lotteryPlayer -> {
@@ -209,10 +211,6 @@ public class LotterySixPlugin extends JavaPlugin implements Listener {
         for (Map.Entry<UUID, Long> entry : transactions.entrySet()) {
             econ.depositPlayer(Bukkit.getOfflinePlayer(entry.getKey()), entry.getValue());
         }
-    }
-
-    public static boolean takeMoney(PlayerBets bet) {
-        return econ.withdrawPlayer(Bukkit.getOfflinePlayer(bet.getPlayer()), bet.getBet()).transactionSuccess();
     }
 
     public static boolean giveMoney(UUID uuid, long amount) {

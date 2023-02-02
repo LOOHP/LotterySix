@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public abstract class BetNumbersBuilder {
 
@@ -42,6 +43,10 @@ public abstract class BetNumbersBuilder {
 
     public static BetNumbersBuilder.RandomBuilder random(int minNumber, int maxNumber) {
         return new BetNumbersBuilder.RandomBuilder(minNumber, maxNumber);
+    }
+
+    public static List<BetNumbers> buildBulkRandom(int minNumber, int maxNumber, int count) {
+        return IntStream.range(0, count).mapToObj(i -> new BetNumbersBuilder.RandomBuilder(minNumber, maxNumber).build()).collect(Collectors.toList());
     }
 
     protected final int minNumber;
