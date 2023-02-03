@@ -159,23 +159,43 @@ public class DiscordSRVHook implements Listener, SlashCommandProvider {
 
                     CompletedLotterySixGame game = selectedGame == null ? lotterySix.getCompletedGames().get(0) : selectedGame;
                     StringBuilder str = new StringBuilder(ChatColor.stripColor(LotteryUtils.formatPlaceholders(null, lotterySix.discordSRVDrawResultAnnouncementDescription, lotterySix, game)));
+                    boolean exceedLimit = false;
 
                     List<PlayerBets> playerBets = game.getPlayerBets(uuid);
                     if (!playerBets.isEmpty()) {
                         str.append("\n\n").append(lotterySix.discordSRVSlashCommandsViewPastDrawYourBets).append("\n");
                         List<PlayerWinnings> winningsList = game.getSortedPlayerWinnings(uuid);
-                        for (PlayerWinnings winnings : winningsList.subList(0, Math.min(50, winningsList.size()))) {
-                            str.append(winnings.getWinningBet(game).getChosenNumbers().toString()).append("\n");
+                        for (PlayerWinnings winnings : winningsList) {
+                            StringBuilder sb = new StringBuilder();
+                            sb.append("**").append(winnings.getWinningBet(game).getChosenNumbers().toString()).append("**\n");
                             if (winnings.isCombination(game)) {
-                                str.append("(").append(winnings.getWinningCombination().toString()).append(")\n");
+                                sb.append("(").append(winnings.getWinningCombination().toString()).append(")\n");
                             }
-                            str.append(winnings.getTier().getShortHand()).append(" $").append(winnings.getWinnings()).append(" ($").append(game.getPricePerBet(winnings.getWinningBet(game).getType())).append(")").append("\n");
-                        }
-                        for (PlayerBets bets : playerBets) {
-                            if (winningsList.stream().noneMatch(each -> each.getWinningBet(game).getBetId().equals(bets.getBetId()))) {
-                                str.append(bets.getChosenNumbers().toString()).append("\n").append(lotterySix.discordSRVSlashCommandsViewPastDrawNoWinnings).append(" $0 ($").append(game.getPricePerBet(bets.getType())).append(")\n");
+                            sb.append("**").append(winnings.getTier().getShortHand()).append(" $").append(winnings.getWinnings()).append("** ($").append(game.getPricePerBet(winnings.getWinningBet(game).getType())).append(")").append("\n\n");
+                            if (str.length() + sb.length() < 4090) {
+                                str.append(sb);
+                            } else {
+                                exceedLimit = true;
+                                break;
                             }
                         }
+                        if (!exceedLimit) {
+                            for (PlayerBets bets : playerBets) {
+                                if (winningsList.stream().noneMatch(each -> each.getWinningBet(game).getBetId().equals(bets.getBetId()))) {
+                                    StringBuilder sb = new StringBuilder();
+                                    sb.append(bets.getChosenNumbers().toString()).append("\n").append(lotterySix.discordSRVSlashCommandsViewPastDrawNoWinnings).append(" $0 ($").append(game.getPricePerBet(bets.getType())).append(")\n\n");
+                                    if (str.length() + sb.length() < 4090) {
+                                        str.append(sb);
+                                    } else {
+                                        exceedLimit = true;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    if (exceedLimit) {
+                        str.append("...");
                     }
 
                     EmbedBuilder builder = new EmbedBuilder()
@@ -212,7 +232,14 @@ public class DiscordSRVHook implements Listener, SlashCommandProvider {
                         sb.append("\n");
                     }
                     for (PlayerBets bet : bets) {
-                        sb.append("**").append(bet.getChosenNumbers().toString()).append("** $").append(bet.getBet()).append(" ($").append(lotterySix.pricePerBet / bet.getType().getDivisor()).append(")\n");
+                        StringBuilder str = new StringBuilder();
+                        str.append("**").append(bet.getChosenNumbers().toString()).append("** $").append(bet.getBet()).append(" ($").append(lotterySix.pricePerBet / bet.getType().getDivisor()).append(")\n\n");
+                        if (str.length() + sb.length() < 4090) {
+                            sb.append(str);
+                        } else {
+                            sb.append("...");
+                            break;
+                        }
                     }
 
                     EmbedBuilder builder = new EmbedBuilder()
