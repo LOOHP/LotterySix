@@ -159,7 +159,7 @@ public class BetNumbers {
         if (bankers.isEmpty()) {
             return numbersString;
         }
-        return bankers.stream().map(each -> each.toString()).collect(Collectors.joining(" ")) + " + " + numbersString;
+        return bankers.stream().map(each -> each.toString()).collect(Collectors.joining(" ")) + " > " + numbersString;
     }
 
     public String toColoredString() {
@@ -167,7 +167,7 @@ public class BetNumbers {
         if (bankers.isEmpty()) {
             return numbersString;
         }
-        return bankers.stream().map(each -> ChatColorUtils.getNumberColor(each) + each.toString()).collect(Collectors.joining(" ")) + " \u00a7e+ " + numbersString;
+        return bankers.stream().map(each -> ChatColorUtils.getNumberColor(each) + each.toString()).collect(Collectors.joining(" ")) + " \u00a7e> " + numbersString;
     }
 
 }

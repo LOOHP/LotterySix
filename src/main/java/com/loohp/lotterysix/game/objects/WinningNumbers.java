@@ -137,7 +137,7 @@ public class WinningNumbers {
 
     @Override
     public String toString() {
-        return numbers.stream().sorted().map(each -> each.toString()).collect(Collectors.joining(" ", "", " \"" + specialNumber + "\""));
+        return numbers.stream().sorted().map(each -> each.toString()).collect(Collectors.joining(" ")) + " + " + specialNumber;
     }
 
     public String toColoredString() {
