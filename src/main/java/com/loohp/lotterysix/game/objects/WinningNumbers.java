@@ -142,7 +142,7 @@ public class WinningNumbers {
 
     public String toColoredString() {
         String numbersString = numbers.stream().sorted().map(each -> ChatColorUtils.getNumberColor(each) + each.toString()).collect(Collectors.joining(" "));
-        return numbersString + " \u00a7e+ " + ChatColorUtils.getNumberColor(specialNumber) + specialNumber;
+        return numbersString + " \u00a76+ " + ChatColorUtils.getNumberColor(specialNumber) + specialNumber;
     }
 
     @Override
