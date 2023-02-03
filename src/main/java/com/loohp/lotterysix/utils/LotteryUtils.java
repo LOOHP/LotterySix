@@ -115,6 +115,7 @@ public class LotteryUtils {
         }
         str = str
                 .replace("{Date}", lotterySix.dateFormat.format(new Date(game.getScheduledDateTime())))
+                .replace("{GameNumber}", game.getGameNumber() + "")
                 .replace("{PricePerBet}", lotterySix.pricePerBet + "")
                 .replace("{TotalBets}", game.getTotalBets() + "")
                 .replace("{PrizePool}", game.estimatedPrizePool(lotterySix.taxPercentage) + "");
@@ -141,6 +142,7 @@ public class LotteryUtils {
         }
         str = str
                 .replace("{Date}", lotterySix.dateFormat.format(new Date(game.getDatetime())))
+                .replace("{GameNumber}", game.getGameNumber() + "")
                 .replace("{PricePerBet}", lotterySix.pricePerBet + "")
                 .replace("{TotalBets}", game.getTotalBets() + "")
                 .replace("{TotalPrizes}", game.getTotalPrizes() + "")

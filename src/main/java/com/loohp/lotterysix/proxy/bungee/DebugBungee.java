@@ -76,6 +76,7 @@ public class DebugBungee implements Listener {
             sender.sendMessage(ChatColor.RED + "There are no active current round");
         } else {
             sender.sendMessage(ChatColor.YELLOW + "Game ID: " + currentGame.getGameId());
+            sender.sendMessage(ChatColor.YELLOW + "Game Number: " + currentGame.getGameNumber());
             sender.sendMessage(ChatColor.YELLOW + "Date: " + LotterySixBungee.getInstance().dateFormat.format(new Date(currentGame.getScheduledDateTime())));
             List<PlayerBets> bets = currentGame.getPlayerBets(player.getUniqueId());
             sender.sendMessage(ChatColor.GREEN + "Total Bet Placed By Player: $" + bets.stream().mapToLong(each -> each.getBet()).sum());
@@ -98,6 +99,7 @@ public class DebugBungee implements Listener {
                 for (int i = 0; i < Math.min(pastGames.size(), maxPastGames); i++) {
                     CompletedLotterySixGame game = pastGames.get(i);
                     sender.sendMessage(ChatColor.YELLOW + "Game ID: " + game.getGameId());
+                    sender.sendMessage(ChatColor.YELLOW + "Game Number: " + game.getGameNumber());
                     sender.sendMessage(ChatColor.YELLOW + "Date: " + LotterySixBungee.getInstance().dateFormat.format(new Date(game.getDatetime())));
                     sender.sendMessage(ChatColor.YELLOW + "Result: " + game.getDrawResult().toColoredString());
                     sender.sendMessage("");

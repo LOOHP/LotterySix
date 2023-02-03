@@ -23,6 +23,7 @@ package com.loohp.lotterysix;
 import com.cryptomorin.xseries.XMaterial;
 import com.loohp.lotterysix.game.LotterySix;
 import com.loohp.lotterysix.game.lottery.CompletedLotterySixGame;
+import com.loohp.lotterysix.game.lottery.GameNumber;
 import com.loohp.lotterysix.game.lottery.PlayableLotterySixGame;
 import com.loohp.lotterysix.game.objects.AddBetResult;
 import com.loohp.lotterysix.game.objects.BetUnitType;
@@ -45,6 +46,7 @@ import io.github.bananapuncher714.nbteditor.NBTEditor;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.TextComponent;
+import net.wesjd.anvilgui.AnvilGUI;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
@@ -65,6 +67,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.List;
 
@@ -195,7 +198,7 @@ public class LotteryPluginGUI implements Listener {
         gui.setFiller(XMaterial.YELLOW_STAINED_GLASS_PANE.parseItem());
         gui.addElement(new StaticGuiElement('a', new ItemStack(Material.AIR), ChatColor.LIGHT_PURPLE.toString()));
         gui.addElement(new StaticGuiElement('b', XMaterial.CLOCK.parseItem(), click -> {
-            Bukkit.getScheduler().runTaskLater(plugin, () -> getPastResults((Player) click.getWhoClicked()).show(click.getWhoClicked()), 1);
+            Bukkit.getScheduler().runTaskLater(plugin, () -> getPastResults((Player) click.getWhoClicked(), instance.getCompletedGames().isEmpty() ? null : instance.getCompletedGames().get(0)).show(click.getWhoClicked()), 1);
             return true;
         }, LotteryUtils.formatPlaceholders(player, instance.guiMainMenuCheckPastResults, instance)));
         gui.addElement(new DynamicGuiElement('c', viewer -> {
@@ -674,10 +677,9 @@ public class LotteryPluginGUI implements Listener {
         return gui;
     }
 
-    public InventoryGui getPastResults(Player player) {
-        List<CompletedLotterySixGame> games = instance.getCompletedGames();
+    public InventoryGui getPastResults(Player player, CompletedLotterySixGame game) {
         InventoryGui gui;
-        if (games.isEmpty()) {
+        if (game == null) {
             String[] guiSetup = {
                     "         ",
                     "    a    ",
@@ -686,12 +688,11 @@ public class LotteryPluginGUI implements Listener {
             gui = new InventoryGui(plugin, LotteryUtils.formatPlaceholders(player, instance.guiLastResultsTitle, instance), guiSetup);
             gui.addElement(new StaticGuiElement('a', XMaterial.BARRIER.parseItem(), ChatColor.RED + "No games have been played yet."));
         } else {
-            CompletedLotterySixGame game = games.get(0);
             String[] guiSetup = {
                     "         ",
                     " abcdefg ",
                     "         ",
-                    "  h   i  ",
+                    "  h i j  ",
                     "         "
             };
             gui = new InventoryGui(plugin, LotteryUtils.formatPlaceholders(player, instance.guiLastResultsTitle, instance, game), guiSetup);
@@ -734,6 +735,36 @@ public class LotteryPluginGUI implements Listener {
                 Bukkit.getScheduler().runTaskLater(plugin, () -> BookUtils.openBook((Player) click.getWhoClicked(), itemStack), 2);
                 return true;
             }, LotteryUtils.formatPlaceholders(player, instance.guiLastResultsYourBets, instance, game)));
+
+            ItemStack left = XMaterial.PAPER.parseItem();
+            ItemMeta leftMeta = left.getItemMeta();
+            leftMeta.setDisplayName(game.getGameNumber() == null ? " " : game.getGameNumber().toString());
+            left.setItemMeta(leftMeta);
+            gui.addElement(new StaticGuiElement('j', XMaterial.MAP.parseItem(), click -> {
+                Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
+                Bukkit.getScheduler().runTaskLater(plugin, () -> new AnvilGUI.Builder().plugin(plugin)
+                        .title(LotteryUtils.formatPlaceholders(player, instance.guiGameNumberInputTitle, instance, game))
+                        .itemLeft(left)
+                        .onComplete(completion -> {
+                            Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+                                String input = completion.getText().trim();
+                                try {
+                                    GameNumber gameNumber = GameNumber.fromString(input);
+                                    CompletedLotterySixGame targetGame = instance.getCompletedGames().get(gameNumber);
+                                    if (targetGame == null) {
+                                        player.sendMessage(instance.messageGameNumberNotFound);
+                                    } else {
+                                        Bukkit.getScheduler().runTaskLater(plugin, () -> getPastResults(player, targetGame).show(player), 2);
+                                    }
+                                } catch (Exception e) {
+                                    player.sendMessage(instance.messageGameNumberNotFound);
+                                }
+                            });
+                            return Collections.singletonList(AnvilGUI.ResponseAction.close());
+                        })
+                        .open(player), 2);
+                return true;
+            }, LotteryUtils.formatPlaceholders(player, instance.guiLastResultsLookupHistoricGames, instance, game)));
         }
 
         return gui;

@@ -44,6 +44,7 @@ public class CompletedLotterySixGame implements IDedGame {
 
     private final UUID gameId;
     private final long datetime;
+    private final GameNumber gameNumber;
     private final WinningNumbers drawResult;
     private final long pricePerBet;
     private final Map<PrizeTier, Long> prizeForTier;
@@ -52,9 +53,10 @@ public class CompletedLotterySixGame implements IDedGame {
     private final long totalPrizes;
     private final long remainingFunds;
 
-    public CompletedLotterySixGame(UUID gameId, long datetime, WinningNumbers drawResult, long pricePerBet, Map<PrizeTier, Long> prizeForTier, List<PlayerWinnings> winners, Map<UUID, PlayerBets> bets, long totalPrizes, long remainingFunds) {
+    public CompletedLotterySixGame(UUID gameId, long datetime, GameNumber gameNumber, WinningNumbers drawResult, long pricePerBet, Map<PrizeTier, Long> prizeForTier, List<PlayerWinnings> winners, Map<UUID, PlayerBets> bets, long totalPrizes, long remainingFunds) {
         this.gameId = gameId;
         this.datetime = datetime;
+        this.gameNumber = gameNumber;
         this.drawResult = drawResult;
         this.pricePerBet = pricePerBet;
         this.prizeForTier = prizeForTier;
@@ -69,12 +71,17 @@ public class CompletedLotterySixGame implements IDedGame {
         return gameId;
     }
 
+    @Override
+    public GameNumber getGameNumber() {
+        return gameNumber;
+    }
+
     public String getDataFileName() {
         return datetime + ".json";
     }
 
     public CompletedLotterySixGameIndex toGameIndex() {
-        return new CompletedLotterySixGameIndex(gameId, datetime);
+        return new CompletedLotterySixGameIndex(gameId, datetime, gameNumber);
     }
 
     public long getDatetime() {

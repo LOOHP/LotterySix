@@ -57,6 +57,7 @@ public class PlayableLotterySixGame implements IDedGame {
 
     private final UUID gameId;
     private volatile long scheduledDateTime;
+    private volatile GameNumber gameNumber;
     private final Map<UUID, PlayerBets> bets;
     private final long carryOverFund;
     private volatile long lowestTopPlacesPrize;
@@ -66,6 +67,7 @@ public class PlayableLotterySixGame implements IDedGame {
         this.instance = instance;
         this.gameId = gameId;
         this.scheduledDateTime = scheduledDateTime;
+        this.gameNumber = instance.dateToGameNumber(scheduledDateTime);
         this.bets = new LinkedHashMap<>();
         this.carryOverFund = carryOverFund;
         this.lowestTopPlacesPrize = lowestTopPlacesPrize;
@@ -85,9 +87,15 @@ public class PlayableLotterySixGame implements IDedGame {
         return gameId;
     }
 
+    @Override
+    public GameNumber getGameNumber() {
+        return gameNumber;
+    }
+
     public void setScheduledDateTime(long scheduledDateTime) {
         if (instance == null || !instance.backendBungeecordMode) {
             this.scheduledDateTime = scheduledDateTime;
+            this.gameNumber = instance.dateToGameNumber(scheduledDateTime);
         }
     }
 
@@ -356,7 +364,7 @@ public class PlayableLotterySixGame implements IDedGame {
 
         this.valid = false;
 
-        return new CompletedLotterySixGame(gameId, scheduledDateTime, winningNumbers, pricePerBet, prizeForTier, winnings, bets, totalPrizes, (long) Math.floor(carryOverNext * (1 - taxPercentage)));
+        return new CompletedLotterySixGame(gameId, scheduledDateTime, gameNumber, winningNumbers, pricePerBet, prizeForTier, winnings, bets, totalPrizes, (long) Math.floor(carryOverNext * (1 - taxPercentage)));
     }
 
 }

@@ -27,15 +27,22 @@ public class CompletedLotterySixGameIndex implements IDedGame {
 
     private final UUID gameId;
     private final long datetime;
+    private final GameNumber gameNumber;
 
-    public CompletedLotterySixGameIndex(UUID gameId, long datetime) {
+    public CompletedLotterySixGameIndex(UUID gameId, long datetime, GameNumber gameNumber) {
         this.gameId = gameId;
         this.datetime = datetime;
+        this.gameNumber = gameNumber;
     }
 
     @Override
     public UUID getGameId() {
         return gameId;
+    }
+
+    @Override
+    public GameNumber getGameNumber() {
+        return gameNumber;
     }
 
     public long getDatetime() {
@@ -51,11 +58,11 @@ public class CompletedLotterySixGameIndex implements IDedGame {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         CompletedLotterySixGameIndex gameIndex = (CompletedLotterySixGameIndex) o;
-        return gameId.equals(gameIndex.gameId);
+        return datetime == gameIndex.datetime && gameId.equals(gameIndex.gameId) && Objects.equals(gameNumber, gameIndex.gameNumber);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(gameId);
+        return Objects.hash(gameId, datetime, gameNumber);
     }
 }

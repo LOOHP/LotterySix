@@ -31,13 +31,15 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.AbstractList;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Spliterator;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 public class LazyCompletedLotterySixGameList extends AbstractList<CompletedLotterySixGame> {
@@ -50,8 +52,12 @@ public class LazyCompletedLotterySixGameList extends AbstractList<CompletedLotte
 
     public LazyCompletedLotterySixGameList(File lotteryDataFolder) {
         this.lotteryDataFolder = lotteryDataFolder;
-        this.gameIndexes = new ArrayList<>();
-        this.cachedGames = new HashMap<>();
+        this.gameIndexes = Collections.synchronizedList(new ArrayList<>());
+        this.cachedGames = new ConcurrentHashMap<>();
+    }
+
+    public Object getIterateLock() {
+        return gameIndexes;
     }
 
     @Override
@@ -76,6 +82,24 @@ public class LazyCompletedLotterySixGameList extends AbstractList<CompletedLotte
             return game;
         }
         return get(gameIndexes.indexOf(gameIndex));
+    }
+
+    public CompletedLotterySixGame get(GameNumber gameNumber) {
+        int i = 0;
+        synchronized (getIterateLock()) {
+            for (CompletedLotterySixGameIndex gameIndex : gameIndexes) {
+                GameNumber number = gameIndex.getGameNumber();
+                if (Objects.equals(number, gameNumber)) {
+                    break;
+                }
+                i++;
+            }
+        }
+        return get(i);
+    }
+
+    public CompletedLotterySixGameIndex getIndex(int index) {
+        return gameIndexes.get(index);
     }
 
     @Override
@@ -158,6 +182,10 @@ public class LazyCompletedLotterySixGameList extends AbstractList<CompletedLotte
 
     public Stream<CompletedLotterySixGameIndex> indexParallelStream() {
         return gameIndexes.parallelStream();
+    }
+
+    public int indexOf(CompletedLotterySixGameIndex gameIndex) {
+        return gameIndexes.indexOf(gameIndex);
     }
 
     @Deprecated

@@ -28,6 +28,7 @@ import com.google.gson.JsonElement;
 import com.loohp.lotterysix.config.Config;
 import com.loohp.lotterysix.game.lottery.CompletedLotterySixGame;
 import com.loohp.lotterysix.game.lottery.CompletedLotterySixGameIndex;
+import com.loohp.lotterysix.game.lottery.GameNumber;
 import com.loohp.lotterysix.game.lottery.IDedGame;
 import com.loohp.lotterysix.game.lottery.LazyCompletedLotterySixGameList;
 import com.loohp.lotterysix.game.lottery.PlayableLotterySixGame;
@@ -51,6 +52,8 @@ import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.Year;
 import java.time.ZonedDateTime;
 import java.util.Collection;
 import java.util.Comparator;
@@ -90,6 +93,7 @@ public class LotterySix implements AutoCloseable {
     public String messagePlayerNotFound;
     public String messagePendingUnclaimed;
     public String messagePendingClaimed;
+    public String messageGameNumberNotFound;
 
     public String explanationMessage;
     public String explanationURL;
@@ -118,6 +122,8 @@ public class LotterySix implements AutoCloseable {
     public String[] guiLastResultsLotteryInfo;
     public String[] guiLastResultsYourBets;
     public String guiLastResultsNoWinnings;
+    public String[] guiLastResultsLookupHistoricGames;
+    public String guiGameNumberInputTitle;
     public String guiYourBetsTitle;
     public String[] guiYourBetsNothing;
     public String guiSelectNewBetTypeTitle;
@@ -156,6 +162,8 @@ public class LotterySix implements AutoCloseable {
     public String discordSRVDrawResultAnnouncementDescription;
     public String discordSRVDrawResultAnnouncementThumbnailURL;
     public String discordSRVSlashCommandsGlobalMessagesNotLinked;
+    public String discordSRVSlashCommandsGlobalLabelsGameNumberName;
+    public String discordSRVSlashCommandsGlobalLabelsGameNumberDescription;
     public boolean discordSRVSlashCommandsViewPastDrawEnabled;
     public String discordSRVSlashCommandsViewPastDrawDescription;
     public String discordSRVSlashCommandsViewPastDrawNoResults;
@@ -296,9 +304,11 @@ public class LotterySix implements AutoCloseable {
         if (currentGame != null && currentGame.getGameId().equals(uuid)) {
             return currentGame;
         }
-        for (CompletedLotterySixGame completedLotterySixGame : completedGames) {
-            if (completedLotterySixGame.getGameId().equals(uuid)) {
-                return completedLotterySixGame;
+        synchronized (completedGames.getIterateLock()) {
+            for (CompletedLotterySixGame completedLotterySixGame : completedGames) {
+                if (completedLotterySixGame.getGameId().equals(uuid)) {
+                    return completedLotterySixGame;
+                }
             }
         }
         return null;
@@ -306,6 +316,19 @@ public class LotterySix implements AutoCloseable {
 
     public PlayableLotterySixGame getCurrentGame() {
         return currentGame;
+    }
+
+    public GameNumber dateToGameNumber(long time) {
+        Year year = Year.from(ZonedDateTime.ofInstant(Instant.ofEpochMilli(time), timezone.toZoneId()));
+        if (completedGames.isEmpty()) {
+            return new GameNumber(year, 1);
+        } else {
+            CompletedLotterySixGameIndex gameIndex = completedGames.getIndex(0);
+            if (gameIndex.getGameNumber() == null || !gameIndex.getGameNumber().getYear().equals(year)) {
+                return new GameNumber(year, 1);
+            }
+            return new GameNumber(year, gameIndex.getGameNumber().getNumber() + 1);
+        }
     }
 
     public PlayableLotterySixGame startNewGame() {
@@ -522,6 +545,7 @@ public class LotterySix implements AutoCloseable {
         messagePlayerNotFound = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Messages.PlayerNotFound"));
         messagePendingUnclaimed = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Messages.PendingUnclaimed"));
         messagePendingClaimed = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Messages.PendingClaimed"));
+        messageGameNumberNotFound = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Messages.GameNumberNotFound"));
 
         explanationMessage = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Explanation.Message"));
         explanationURL = config.getConfiguration().getString("Explanation.URL");
@@ -561,6 +585,8 @@ public class LotterySix implements AutoCloseable {
         guiLastResultsLotteryInfo = config.getConfiguration().getStringList("GUI.LastResults.LotteryInfo").toArray(new String[0]);
         guiLastResultsYourBets = config.getConfiguration().getStringList("GUI.LastResults.YourBets").toArray(new String[0]);
         guiLastResultsNoWinnings = config.getConfiguration().getString("GUI.LastResults.NoWinnings");
+        guiLastResultsLookupHistoricGames = config.getConfiguration().getStringList("GUI.LastResults.LookupHistoricGames").toArray(new String[0]);
+        guiGameNumberInputTitle = config.getConfiguration().getString("GUI.GameNumberInput.Title");
         guiYourBetsTitle = config.getConfiguration().getString("GUI.YourBets.Title");
         guiYourBetsNothing = config.getConfiguration().getStringList("GUI.YourBets.Nothing").toArray(new String[0]);
         guiSelectNewBetTypeTitle = config.getConfiguration().getString("GUI.SelectNewBetType.Title");
@@ -599,6 +625,8 @@ public class LotterySix implements AutoCloseable {
         discordSRVDrawResultAnnouncementDescription = String.join("\n", config.getConfiguration().getStringList("DiscordSRV.DrawResultAnnouncement.Description"));
         discordSRVDrawResultAnnouncementThumbnailURL = config.getConfiguration().getString("DiscordSRV.DrawResultAnnouncement.ThumbnailURL");
         discordSRVSlashCommandsGlobalMessagesNotLinked = config.getConfiguration().getString("DiscordSRV.SlashCommands.Global.Messages.NotLinked");
+        discordSRVSlashCommandsGlobalLabelsGameNumberName = config.getConfiguration().getString("DiscordSRV.SlashCommands.Global.Labels.GameNumber.Name");
+        discordSRVSlashCommandsGlobalLabelsGameNumberDescription = config.getConfiguration().getString("DiscordSRV.SlashCommands.Global.Labels.GameNumber.Description");
         discordSRVSlashCommandsViewPastDrawEnabled = config.getConfiguration().getBoolean("DiscordSRV.SlashCommands.ViewPastDraw.Enabled");
         discordSRVSlashCommandsViewPastDrawDescription = config.getConfiguration().getString("DiscordSRV.SlashCommands.ViewPastDraw.Description");
         discordSRVSlashCommandsViewPastDrawNoResults = config.getConfiguration().getString("DiscordSRV.SlashCommands.ViewPastDraw.NoResults");
@@ -688,8 +716,10 @@ public class LotterySix implements AutoCloseable {
         if (!onlyCurrent) {
             File completedGameFile = new File(lotteryDataFolder, "completed.json");
             JsonArray array = new JsonArray();
-            for (CompletedLotterySixGameIndex gameIndex : completedGames.indexIterable()) {
-                array.add(gson.toJsonTree(gameIndex));
+            synchronized (completedGames.getIterateLock()) {
+                for (CompletedLotterySixGameIndex gameIndex : completedGames.indexIterable()) {
+                    array.add(gson.toJsonTree(gameIndex));
+                }
             }
             try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(Files.newOutputStream(completedGameFile.toPath()), StandardCharsets.UTF_8))) {
                 pw.println(gson.toJson(array));
@@ -697,14 +727,16 @@ public class LotterySix implements AutoCloseable {
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            for (CompletedLotterySixGameIndex gameIndex : completedGames.indexIterable()) {
-                File file = new File(lotteryDataFolder, gameIndex.getDataFileName());
-                if (!file.exists()) {
-                    try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(Files.newOutputStream(file.toPath()), StandardCharsets.UTF_8))) {
-                        pw.println(gson.toJson(completedGames.get(gameIndex)));
-                        pw.flush();
-                    } catch (IOException e) {
-                        e.printStackTrace();
+            synchronized (completedGames.getIterateLock()) {
+                for (CompletedLotterySixGameIndex gameIndex : completedGames.indexIterable()) {
+                    File file = new File(lotteryDataFolder, gameIndex.getDataFileName());
+                    if (!file.exists()) {
+                        try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(Files.newOutputStream(file.toPath()), StandardCharsets.UTF_8))) {
+                            pw.println(gson.toJson(completedGames.get(gameIndex)));
+                            pw.flush();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
                     }
                 }
             }

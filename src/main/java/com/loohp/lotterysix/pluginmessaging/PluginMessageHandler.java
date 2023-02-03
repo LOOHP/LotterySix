@@ -414,9 +414,11 @@ public class PluginMessageHandler implements PluginMessageListener {
         try {
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             DataOutputStream out = new DataOutputStream(outputStream);
-            out.writeInt(instance.getCompletedGames().size());
-            for (CompletedLotterySixGameIndex gameIndex : instance.getCompletedGames().indexIterable()) {
-                DataTypeIO.writeUUID(out, gameIndex.getGameId());
+            synchronized (instance.getCompletedGames().getIterateLock()) {
+                out.writeInt(instance.getCompletedGames().size());
+                for (CompletedLotterySixGameIndex gameIndex : instance.getCompletedGames().indexIterable()) {
+                    DataTypeIO.writeUUID(out, gameIndex.getGameId());
+                }
             }
             sendData(0x02, outputStream.toByteArray());
         } catch (IOException e) {

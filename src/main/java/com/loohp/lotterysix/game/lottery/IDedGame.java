@@ -26,4 +26,6 @@ public interface IDedGame {
 
     UUID getGameId();
 
+    GameNumber getGameNumber();
+
 }

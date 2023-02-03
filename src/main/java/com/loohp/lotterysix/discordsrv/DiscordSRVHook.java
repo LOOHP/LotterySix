@@ -24,6 +24,7 @@ import com.loohp.lotterysix.LotterySixPlugin;
 import com.loohp.lotterysix.events.LotterySixEvent;
 import com.loohp.lotterysix.game.LotterySix;
 import com.loohp.lotterysix.game.lottery.CompletedLotterySixGame;
+import com.loohp.lotterysix.game.lottery.GameNumber;
 import com.loohp.lotterysix.game.lottery.PlayableLotterySixGame;
 import com.loohp.lotterysix.game.objects.LotterySixAction;
 import com.loohp.lotterysix.game.objects.PlayerBets;
@@ -40,6 +41,7 @@ import github.scarsz.discordsrv.dependencies.jda.api.EmbedBuilder;
 import github.scarsz.discordsrv.dependencies.jda.api.entities.Guild;
 import github.scarsz.discordsrv.dependencies.jda.api.entities.TextChannel;
 import github.scarsz.discordsrv.dependencies.jda.api.events.interaction.SlashCommandEvent;
+import github.scarsz.discordsrv.dependencies.jda.api.interactions.commands.OptionType;
 import github.scarsz.discordsrv.dependencies.jda.api.interactions.commands.build.CommandData;
 import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Bukkit;
@@ -108,7 +110,8 @@ public class DiscordSRVHook implements Listener, SlashCommandProvider {
         Guild guild = DiscordSRV.getPlugin().getMainGuild();
 
         if (LotterySixPlugin.getInstance().discordSRVSlashCommandsViewPastDrawEnabled) {
-            commands.add(new PluginSlashCommand(LotterySixPlugin.plugin, new CommandData(PAST_DRAW_LABEL, LotterySixPlugin.getInstance().discordSRVSlashCommandsViewPastDrawDescription), guild.getId()));
+            commands.add(new PluginSlashCommand(LotterySixPlugin.plugin, new CommandData(PAST_DRAW_LABEL, LotterySixPlugin.getInstance().discordSRVSlashCommandsViewPastDrawDescription)
+                    .addOption(OptionType.STRING, LotterySixPlugin.getInstance().discordSRVSlashCommandsGlobalLabelsGameNumberName, LotterySixPlugin.getInstance().discordSRVSlashCommandsGlobalLabelsGameNumberDescription, false), guild.getId()));
         }
         if (LotterySixPlugin.getInstance().discordSRVSlashCommandsViewCurrentBetsEnabled) {
             commands.add(new PluginSlashCommand(LotterySixPlugin.plugin, new CommandData(MY_BETS_LABEL, LotterySixPlugin.getInstance().discordSRVSlashCommandsViewCurrentBetsDescription), guild.getId()));
@@ -135,15 +138,26 @@ public class DiscordSRVHook implements Listener, SlashCommandProvider {
                 event.reply(lotterySix.discordSRVSlashCommandsGlobalMessagesNotLinked).setEphemeral(true).queue();
                 return;
             }
+            CompletedLotterySixGame selectedGame;
+            if (!event.getOptions().isEmpty()) {
+                try {
+                    selectedGame = lotterySix.getCompletedGames().get(GameNumber.fromString(event.getOptions().get(0).getAsString().trim()));
+                } catch (Exception e) {
+                    event.reply(lotterySix.discordSRVSlashCommandsViewPastDrawNoResults).setEphemeral(true).queue();
+                    return;
+                }
+            } else {
+                selectedGame = null;
+            }
 
-            if (lotterySix.getCompletedGames().isEmpty()) {
+            if (lotterySix.getCompletedGames().isEmpty() && selectedGame == null) {
                 event.reply(lotterySix.discordSRVSlashCommandsViewPastDrawNoResults).setEphemeral(true).queue();
             } else {
                 event.deferReply(true).queue();
                 Bukkit.getScheduler().runTaskAsynchronously(LotterySixPlugin.plugin, () -> {
                     SyncUtils.blockUntilTrue(() -> !lotterySix.isGameLocked());
 
-                    CompletedLotterySixGame game = lotterySix.getCompletedGames().get(0);
+                    CompletedLotterySixGame game = selectedGame == null ? lotterySix.getCompletedGames().get(0) : selectedGame;
                     StringBuilder str = new StringBuilder(ChatColor.stripColor(LotteryUtils.formatPlaceholders(null, lotterySix.discordSRVDrawResultAnnouncementDescription, lotterySix, game)));
 
                     List<PlayerBets> playerBets = game.getPlayerBets(uuid);

@@ -16,6 +16,7 @@ Messages:
   PlayerNotFound: "&cThat player cannot be found"
   PendingUnclaimed: "&b&lYou have unclaimed balance from LotterySix, click to receive!"
   PendingClaimed: "&aPending balance of ${Money} claimed!"
+  GameNumberNotFound: "&cNo game with that game number can be found"
 
 Explanation:
   Message: "&aFor the explanation on how LotterySix works, please visit: &bhttps://github.com/LOOHP/LotterySix/wiki/LotterySix-Draw-&-Prizes-Explanation"
@@ -85,6 +86,7 @@ GUI:
       - "&cNo LotterySix games are scheduled"
     CheckOwnBets:
       - "&eNext LotterySix!"
+      - "&aGame Number: {GameNumber}"
       - "&aDraw Date: {Date}"
       - "&aTurnover: ${TotalBets}"
       - "&aEstimated Prize Pool: ${PrizePool}"
@@ -105,6 +107,7 @@ GUI:
   LastResults:
     Title: "&2Last Results"
     LotteryInfo:
+      - "&aGame Number: {GameNumber}"
       - "&aDraw Date: {Date}"
       - "&aTurnover: ${TotalBets}"
       - "&aTotal Prizes: ${TotalPrizes}"
@@ -119,6 +122,11 @@ GUI:
     YourBets:
       - "&aYour Bets"
     NoWinnings: "&7No Winnings"
+    LookupHistoricGames:
+      - "&fLook up historic games"
+      - "&7Click and enter Game Number"
+  GameNumberInput:
+    Title: "&2Enter Game Number"
   YourBets:
     Title: "&2Your Bets"
     Nothing:
@@ -188,7 +196,7 @@ Announcer:
     #Send this message one more time one minute before scheduled draw
     OneMinuteBefore: true
 
-  DrawCancelledMessage: "&e[LotterySix] LotterySix game on {Date} had been cancelled by an admin or because there are no bets submitted"
+  DrawCancelledMessage: "&e[LotterySix] LotterySix game {GameNumber} on {Date} had been cancelled by an admin or because there are no bets submitted"
 
   BetPlacedAnnouncement:
     #Whether to announce players placing bets
@@ -206,7 +214,7 @@ Announcer:
     #This is in seconds
     TimeBetween: 5
     PreMessage:
-      - "&a[LotterySix] Submissions for LotterySix game on {Date} are closed! &eLottery draw will begin shortly, 6 + 1 numbers will be drawn"
+      - "&a[LotterySix] Submissions for LotterySix game {GameNumber} on {Date} are closed! &eLottery draw will begin shortly, 6 + 1 numbers will be drawn"
     #These will also be sent as title if enabled above
     Messages:
       - "&eLotterySix &aDraw will begin"
@@ -222,7 +230,8 @@ Announcer:
       - "&b3rd Tier Prize: &a${THIRDPrize} &7x{THIRDPrizeCount}"
     PostMessages:
       - "&e[LotterySix] &aCongratulations winners! Prizes will be given out shortly, here is a recap of the draw results:"
-      - "&e[LotterySix] &aDate: {Date}"
+      - "&e[LotterySix] &aGame Number: {GameNumber}"
+      - "&e[LotterySix] &aDraw Date: {Date}"
       - "&e[LotterySix] &aDraw Results: {FirstNumberOrdered} {SecondNumberOrdered} {ThirdNumberOrdered} {FourthNumberOrdered} {FifthNumberOrdered} {SixthNumberOrdered} &e+ {SpecialNumber}"
       - "&e[LotterySix] &a1st Tier Prize: &6${FIRSTPrize} &7x{FIRSTPrizeCount}"
       - "&e[LotterySix] &a2nd Tier Prize: &6${SECONDPrize} &7x{SECONDPrizeCount}"
@@ -238,7 +247,8 @@ DiscordSRV:
     Channel: "Global"
     Title: "LotterySix Draw Results"
     Description:
-      - "**Date: {Date}**"
+      - "**Game Number: {GameNumber}**"
+      - "**Draw Date: {Date}**"
       - "**Draw Results: {FirstNumberOrdered} {SecondNumberOrdered} {ThirdNumberOrdered} {FourthNumberOrdered} {FifthNumberOrdered} {SixthNumberOrdered} + {SpecialNumber}**"
       - ""
       - "1st Tier Prize: ${FIRSTPrize} x{FIRSTPrizeCount}"
@@ -255,6 +265,10 @@ DiscordSRV:
     Global:
       Messages:
         NotLinked: "Minecraft account must be linked to use this command."
+      Labels:
+        GameNumber:
+          Name: "game-number"
+          Description: "Game number of the LotterySix game to look up (e.g. '23/001')"
     #SlashCommand /pastdraw
     ViewPastDraw:
       Enabled: true
@@ -269,6 +283,7 @@ DiscordSRV:
       Description: "View my bets for the current round of LotterySix"
       Title: "Your Bets"
       SubTitle:
+        - "Game Number: {GameNumber}"
         - "Draw Date: {Date}"
         - "Turnover: ${TotalBets}"
         - "Estimated Prize Pool: ${PrizePool}"
