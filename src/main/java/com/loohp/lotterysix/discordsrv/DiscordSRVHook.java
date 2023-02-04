@@ -220,17 +220,17 @@ public class DiscordSRVHook implements Listener, SlashCommandProvider {
                 event.reply(lotterySix.discordSRVSlashCommandsViewCurrentBetsNoGame).setEphemeral(true).queue();
             } else {
                 List<PlayerBets> bets = game.getPlayerBets(uuid);
+                OfflinePlayer player = Bukkit.getOfflinePlayer(uuid);
+                StringBuilder sb = new StringBuilder();
+                for (String line : lotterySix.discordSRVSlashCommandsViewCurrentBetsSubTitle) {
+                    sb.append(ChatColor.stripColor(LotteryUtils.formatPlaceholders(player, line, lotterySix, game))).append("\n");
+                }
+                if (sb.length() > 0) {
+                    sb.append("\n");
+                }
                 if (bets.isEmpty()) {
-                    event.reply(lotterySix.discordSRVSlashCommandsViewCurrentBetsNoBets).setEphemeral(true).queue();
+                    sb.append(lotterySix.discordSRVSlashCommandsViewCurrentBetsNoBets);
                 } else {
-                    OfflinePlayer player = Bukkit.getOfflinePlayer(uuid);
-                    StringBuilder sb = new StringBuilder();
-                    for (String line : lotterySix.discordSRVSlashCommandsViewCurrentBetsSubTitle) {
-                        sb.append(ChatColor.stripColor(LotteryUtils.formatPlaceholders(player, line, lotterySix, game))).append("\n");
-                    }
-                    if (sb.length() > 0) {
-                        sb.append("\n");
-                    }
                     for (PlayerBets bet : bets) {
                         StringBuilder str = new StringBuilder();
                         str.append("**").append(bet.getChosenNumbers().toString()).append("** $").append(bet.getBet()).append(" ($").append(lotterySix.pricePerBet / bet.getType().getDivisor()).append(")\n\n");
@@ -241,14 +241,14 @@ public class DiscordSRVHook implements Listener, SlashCommandProvider {
                             break;
                         }
                     }
-
-                    EmbedBuilder builder = new EmbedBuilder()
-                            .setColor(Color.YELLOW)
-                            .setTitle(ChatColor.stripColor(LotteryUtils.formatPlaceholders(player, lotterySix.discordSRVSlashCommandsViewCurrentBetsTitle, lotterySix, game)))
-                            .setDescription(sb.substring(0, sb.length() - 1))
-                            .setThumbnail(lotterySix.discordSRVSlashCommandsViewCurrentBetsThumbnailURL);
-                    event.replyEmbeds(builder.build()).setEphemeral(true).queue();
                 }
+
+                EmbedBuilder builder = new EmbedBuilder()
+                        .setColor(Color.YELLOW)
+                        .setTitle(ChatColor.stripColor(LotteryUtils.formatPlaceholders(player, lotterySix.discordSRVSlashCommandsViewCurrentBetsTitle, lotterySix, game)))
+                        .setDescription(sb.substring(0, sb.length() - 1))
+                        .setThumbnail(lotterySix.discordSRVSlashCommandsViewCurrentBetsThumbnailURL);
+                event.replyEmbeds(builder.build()).setEphemeral(true).queue();
             }
             return;
         }
