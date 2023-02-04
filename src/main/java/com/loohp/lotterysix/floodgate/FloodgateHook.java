@@ -18,46 +18,42 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.loohp.lotterysix.utils;
+package com.loohp.lotterysix.floodgate;
 
 import com.cryptomorin.xseries.XMaterial;
 import com.loohp.lotterysix.LotterySixPlugin;
-import com.loohp.lotterysix.floodgate.FloodgateHook;
+import org.bukkit.ChatColor;
 import org.bukkit.Material;
-import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import xyz.upperlevel.spigot.book.BookUtil;
+import org.bukkit.inventory.meta.BookMeta;
+import org.geysermc.cumulus.form.SimpleForm;
+import org.geysermc.floodgate.api.FloodgateApi;
 
-public class BookUtils {
+import java.util.UUID;
+
+public class FloodgateHook {
 
     private static final Material MATERIAL_WRITTEN_BOOK = XMaterial.WRITTEN_BOOK.parseMaterial();
-    private static boolean bukkitHasOpenBook;
 
-    static {
-        try {
-            Player.class.getMethod("openBook", ItemStack.class);
-            bukkitHasOpenBook = true;
-        } catch (NoSuchMethodException e) {
-            bukkitHasOpenBook = false;
+    public static boolean isBedrockPlayer(UUID uuid) {
+        if (!LotterySixPlugin.hasFloodgate) {
+            return false;
         }
+        return FloodgateApi.getInstance().isFloodgatePlayer(uuid);
     }
 
-    public static void openBook(Player player, ItemStack book) {
+    public static void sendAlternateBook(UUID uuid, ItemStack book) {
+        if (!isBedrockPlayer(uuid)) {
+            throw new IllegalArgumentException("uuid is not a bedrock player");
+        }
         if (book == null) {
             throw new IllegalArgumentException("Book cannot be null");
         }
         if (!book.getType().equals(MATERIAL_WRITTEN_BOOK)) {
             throw new IllegalArgumentException("Book must be Material.WRITTEN_BOOK");
         }
-        if (LotterySixPlugin.hasFloodgate && FloodgateHook.isBedrockPlayer(player.getUniqueId())) {
-            FloodgateHook.sendAlternateBook(player.getUniqueId(), book);
-        } else {
-            if (bukkitHasOpenBook) {
-                player.openBook(book);
-            } else {
-                BookUtil.openPlayer(player, book);
-            }
-        }
+        String pages = String.join("\n\n" + ChatColor.RESET + "---------------------\n\n", ((BookMeta) book.getItemMeta()).getPages());
+        FloodgateApi.getInstance().sendForm(uuid, SimpleForm.builder().title("").content(pages));
     }
 
 }

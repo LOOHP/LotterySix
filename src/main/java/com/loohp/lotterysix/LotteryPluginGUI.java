@@ -712,7 +712,7 @@ public class LotteryPluginGUI implements Listener {
 
             gui.addElement(new StaticGuiElement('i', XMaterial.GREEN_WOOL.parseItem(), click -> {
                 Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                    close(click.getWhoClicked(), click.getGui(), true);
+                    close(click.getWhoClicked(), click.getGui(), false);
 
                     Bukkit.getScheduler().runTaskLaterAsynchronously(plugin, () -> {
                         String winningNumberStr = game.getDrawResult().toColoredString();

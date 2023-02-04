@@ -70,6 +70,7 @@ public class LotterySixPlugin extends JavaPlugin implements Listener {
     public static LotterySixPlugin plugin;
 
     public static DiscordSRVHook discordSRVHook = null;
+    public static boolean hasFloodgate = false;
 
     private static PluginMessageHandler pluginMessageHandler;
 
@@ -173,6 +174,11 @@ public class LotterySixPlugin extends JavaPlugin implements Listener {
             discordSRVHook = new DiscordSRVHook();
             getServer().getPluginManager().registerEvents(discordSRVHook, this);
             getServer().getConsoleSender().sendMessage(ChatColor.AQUA + "[LotterySix] LotterySix has hooked into DiscordSRV!");
+        }
+
+        if (getServer().getPluginManager().isPluginEnabled("floodgate")) {
+            hasFloodgate = true;
+            getServer().getConsoleSender().sendMessage(ChatColor.AQUA + "[LotterySix] LotterySix has hooked into Floodgate!");
         }
 
         if (instance.updaterEnabled) {

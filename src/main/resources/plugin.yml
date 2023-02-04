@@ -4,7 +4,7 @@ main: com.loohp.lotterysix.LotterySixPlugin
 api-version: 1.13
 authors: [LOOHP]
 depend: [Vault, PlaceholderAPI]
-softdepend: [DiscordSRV]
+softdepend: [DiscordSRV, floodgate]
 description: Number picking lottery inspired by 'Mark Six' by the HKJC. Please bet responsibly.
 
 commands:
