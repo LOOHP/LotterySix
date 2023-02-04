@@ -96,12 +96,12 @@ public class LotterySixBungee extends Plugin implements Listener {
             return false;
         }, lock -> {
             pluginMessageBungee.updateLockState(lock);
-        }, () -> Collections2.transform(getProxy().getPlayers(), p -> p.getUniqueId()), (uuid, message, game) -> {
+        }, () -> Collections2.transform(getProxy().getPlayers(), p -> p.getUniqueId()), (uuid, message, hover, game) -> {
             ProxiedPlayer player = getProxy().getPlayer(uuid);
             if (player != null) {
-                sendFormattedMessage(player, game, message);
+                sendFormattedMessage(player, game, message, hover);
             }
-        }, (uuid, message, game) -> {
+        }, (uuid, message, hover, game) -> {
             ProxiedPlayer player = getProxy().getPlayer(uuid);
             if (player != null) {
                 sendFormattedTitle(player, game, message, 10, 100, 20);
@@ -165,8 +165,8 @@ public class LotterySixBungee extends Plugin implements Listener {
         pluginMessageBungee.sendFormattedTitle(player, game, title, fadeIn, stay, fadeOut);
     }
 
-    public static void sendFormattedMessage(ProxiedPlayer player, IDedGame game, String message) {
-        pluginMessageBungee.sendFormattedMessage(player, game, message);
+    public static void sendFormattedMessage(ProxiedPlayer player, IDedGame game, String message, String hover) {
+        pluginMessageBungee.sendFormattedMessage(player, game, message, hover);
     }
 
     public static void givePrizes(Collection<PlayerWinnings> winnings) {

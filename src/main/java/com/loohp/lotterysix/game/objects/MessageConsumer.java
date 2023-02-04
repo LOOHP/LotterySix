@@ -27,10 +27,18 @@ import java.util.UUID;
 @FunctionalInterface
 public interface MessageConsumer {
 
-    void accept(UUID uuid, String message, IDedGame game);
+    void accept(UUID uuid, String message, String hover, IDedGame game);
 
     default void accept(UUID uuid, String message) {
-        accept(uuid, message, null);
+        accept(uuid, message, "", null);
+    }
+
+    default void accept(UUID uuid, String message, String hover) {
+        accept(uuid, message, hover, null);
+    }
+
+    default void accept(UUID uuid, String message, IDedGame game) {
+        accept(uuid, message, "", game);
     }
 
 }

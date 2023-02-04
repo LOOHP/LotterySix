@@ -41,6 +41,9 @@ import com.loohp.lotterysix.utils.LotteryUtils;
 import com.loohp.lotterysix.utils.TitleUtils;
 import me.clip.placeholderapi.PlaceholderAPI;
 import net.md_5.bungee.api.ChatColor;
+import net.md_5.bungee.api.chat.BaseComponent;
+import net.md_5.bungee.api.chat.HoverEvent;
+import net.md_5.bungee.api.chat.TextComponent;
 import net.milkbowl.vault.economy.Economy;
 import net.milkbowl.vault.permission.Permission;
 import org.bukkit.Bukkit;
@@ -110,17 +113,28 @@ public class LotterySixPlugin extends JavaPlugin implements Listener {
             if (lock) {
                 forceCloseAllGui();
             }
-        }, () -> Collections2.transform(Bukkit.getOnlinePlayers(), p -> p.getUniqueId()), (uuid, message, game) -> {
+        }, () -> Collections2.transform(Bukkit.getOnlinePlayers(), p -> p.getUniqueId()), (uuid, message, hover, game) -> {
             Player player = Bukkit.getPlayer(uuid);
             if (player != null) {
                 if (game instanceof PlayableLotterySixGame) {
                     message = LotteryUtils.formatPlaceholders(player, message, instance, (PlayableLotterySixGame) game);
+                    if (!hover.isEmpty()) {
+                        hover = LotteryUtils.formatPlaceholders(player, hover, instance, (PlayableLotterySixGame) game);
+                    }
                 } else if (game instanceof CompletedLotterySixGame) {
                     message = LotteryUtils.formatPlaceholders(player, message, instance, (CompletedLotterySixGame) game);
+                    if (!hover.isEmpty()) {
+                        hover = LotteryUtils.formatPlaceholders(player, hover, instance, (CompletedLotterySixGame) game);
+                    }
                 }
-                player.sendMessage(ChatColorUtils.translateAlternateColorCodes('&', message));
+                TextComponent textComponent = new TextComponent(ChatColorUtils.translateAlternateColorCodes('&', message));
+                if (!hover.isEmpty()) {
+                    //noinspection deprecation
+                    textComponent.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new BaseComponent[] {new TextComponent(ChatColorUtils.translateAlternateColorCodes('&', hover))}));
+                }
+                player.spigot().sendMessage(textComponent);
             }
-        }, (uuid, message, game) -> {
+        }, (uuid, message, hover, game) -> {
             Player player = Bukkit.getPlayer(uuid);
             if (player != null) {
                 if (game instanceof PlayableLotterySixGame) {

@@ -271,7 +271,7 @@ public class PluginMessageBungee implements Listener {
         }
     }
 
-    public void sendFormattedMessage(ProxiedPlayer player, IDedGame game, String message) {
+    public void sendFormattedMessage(ProxiedPlayer player, IDedGame game, String message, String hover) {
         try {
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             DataOutputStream out = new DataOutputStream(outputStream);
@@ -283,6 +283,7 @@ public class PluginMessageBungee implements Listener {
             }
             DataTypeIO.writeUUID(out, player.getUniqueId());
             DataTypeIO.writeString(out, message, StandardCharsets.UTF_8);
+            DataTypeIO.writeString(out, hover, StandardCharsets.UTF_8);
             sendData(player.getServer().getInfo(), 0x03, outputStream.toByteArray());
         } catch (IOException e) {
             e.printStackTrace();

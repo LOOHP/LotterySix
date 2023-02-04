@@ -54,11 +54,12 @@ public class PlayableLotterySixGame implements IDedGame {
     }
 
     private transient LotterySix instance;
+    private transient Object betsLock;
 
     private final UUID gameId;
     private volatile long scheduledDateTime;
     private volatile GameNumber gameNumber;
-    private final Map<UUID, PlayerBets> bets;
+    private final LinkedHashMap<UUID, PlayerBets> bets;
     private final long carryOverFund;
     private volatile long lowestTopPlacesPrize;
     private volatile boolean valid;
@@ -72,6 +73,13 @@ public class PlayableLotterySixGame implements IDedGame {
         this.carryOverFund = carryOverFund;
         this.lowestTopPlacesPrize = lowestTopPlacesPrize;
         this.valid = valid;
+    }
+    
+    private synchronized Object getBetsLock() {
+        if (betsLock == null) {
+            return betsLock = new Object();
+        }
+        return betsLock;
     }
 
     public LotterySix getInstance() {
@@ -124,19 +132,25 @@ public class PlayableLotterySixGame implements IDedGame {
     public void cancelGame() {
         this.valid = false;
         if (instance != null && !instance.backendBungeecordMode) {
-            instance.refundBets(bets.values());
-            for (PlayerBets bet : bets.values()) {
-                instance.getPlayerPreferenceManager().getLotteryPlayer(bet.getPlayer()).updateStats(PlayerStatsKey.TOTAL_BETS_PLACED, long.class, i -> i - bet.getBet());
+            synchronized (getBetsLock()) {
+                instance.refundBets(bets.values());
+                for (PlayerBets bet : bets.values()) {
+                    instance.getPlayerPreferenceManager().getLotteryPlayer(bet.getPlayer()).updateStats(PlayerStatsKey.TOTAL_BETS_PLACED, long.class, i -> i - bet.getBet());
+                }
             }
         }
     }
 
-    public Collection<PlayerBets> getBets() {
-        return Collections.unmodifiableCollection(bets.values());
+    public List<PlayerBets> getBets() {
+        synchronized (getBetsLock()) {
+            return new ArrayList<>(bets.values());
+        }
     }
 
     public long getTotalBets() {
-        return bets.values().stream().mapToLong(each -> each.getBet()).sum();
+        synchronized (getBetsLock()) {
+            return bets.values().stream().mapToLong(each -> each.getBet()).sum();
+        }
     }
 
     public AddBetResult addBet(String name, UUID player, long bet, BetUnitType unitType, BetNumbers chosenNumbers) {
@@ -176,8 +190,10 @@ public class PlayableLotterySixGame implements IDedGame {
             }
             lotteryPlayer.updateStats(PlayerStatsKey.TOTAL_BETS_PLACED, long.class, i -> i + price);
         }
-        for (PlayerBets bet : bets) {
-            this.bets.put(bet.getBetId(), bet);
+        synchronized (getBetsLock()) {
+            for (PlayerBets bet : bets) {
+                this.bets.put(bet.getBetId(), bet);
+            }
         }
         if (instance != null) {
             instance.saveData(true);
@@ -203,11 +219,13 @@ public class PlayableLotterySixGame implements IDedGame {
     }
 
     public List<PlayerBets> getPlayerBets(UUID player) {
-        return Collections.unmodifiableList(bets.values().stream().filter(each -> each.getPlayer().equals(player)).collect(Collectors.toList()));
+        synchronized (getBetsLock()) {
+            return bets.values().stream().filter(each -> each.getPlayer().equals(player)).collect(Collectors.toList());
+        }
     }
 
     public long estimatedPrizePool(double taxPercentage) {
-        return Math.max(lowestTopPlacesPrize, carryOverFund + (long) Math.floor(bets.values().stream().mapToLong(each -> each.getBet()).sum() * (1.0 - taxPercentage)));
+        return Math.max(lowestTopPlacesPrize, carryOverFund + (long) Math.floor(getTotalBets() * (1.0 - taxPercentage)));
     }
 
     public synchronized CompletedLotterySixGame runLottery(int maxNumber, long pricePerBet, double taxPercentage) {
@@ -221,13 +239,15 @@ public class PlayableLotterySixGame implements IDedGame {
         for (PrizeTier prizeTier : PrizeTier.values()) {
             tiers.put(prizeTier, new ArrayList<>());
         }
-        long totalPrize = carryOverFund + (long) Math.floor(bets.values().stream().mapToLong(each -> each.getBet()).sum() * (1.0 - taxPercentage));
+        long totalPrize = carryOverFund + (long) Math.floor(getTotalBets() * (1.0 - taxPercentage));
         Set<UUID> participants = new HashSet<>();
-        for (PlayerBets playerBets : bets.values()) {
-            participants.add(playerBets.getPlayer());
-            List<Pair<PrizeTier, WinningCombination>> prizeTiersPairs = winningNumbers.checkWinning(playerBets.getChosenNumbers());
-            for (Pair<PrizeTier, WinningCombination> prizeTiersPair : prizeTiersPairs) {
-                tiers.get(prizeTiersPair.getFirst()).add(Pair.of(playerBets, prizeTiersPair.getSecond()));
+        synchronized (getBetsLock()) {
+            for (PlayerBets playerBets : bets.values()) {
+                participants.add(playerBets.getPlayer());
+                List<Pair<PrizeTier, WinningCombination>> prizeTiersPairs = winningNumbers.checkWinning(playerBets.getChosenNumbers());
+                for (Pair<PrizeTier, WinningCombination> prizeTiersPair : prizeTiersPairs) {
+                    tiers.get(prizeTiersPair.getFirst()).add(Pair.of(playerBets, prizeTiersPair.getSecond()));
+                }
             }
         }
         if (instance != null) {

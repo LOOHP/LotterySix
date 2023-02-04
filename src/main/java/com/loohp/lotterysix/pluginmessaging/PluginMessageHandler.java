@@ -46,6 +46,9 @@ import com.loohp.lotterysix.utils.DataTypeIO;
 import com.loohp.lotterysix.utils.LotteryUtils;
 import com.loohp.lotterysix.utils.TitleUtils;
 import me.clip.placeholderapi.PlaceholderAPI;
+import net.md_5.bungee.api.chat.BaseComponent;
+import net.md_5.bungee.api.chat.HoverEvent;
+import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.messaging.PluginMessageListener;
@@ -183,13 +186,25 @@ public class PluginMessageHandler implements PluginMessageListener {
                             Player player = Bukkit.getPlayer(uuid);
                             if (player != null) {
                                 String message = DataTypeIO.readString(in, StandardCharsets.UTF_8);
+                                String hover = DataTypeIO.readString(in, StandardCharsets.UTF_8);
                                 IDedGame game = gameId == null ? null : instance.getGame(gameId);
                                 if (game instanceof PlayableLotterySixGame) {
                                     message = LotteryUtils.formatPlaceholders(player, message, instance, (PlayableLotterySixGame) game);
+                                    if (!hover.isEmpty()) {
+                                        hover = LotteryUtils.formatPlaceholders(player, hover, instance, (PlayableLotterySixGame) game);
+                                    }
                                 } else if (game instanceof CompletedLotterySixGame) {
                                     message = LotteryUtils.formatPlaceholders(player, message, instance, (CompletedLotterySixGame) game);
+                                    if (!hover.isEmpty()) {
+                                        hover = LotteryUtils.formatPlaceholders(player, hover, instance, (CompletedLotterySixGame) game);
+                                    }
                                 }
-                                player.sendMessage(ChatColorUtils.translateAlternateColorCodes('&', message));
+                                TextComponent textComponent = new TextComponent(ChatColorUtils.translateAlternateColorCodes('&', message));
+                                if (!hover.isEmpty()) {
+                                    //noinspection deprecation
+                                    textComponent.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new BaseComponent[] {new TextComponent(ChatColorUtils.translateAlternateColorCodes('&', hover))}));
+                                }
+                                player.spigot().sendMessage(textComponent);
                             }
                             break;
                         }

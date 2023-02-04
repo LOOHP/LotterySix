@@ -122,6 +122,7 @@ public class LotterySix implements AutoCloseable {
     public String[] guiLastResultsLotteryInfo;
     public String[] guiLastResultsYourBets;
     public String guiLastResultsNoWinnings;
+    public String[] guiLastResultsNothing;
     public String[] guiLastResultsLookupHistoricGames;
     public String guiGameNumberInputTitle;
     public String guiYourBetsTitle;
@@ -145,6 +146,7 @@ public class LotterySix implements AutoCloseable {
     public String[] guiConfirmNewBetCancel;
 
     public String announcerPeriodicMessageMessage;
+    public String announcerPeriodicMessageHover;
     public int announcerPeriodicMessageFrequency;
     public boolean announcerPeriodicMessageOneMinuteBefore;
     public String announcerDrawCancelledMessage;
@@ -154,8 +156,10 @@ public class LotterySix implements AutoCloseable {
     public boolean liveDrawAnnouncerSendMessagesTitle;
     public int liveDrawAnnouncerTimeBetween;
     public List<String> liveDrawAnnouncerPreMessage;
+    public List<String> liveDrawAnnouncerPreMessageHover;
     public List<String> liveDrawAnnouncerMessages;
     public List<String> liveDrawAnnouncerPostMessages;
+    public List<String> liveDrawAnnouncerPostMessagesHover;
 
     public String discordSRVDrawResultAnnouncementChannel;
     public String discordSRVDrawResultAnnouncementTitle;
@@ -264,7 +268,7 @@ public class LotterySix implements AutoCloseable {
                         if (announce) {
                             for (UUID uuid : onlinePlayersSupplier.get()) {
                                 if (!playerPreferenceManager.getLotteryPlayer(uuid).getPreference(PlayerPreferenceKey.HIDE_PERIODIC_ANNOUNCEMENTS, boolean.class)) {
-                                    messageSendingConsumer.accept(uuid, announcerPeriodicMessageMessage, currentGame);
+                                    messageSendingConsumer.accept(uuid, announcerPeriodicMessageMessage, announcerPeriodicMessageHover, currentGame);
                                 }
                             }
                         }
@@ -357,7 +361,7 @@ public class LotterySix implements AutoCloseable {
         if (backendBungeecordMode) {
             throw new IllegalStateException("method cannot be ran on backend server while on bungeecord mode");
         }
-        if (currentGame.getBets().isEmpty()) {
+        if (!currentGame.hasBets()) {
             cancelCurrentGame();
             return null;
         }
@@ -365,8 +369,9 @@ public class LotterySix implements AutoCloseable {
         actionListener.accept(LotterySixAction.RUN_LOTTERY_BEGIN);
         if (liveDrawAnnouncerEnabled) {
             for (UUID uuid : onlinePlayersSupplier.get()) {
-                for (String message : liveDrawAnnouncerPreMessage) {
-                    messageSendingConsumer.accept(uuid, message, currentGame);
+                for (int i = 0; i < liveDrawAnnouncerPreMessage.size(); i++) {
+                    String hover = i < liveDrawAnnouncerPreMessageHover.size() ? liveDrawAnnouncerPreMessageHover.get(i) : "";
+                    messageSendingConsumer.accept(uuid, liveDrawAnnouncerPreMessage.get(i), hover, currentGame);
                 }
             }
         }
@@ -387,8 +392,9 @@ public class LotterySix implements AutoCloseable {
                 public void run() {
                     if (index >= liveDrawAnnouncerMessages.size()) {
                         for (UUID uuid : onlinePlayersSupplier.get()) {
-                            for (String message : liveDrawAnnouncerPostMessages) {
-                                messageSendingConsumer.accept(uuid, message, completed);
+                            for (int i = 0; i < liveDrawAnnouncerPostMessages.size(); i++) {
+                                String hover = i < liveDrawAnnouncerPostMessagesHover.size() ? liveDrawAnnouncerPostMessagesHover.get(i) : "";
+                                messageSendingConsumer.accept(uuid, liveDrawAnnouncerPostMessages.get(i), hover, completed);
                             }
                         }
                         completed.givePrizesAndUpdateStats(LotterySix.this);
@@ -585,6 +591,7 @@ public class LotterySix implements AutoCloseable {
         guiLastResultsLotteryInfo = config.getConfiguration().getStringList("GUI.LastResults.LotteryInfo").toArray(new String[0]);
         guiLastResultsYourBets = config.getConfiguration().getStringList("GUI.LastResults.YourBets").toArray(new String[0]);
         guiLastResultsNoWinnings = config.getConfiguration().getString("GUI.LastResults.NoWinnings");
+        guiLastResultsNothing = config.getConfiguration().getStringList("GUI.LastResults.Nothing").toArray(new String[0]);
         guiLastResultsLookupHistoricGames = config.getConfiguration().getStringList("GUI.LastResults.LookupHistoricGames").toArray(new String[0]);
         guiGameNumberInputTitle = config.getConfiguration().getString("GUI.GameNumberInput.Title");
         guiYourBetsTitle = config.getConfiguration().getString("GUI.YourBets.Title");
@@ -608,6 +615,7 @@ public class LotterySix implements AutoCloseable {
         guiConfirmNewBetCancel = config.getConfiguration().getStringList("GUI.ConfirmNewBet.Cancel").toArray(new String[0]);
 
         announcerPeriodicMessageMessage = config.getConfiguration().getString("Announcer.PeriodicMessage.Message");
+        announcerPeriodicMessageHover = config.getConfiguration().getString("Announcer.PeriodicMessage.Hover");
         announcerPeriodicMessageFrequency = config.getConfiguration().getInt("Announcer.PeriodicMessage.Frequency");
         announcerPeriodicMessageOneMinuteBefore = config.getConfiguration().getBoolean("Announcer.PeriodicMessage.OneMinuteBefore");
         announcerDrawCancelledMessage = config.getConfiguration().getString("Announcer.DrawCancelledMessage");
@@ -617,8 +625,10 @@ public class LotterySix implements AutoCloseable {
         liveDrawAnnouncerSendMessagesTitle = config.getConfiguration().getBoolean("Announcer.LiveDrawAnnouncer.SendMessagesTitle");
         liveDrawAnnouncerTimeBetween = config.getConfiguration().getInt("Announcer.LiveDrawAnnouncer.TimeBetween");
         liveDrawAnnouncerPreMessage = config.getConfiguration().getStringList("Announcer.LiveDrawAnnouncer.PreMessage");
+        liveDrawAnnouncerPreMessageHover = config.getConfiguration().getStringList("Announcer.LiveDrawAnnouncer.PreMessageHover");
         liveDrawAnnouncerMessages = config.getConfiguration().getStringList("Announcer.LiveDrawAnnouncer.Messages");
         liveDrawAnnouncerPostMessages = config.getConfiguration().getStringList("Announcer.LiveDrawAnnouncer.PostMessages");
+        liveDrawAnnouncerPostMessagesHover = config.getConfiguration().getStringList("Announcer.LiveDrawAnnouncer.PostMessagesHover");
 
         discordSRVDrawResultAnnouncementChannel = config.getConfiguration().getString("DiscordSRV.DrawResultAnnouncement.Channel");
         discordSRVDrawResultAnnouncementTitle = config.getConfiguration().getString("DiscordSRV.DrawResultAnnouncement.Title");

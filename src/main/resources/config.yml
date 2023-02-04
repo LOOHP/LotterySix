@@ -122,6 +122,8 @@ GUI:
     YourBets:
       - "&aYour Bets"
     NoWinnings: "&7No Winnings"
+    Nothing:
+      - "&cNo bets were placed"
     LookupHistoricGames:
       - "&fLook up historic games"
       - "&7Click and enter Game Number"
@@ -191,6 +193,8 @@ GUI:
 Announcer:
   PeriodicMessage:
     Message: "&6[LotterySix] Join the next round of LotterySix by placing your bet with [/lottery play]! &eDraw will happen on &a{Date} &ewith an estimated prize pool of &b${PrizePool}&6!"
+    #Set to blank if you don't want a hover text
+    Hover: ""
     #This is in seconds
     Frequency: 900
     #Send this message one more time one minute before scheduled draw
@@ -215,6 +219,12 @@ Announcer:
     TimeBetween: 5
     PreMessage:
       - "&a[LotterySix] Submissions for LotterySix game {GameNumber} on {Date} are closed! &eLottery draw will begin shortly, 6 + 1 numbers will be drawn"
+    #Each line here corresponds to each line in 'PreMessage'
+    #And applies a hover message to that message
+    #Set to blank if you don't want a hover text
+    #If a corresponding message is not found, it is equivalent as blank
+    PreMessageHover:
+      - "&eIf the numbers you've picked contain 3\n&eor more numbers selected in the draw\n&7(excluding the special number)&e,\n&eyou will qualify for prizes!\n&6The jackpot is matching all &c6&6!"
     #These will also be sent as title if enabled above
     Messages:
       - "&eLotterySix &aDraw will begin"
@@ -228,6 +238,15 @@ Announcer:
       - "&b1st Tier Prize: &a${FIRSTPrize} &7x{FIRSTPrizeCount}"
       - "&b2nd Tier Prize: &a${SECONDPrize} &7x{SECONDPrizeCount}"
       - "&b3rd Tier Prize: &a${THIRDPrize} &7x{THIRDPrizeCount}"
+    #These placeholders not used in the default config are also available
+    #{BetPlayerNames}
+    #{FIRSTPlayerNames}
+    #{SECONDPlayerNames}
+    #{THIRDPlayerNames}
+    #{FOURTHPlayerNames}
+    #{FIFTHPlayerNames}
+    #{SIXTHPlayerNames}
+    #{SEVENTHPlayerNames}
     PostMessages:
       - "&e[LotterySix] &aCongratulations winners! Prizes will be given out shortly, here is a recap of the draw results:"
       - "&e[LotterySix] &aGame Number: {GameNumber}"
@@ -240,6 +259,11 @@ Announcer:
       - "&e[LotterySix] &a5th Tier Prize: &6${FIFTHPrize} &7x{FIFTHPrizeCount}"
       - "&e[LotterySix] &a6th Tier Prize: &6${SIXTHPrize} &7x{SIXTHPrizeCount}"
       - "&e[LotterySix] &a7th Tier Prize: &6${SEVENTHPrize} &7x{SEVENTHPrizeCount}"
+    #Each line here corresponds to each line in 'PostMessages'
+    #And applies a hover message to that message
+    #Set to blank if you don't want a hover text
+    #If a corresponding message is not found, it is equivalent as blank
+    PostMessagesHover: []
 
 DiscordSRV:
   DrawResultAnnouncement:

@@ -207,8 +207,14 @@ public class LotteryPluginGUI implements Listener {
                 return new StaticGuiElement('c', XMaterial.BARRIER.parseItem(), LotteryUtils.formatPlaceholders(player, instance.guiMainMenuNoLotteryGamesScheduled, instance));
             } else {
                 return new StaticGuiElement('c', XMaterial.PAPER.parseItem(), click -> {
-                    Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), true), 1);
-                    Bukkit.getScheduler().runTaskLater(plugin, () -> BookUtils.openBook((Player) click.getWhoClicked(), getPlacedBets((Player) click.getWhoClicked())), 2);
+                    Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                        close(click.getWhoClicked(), click.getGui(), true);
+
+                        Bukkit.getScheduler().runTaskLaterAsynchronously(plugin, () -> {
+                            ItemStack itemStack = getPlacedBets((Player) click.getWhoClicked());
+                            Bukkit.getScheduler().runTaskLater(plugin, () -> BookUtils.openBook((Player) click.getWhoClicked(), itemStack), 1);
+                        }, 1);
+                    }, 1);
                     return true;
                 }, LotteryUtils.formatPlaceholders(player, instance.guiMainMenuCheckOwnBets, instance, currentGame));
             }
@@ -704,35 +710,49 @@ public class LotteryPluginGUI implements Listener {
             gui.addElement(new StaticGuiElement(c, getNumberItem(specialNumber, true), getNumberColor(specialNumber) + "" + specialNumber));
             gui.addElement(new StaticGuiElement('h', XMaterial.GOLD_BLOCK.parseItem(), LotteryUtils.formatPlaceholders(player, instance.guiLastResultsLotteryInfo, instance, game)));
 
-            String winningNumberStr = game.getDrawResult().toColoredString();
-
-            List<String> pages = new ArrayList<>();
-            List<PlayerWinnings> winningsList = game.getSortedPlayerWinnings(player.getUniqueId());
-            for (PlayerWinnings winnings : winningsList.subList(0, Math.min(50, winningsList.size()))) {
-                String str = winningNumberStr + "\n\n" + winnings.getWinningBet(game).getChosenNumbers().toColoredString() + "\n";
-                if (winnings.isCombination(game)) {
-                    str += ChatColor.BLACK + "(" + winnings.getWinningCombination().toColoredString() + ChatColor.BLACK + ")\n";
-                }
-                str += ChatColor.GOLD + "" + winnings.getTier().getShortHand() + " $" + winnings.getWinnings() + " ($" + game.getPricePerBet(winnings.getWinningBet(game).getType()) + ")";
-                pages.add(str);
-            }
-            for (PlayerBets bets : game.getPlayerBets(player.getUniqueId())) {
-                if (winningsList.stream().noneMatch(each -> each.getWinningBet(game).getBetId().equals(bets.getBetId()))) {
-                    String str = winningNumberStr + "\n\n" + bets.getChosenNumbers().toColoredString() + "\n"
-                            + LotteryUtils.formatPlaceholders(player, instance.guiLastResultsNoWinnings, instance, game) + " $0 ($" + game.getPricePerBet(bets.getType()) + ")";
-                    pages.add(str);
-                }
-            }
-            ItemStack itemStack = XMaterial.WRITTEN_BOOK.parseItem();
-            BookMeta meta = (BookMeta) itemStack.getItemMeta();
-            meta.setAuthor("LotterySix");
-            meta.setTitle("LotterySix");
-            meta.setPages(pages);
-            itemStack.setItemMeta(meta);
-
             gui.addElement(new StaticGuiElement('i', XMaterial.GREEN_WOOL.parseItem(), click -> {
-                Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), true), 1);
-                Bukkit.getScheduler().runTaskLater(plugin, () -> BookUtils.openBook((Player) click.getWhoClicked(), itemStack), 2);
+                Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                    close(click.getWhoClicked(), click.getGui(), true);
+
+                    Bukkit.getScheduler().runTaskLaterAsynchronously(plugin, () -> {
+                        String winningNumberStr = game.getDrawResult().toColoredString();
+
+                        List<String> pages = new ArrayList<>();
+                        List<PlayerWinnings> winningsList = game.getSortedPlayerWinnings(player.getUniqueId());
+                        for (PlayerWinnings winnings : winningsList) {
+                            if (pages.size() > 100) {
+                                break;
+                            }
+                            String str = winningNumberStr + "\n\n" + winnings.getWinningBet(game).getChosenNumbers().toColoredString() + "\n";
+                            if (winnings.isCombination(game)) {
+                                str += ChatColor.BLACK + "(" + winnings.getWinningCombination().toColoredString() + ChatColor.BLACK + ")\n";
+                            }
+                            str += ChatColor.GOLD + "" + winnings.getTier().getShortHand() + " $" + winnings.getWinnings() + " ($" + game.getPricePerBet(winnings.getWinningBet(game).getType()) + ")";
+                            pages.add(str);
+                        }
+                        for (PlayerBets bets : game.getPlayerBets(player.getUniqueId())) {
+                            if (pages.size() > 100) {
+                                break;
+                            }
+                            if (winningsList.stream().noneMatch(each -> each.getWinningBet(game).getBetId().equals(bets.getBetId()))) {
+                                String str = winningNumberStr + "\n\n" + bets.getChosenNumbers().toColoredString() + "\n"
+                                        + LotteryUtils.formatPlaceholders(player, instance.guiLastResultsNoWinnings, instance, game) + " $0 ($" + game.getPricePerBet(bets.getType()) + ")";
+                                pages.add(str);
+                            }
+                        }
+                        if (pages.isEmpty()) {
+                            pages.add(winningNumberStr + "\n\n" + String.join("\n", LotteryUtils.formatPlaceholders(null, instance.guiLastResultsNothing, instance, game)) + "\n");
+                        }
+                        ItemStack itemStack = XMaterial.WRITTEN_BOOK.parseItem();
+                        BookMeta meta = (BookMeta) itemStack.getItemMeta();
+                        meta.setAuthor("LotterySix");
+                        meta.setTitle("LotterySix");
+                        meta.setPages(pages);
+                        itemStack.setItemMeta(meta);
+
+                        Bukkit.getScheduler().runTaskLater(plugin, () -> BookUtils.openBook((Player) click.getWhoClicked(), itemStack), 1);
+                    }, 1);
+                }, 1);
                 return true;
             }, LotteryUtils.formatPlaceholders(player, instance.guiLastResultsYourBets, instance, game)));
 
