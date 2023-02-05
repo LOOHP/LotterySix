@@ -212,14 +212,14 @@ public class PluginMessageHandler implements PluginMessageListener {
                         case 0x04: { // Give Money
                             UUID uuid = DataTypeIO.readUUID(in);
                             long amount = in.readLong();
-                            LotterySixPlugin.giveMoney(uuid, amount);
+                            LotterySixPlugin.giveMoneyNow(uuid, amount);
                             break;
                         }
                         case 0x05: { // Take Money
                             int id = in.readInt();
                             UUID uuid = DataTypeIO.readUUID(in);
                             long amount = in.readLong();
-                            respondTakeMoneyRequest(id, LotterySixPlugin.takeMoney(uuid, amount));
+                            respondTakeMoneyRequest(id, LotterySixPlugin.takeMoneyOnline(uuid, amount));
                             break;
                         }
                         case 0x06: { // Force Close GUIs

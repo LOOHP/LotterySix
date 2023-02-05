@@ -23,13 +23,16 @@ package com.loohp.lotterysix;
 import com.cronutils.model.Cron;
 import com.loohp.lotterysix.debug.Debug;
 import com.loohp.lotterysix.game.lottery.PlayableLotterySixGame;
+import com.loohp.lotterysix.game.objects.LotteryPlayer;
 import com.loohp.lotterysix.game.objects.PlayerPreferenceKey;
+import com.loohp.lotterysix.game.objects.PlayerStatsKey;
 import com.loohp.lotterysix.game.objects.betnumbers.BetNumbersType;
 import com.loohp.lotterysix.updater.Updater;
 import com.loohp.lotterysix.utils.ArrayUtils;
 import com.loohp.lotterysix.utils.ChatColorUtils;
 import com.loohp.lotterysix.utils.CronUtils;
 import com.loohp.lotterysix.utils.LotteryUtils;
+import com.loohp.lotterysix.utils.StringUtils;
 import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
@@ -268,6 +271,19 @@ public class Commands implements CommandExecutor, TabCompleter {
                 }
             } else {
                 sender.sendMessage(LotterySixPlugin.getInstance().messageNoPermission);
+            }
+            return true;
+        } else if (args[0].equalsIgnoreCase("pendingtransaction")) {
+            if (sender instanceof Player) {
+                Player player = (Player) sender;
+                LotteryPlayer lotteryPlayer = LotterySixPlugin.getInstance().getPlayerPreferenceManager().getLotteryPlayer(player.getUniqueId());
+                Long money = lotteryPlayer.updateStats(PlayerStatsKey.PENDING_TRANSACTION, long.class, i -> 0L);
+                if (money != null && money > 0) {
+                    player.sendMessage(LotterySixPlugin.getInstance().messagePendingClaimed.replace("{Money}", StringUtils.formatComma(money)));
+                    LotterySixPlugin.giveMoneyNow(player.getUniqueId(), money);
+                }
+            } else {
+                sender.sendMessage(LotterySixPlugin.getInstance().messageNoConsole);
             }
             return true;
         }
