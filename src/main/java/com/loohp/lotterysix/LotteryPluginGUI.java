@@ -57,6 +57,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
+import org.bukkit.event.inventory.InventoryInteractEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemFlag;
@@ -69,7 +70,9 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class LotteryPluginGUI implements Listener {
 
@@ -127,10 +130,12 @@ public class LotteryPluginGUI implements Listener {
 
     private final LotterySixPlugin plugin;
     private final LotterySix instance;
+    private final Map<Player, Long> lastGuiClick;
 
     public LotteryPluginGUI(LotterySixPlugin plugin) {
         this.plugin = plugin;
         this.instance = LotterySixPlugin.getInstance();
+        this.lastGuiClick = new HashMap<>();
     }
 
     public void forceClose(Player player) {
@@ -140,9 +145,22 @@ public class LotteryPluginGUI implements Listener {
         }
     }
 
+    private void handleClick(InventoryInteractEvent event) {
+        Player player = (Player) event.getWhoClicked();
+        long gameTick = player.getWorld().getGameTime();
+        Long lastClick = lastGuiClick.get(player);
+        if (lastClick == null || gameTick != lastClick) {
+            lastGuiClick.put(player, gameTick);
+        } else {
+            event.setCancelled(true);
+        }
+    }
+
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
-        Deque<InventoryGui> guis = InventoryGui.clearHistory(event.getPlayer());
+        Player player = event.getPlayer();
+        lastGuiClick.remove(player);
+        Deque<InventoryGui> guis = InventoryGui.clearHistory(player);
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             InventoryGui gui;
             while ((gui = guis.poll()) != null) {
@@ -151,27 +169,40 @@ public class LotteryPluginGUI implements Listener {
         }, 1);
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
-    public void onInventoryClick(InventoryClickEvent event) {
+    @EventHandler(priority = EventPriority.LOW)
+    public void onInventoryClickLow(InventoryClickEvent event) {
         Inventory inventory = event.getView().getTopInventory();
-        if (inventory.getHolder() instanceof InventoryGui.Holder && InventoryGui.getOpen(event.getWhoClicked()) == null) {
-            event.setCancelled(true);
-            Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                InventoryGui.clearHistory(event.getWhoClicked());
-                event.getWhoClicked().closeInventory();
-            }, 1);
+        if (inventory.getHolder() instanceof InventoryGui.Holder) {
+            handleClick(event);
         }
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onInventoryClick(InventoryClickEvent event) {
+        Inventory inventory = event.getView().getTopInventory();
+        if (inventory.getHolder() instanceof InventoryGui.Holder) {
+            if (InventoryGui.getOpen(event.getWhoClicked()) == null) {
+                event.setCancelled(true);
+                Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                    InventoryGui.clearHistory(event.getWhoClicked());
+                    event.getWhoClicked().closeInventory();
+                }, 1);
+            }
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onInventoryDrag(InventoryDragEvent event) {
         Inventory inventory = event.getView().getTopInventory();
-        if (inventory.getHolder() instanceof InventoryGui.Holder && InventoryGui.getOpen(event.getWhoClicked()) == null) {
-            event.setCancelled(true);
-            Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                InventoryGui.clearHistory(event.getWhoClicked());
-                event.getWhoClicked().closeInventory();
-            }, 1);
+        if (inventory.getHolder() instanceof InventoryGui.Holder) {
+            handleClick(event);
+            if (InventoryGui.getOpen(event.getWhoClicked()) == null) {
+                event.setCancelled(true);
+                Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                    InventoryGui.clearHistory(event.getWhoClicked());
+                    event.getWhoClicked().closeInventory();
+                }, 1);
+            }
         }
     }
 
