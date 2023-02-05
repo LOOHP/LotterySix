@@ -100,7 +100,7 @@ public class LotteryPlaceholders extends PlaceholderExpansion {
             } else {
                 String type = identifier.substring("scheduler_".length());
                 if (type.equalsIgnoreCase("interval")) {
-                    return CronUtils.DESCRIPTOR.describe(cron);
+                    return CronUtils.getDescriptor(LotterySixPlugin.getInstance().locale).describe(cron);
                 } else if (type.equalsIgnoreCase("next")) {
                     ZonedDateTime dateTime = CronUtils.getNextExecution(cron, CronUtils.getNow(LotterySixPlugin.getInstance().timezone));
                     if (dateTime == null) {

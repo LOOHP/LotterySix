@@ -44,6 +44,7 @@ import com.loohp.lotterysix.utils.ArrayUtils;
 import com.loohp.lotterysix.utils.ChatColorUtils;
 import com.loohp.lotterysix.utils.DataTypeIO;
 import com.loohp.lotterysix.utils.LotteryUtils;
+import com.loohp.lotterysix.utils.StringUtils;
 import com.loohp.lotterysix.utils.TitleUtils;
 import me.clip.placeholderapi.PlaceholderAPI;
 import net.md_5.bungee.api.chat.BaseComponent;
@@ -284,23 +285,23 @@ public class PluginMessageHandler implements PluginMessageListener {
                                 if (player != null) {
                                     switch (result) {
                                         case SUCCESS: {
-                                            player.sendMessage(instance.messageBetPlaced.replace("{Price}", price + ""));
+                                            player.sendMessage(instance.messageBetPlaced.replace("{Price}", StringUtils.formatComma(price)));
                                             break;
                                         }
                                         case GAME_LOCKED: {
-                                            player.sendMessage(instance.messageGameLocked.replace("{Price}", price + ""));
+                                            player.sendMessage(instance.messageGameLocked.replace("{Price}", StringUtils.formatComma(price)));
                                             break;
                                         }
                                         case NOT_ENOUGH_MONEY: {
-                                            player.sendMessage(instance.messageNotEnoughMoney.replace("{Price}", price + ""));
+                                            player.sendMessage(instance.messageNotEnoughMoney.replace("{Price}", StringUtils.formatComma(price)));
                                             break;
                                         }
                                         case LIMIT_SELF: {
-                                            player.sendMessage(instance.messageBetLimitReachedSelf.replace("{Price}", price + ""));
+                                            player.sendMessage(instance.messageBetLimitReachedSelf.replace("{Price}", StringUtils.formatComma(price)));
                                             break;
                                         }
                                         case LIMIT_PERMISSION: {
-                                            player.sendMessage(instance.messageBetLimitReachedPermission.replace("{Price}", price + ""));
+                                            player.sendMessage(instance.messageBetLimitReachedPermission.replace("{Price}", StringUtils.formatComma(price)));
                                             break;
                                         }
                                     }

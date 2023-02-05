@@ -33,6 +33,7 @@ import com.loohp.lotterysix.game.objects.PrizeTier;
 import com.loohp.lotterysix.game.objects.WinningCombination;
 import com.loohp.lotterysix.game.objects.WinningNumbers;
 import com.loohp.lotterysix.game.objects.betnumbers.BetNumbers;
+import com.loohp.lotterysix.utils.StringUtils;
 
 import java.security.SecureRandom;
 import java.util.ArrayList;
@@ -200,7 +201,7 @@ public class PlayableLotterySixGame implements IDedGame {
             if (!instance.backendBungeecordMode && instance.announcerBetPlacedAnnouncementEnabled) {
                 for (UUID uuid : instance.getOnlinePlayersSupplier().get()) {
                     instance.getMessageSendingConsumer().accept(uuid, instance.announcerBetPlacedAnnouncementMessage
-                            .replace("{Player}", name).replace("{Price}", price + ""), this);
+                            .replace("{Player}", name).replace("{Price}", StringUtils.formatComma(price)), this);
                 }
             }
         }

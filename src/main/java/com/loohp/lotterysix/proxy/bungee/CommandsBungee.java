@@ -28,6 +28,7 @@ import com.loohp.lotterysix.game.objects.PlayerStatsKey;
 import com.loohp.lotterysix.game.objects.betnumbers.BetNumbersType;
 import com.loohp.lotterysix.utils.CronUtils;
 import com.loohp.lotterysix.utils.LotteryUtils;
+import com.loohp.lotterysix.utils.StringUtils;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.ProxyServer;
@@ -277,7 +278,7 @@ public class CommandsBungee extends Command implements TabExecutor {
                         LotteryPlayer lotteryPlayer = LotterySixBungee.getInstance().getPlayerPreferenceManager().getLotteryPlayer(player.getUniqueId());
                         Long money = lotteryPlayer.updateStats(PlayerStatsKey.PENDING_TRANSACTION, long.class, i -> 0L);
                         if (money != null && money > 0) {
-                            player.sendMessage(LotterySixBungee.getInstance().messagePendingClaimed.replace("{Money}", money + ""));
+                            player.sendMessage(LotterySixBungee.getInstance().messagePendingClaimed.replace("{Money}", StringUtils.formatComma(money)));
                             LotterySixBungee.getPluginMessageHandler().giveMoney(player, money);
                         }
                     }

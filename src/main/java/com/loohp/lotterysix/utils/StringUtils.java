@@ -20,7 +20,12 @@
 
 package com.loohp.lotterysix.utils;
 
+import java.text.NumberFormat;
+import java.util.Locale;
+
 public class StringUtils {
+
+    public static NumberFormat COMMA_FORMAT = NumberFormat.getNumberInstance(Locale.US);
 
     public static String wrapAtSpace(String str, int perSpace) {
         StringBuilder sb = new StringBuilder(str);
@@ -34,6 +39,10 @@ public class StringUtils {
             }
         }
         return sb.toString();
+    }
+
+    public static String formatComma(long value) {
+        return COMMA_FORMAT.format(value);
     }
 
 }

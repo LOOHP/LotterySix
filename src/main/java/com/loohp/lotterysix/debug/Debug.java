@@ -28,6 +28,7 @@ import com.loohp.lotterysix.game.objects.PlayerBets;
 import com.loohp.lotterysix.game.objects.PlayerPreferenceKey;
 import com.loohp.lotterysix.game.objects.PlayerStatsKey;
 import com.loohp.lotterysix.game.objects.PlayerWinnings;
+import com.loohp.lotterysix.utils.StringUtils;
 import net.md_5.bungee.api.ChatColor;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
@@ -74,13 +75,13 @@ public class Debug implements Listener {
             sender.sendMessage(ChatColor.YELLOW + "Game Number: " + currentGame.getGameNumber());
             sender.sendMessage(ChatColor.YELLOW + "Draw Date: " + LotterySixPlugin.getInstance().dateFormat.format(new Date(currentGame.getScheduledDateTime())));
             List<PlayerBets> bets = currentGame.getPlayerBets(player.getUniqueId());
-            sender.sendMessage(ChatColor.GREEN + "Total Bet Placed By Player: $" + bets.stream().mapToLong(each -> each.getBet()).sum());
+            sender.sendMessage(ChatColor.GREEN + "Total Bet Placed By Player: $" + StringUtils.formatComma(bets.stream().mapToLong(each -> each.getBet()).sum()));
             sender.sendMessage("");
             for (int i = 0; i < bets.size(); i++) {
                 PlayerBets bet = bets.get(i);
                 sender.sendMessage((i + 1) + ". " + bet.getChosenNumbers().toColoredString());
                 sender.sendMessage("    " + ChatColor.GOLD + "Type: " + bet.getChosenNumbers().getType().name());
-                sender.sendMessage("    " + ChatColor.GOLD + "Price: $" + bet.getBet());
+                sender.sendMessage("    " + ChatColor.GOLD + "Price: $" + StringUtils.formatComma(bet.getBet()));
                 sender.sendMessage("");
             }
         }
@@ -105,9 +106,9 @@ public class Debug implements Listener {
                         if (winnings.isCombination(game)) {
                             sender.sendMessage("    (" + winnings.getWinningCombination().toColoredString() + ")");
                         }
-                        sender.sendMessage("    " + ChatColor.GOLD + "" + winnings.getTier().getShortHand() + " $" + winnings.getWinnings());
+                        sender.sendMessage("    " + ChatColor.GOLD + "" + winnings.getTier().getShortHand() + " $" + StringUtils.formatComma(winnings.getWinnings()));
                         sender.sendMessage("    " + ChatColor.GOLD + "Type: " + winnings.getWinningBet(game).getChosenNumbers().getType().name());
-                        sender.sendMessage("    " + ChatColor.GOLD + "Price: $" + winnings.getWinningBet(game).getBet());
+                        sender.sendMessage("    " + ChatColor.GOLD + "Price: $" + StringUtils.formatComma(winnings.getWinningBet(game).getBet()));
                         sender.sendMessage("");
                     }
                     for (PlayerBets bet : game.getPlayerBets(player.getUniqueId())) {
@@ -115,7 +116,7 @@ public class Debug implements Listener {
                             sender.sendMessage(u++ + ". " + bet.getChosenNumbers().toColoredString());
                             sender.sendMessage("    " + ChatColor.GOLD + "No Winnings $0");
                             sender.sendMessage("    " + ChatColor.GOLD + "Type: " + bet.getChosenNumbers().getType().name());
-                            sender.sendMessage("    " + ChatColor.GOLD + "Price: $" + bet.getBet());
+                            sender.sendMessage("    " + ChatColor.GOLD + "Price: $" + StringUtils.formatComma(bet.getBet()));
                             sender.sendMessage("");
                         }
                     }

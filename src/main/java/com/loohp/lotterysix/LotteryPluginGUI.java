@@ -287,7 +287,7 @@ public class LotteryPluginGUI implements Listener {
             pages.add(title + "\n\n" + String.join("\n", LotteryUtils.formatPlaceholders(null, instance.guiYourBetsNothing, instance, game)));
         } else {
             for (PlayerBets bet : bets) {
-                pages.add(title + "\n\n" + bet.getChosenNumbers().toColoredString() + "\n" + ChatColor.GOLD + "$" + bet.getBet() + " ($" + (instance.pricePerBet / bet.getType().getDivisor()) + ")");
+                pages.add(title + "\n\n" + bet.getChosenNumbers().toColoredString() + "\n" + ChatColor.GOLD + "$" + StringUtils.formatComma(bet.getBet()) + " ($" + StringUtils.formatComma(instance.pricePerBet / bet.getType().getDivisor()) + ")");
             }
         }
 
@@ -387,7 +387,7 @@ public class LotteryPluginGUI implements Listener {
                 throw new RuntimeException(builder.getType() + " type does not need choosing");
             }
         }
-        InventoryGui gui = new InventoryGui(plugin, LotteryUtils.formatPlaceholders(player, title.replace("{Price}", LotteryUtils.calculatePrice(builder, instance) + "").replace("{MinSelection}", ((isBanker ? ((BetNumbersBuilder.BankerBuilder) builder).getMinSelectionsNeeded() : 6) - builder.size()) + ""), instance, game), guiSetup);
+        InventoryGui gui = new InventoryGui(plugin, LotteryUtils.formatPlaceholders(player, title.replace("{Price}", StringUtils.formatComma(LotteryUtils.calculatePrice(builder, instance))).replace("{MinSelection}", ((isBanker ? ((BetNumbersBuilder.BankerBuilder) builder).getMinSelectionsNeeded() : 6) - builder.size()) + ""), instance, game), guiSetup);
         char c = 'a';
         for (int i = 0; i < num; i++) {
             int number = i + 1;
@@ -442,7 +442,7 @@ public class LotteryPluginGUI implements Listener {
                                             }
                                             return true;
                                         }, LotteryUtils.formatPlaceholders(player, Arrays.stream(isBanker && !((BetNumbersBuilder.BankerBuilder) builder).inSelectionPhase() ? instance.guiNewBetFinishBankers : instance.guiNewBetFinish)
-                                                .map(each -> each.replace("{Price}", LotteryUtils.calculatePrice(builder, instance) + "")).toArray(String[]::new), instance, game)));
+                                                .map(each -> each.replace("{Price}", StringUtils.formatComma(LotteryUtils.calculatePrice(builder, instance)))).toArray(String[]::new), instance, game)));
                                     }
                                 } else {
                                     gui.removeElement('\0');
@@ -479,7 +479,7 @@ public class LotteryPluginGUI implements Listener {
                                         return;
                                     }
                                     ((StaticGuiElement) gui.getElement('\0')).setText(LotteryUtils.formatPlaceholders(player, Arrays.stream(isBanker ? instance.guiNewBetFinishBankers : instance.guiNewBetFinish)
-                                            .map(each -> each.replace("{Price}", LotteryUtils.calculatePrice(builder, instance) + "")).toArray(String[]::new), instance, game));
+                                            .map(each -> each.replace("{Price}", StringUtils.formatComma(LotteryUtils.calculatePrice(builder, instance)))).toArray(String[]::new), instance, game));
                                 }
                             },
                             "false",
@@ -508,9 +508,9 @@ public class LotteryPluginGUI implements Listener {
         long partial = price / BetUnitType.PARTIAL.getDivisor();
         InventoryGui gui = new InventoryGui(plugin, LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetTitle, instance, game), guiSetup);
         gui.addElement(new StaticGuiElement('a', XMaterial.GOLD_BLOCK.parseItem(), StringUtils.wrapAtSpace(betNumbers.toColoredString(), 6)
-                .replace("{Price}", price + "").replace("{PricePartial}", partial + "")));
+                .replace("{Price}", StringUtils.formatComma(price)).replace("{PricePartial}", StringUtils.formatComma(partial))));
         gui.addElement(new StaticGuiElement('g', XMaterial.BEACON.parseItem(), Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetLotteryInfo, instance, game))
-                .map(each -> each.replace("{Price}", price + "").replace("{PricePartial}", partial + "")).toArray(String[]::new)));
+                .map(each -> each.replace("{Price}", StringUtils.formatComma(price)).replace("{PricePartial}", StringUtils.formatComma(partial))).toArray(String[]::new)));
         gui.addElement(new StaticGuiElement('h', XMaterial.YELLOW_WOOL.parseItem(), click -> {
             if (game != null && game.isValid()) {
                 if (instance.backendBungeecordMode) {
@@ -519,23 +519,23 @@ public class LotteryPluginGUI implements Listener {
                     AddBetResult result = game.addBet(player.getName(), player.getUniqueId(), partial, BetUnitType.PARTIAL, betNumbers);
                     switch (result) {
                         case SUCCESS: {
-                            player.sendMessage(instance.messageBetPlaced.replace("{Price}", partial + ""));
+                            player.sendMessage(instance.messageBetPlaced.replace("{Price}", StringUtils.formatComma(partial)));
                             break;
                         }
                         case GAME_LOCKED: {
-                            player.sendMessage(instance.messageGameLocked.replace("{Price}", partial + ""));
+                            player.sendMessage(instance.messageGameLocked.replace("{Price}", StringUtils.formatComma(partial)));
                             break;
                         }
                         case NOT_ENOUGH_MONEY: {
-                            player.sendMessage(instance.messageNotEnoughMoney.replace("{Price}", partial + ""));
+                            player.sendMessage(instance.messageNotEnoughMoney.replace("{Price}", StringUtils.formatComma(partial)));
                             break;
                         }
                         case LIMIT_SELF: {
-                            player.sendMessage(instance.messageBetLimitReachedSelf.replace("{Price}", partial + ""));
+                            player.sendMessage(instance.messageBetLimitReachedSelf.replace("{Price}", StringUtils.formatComma(partial)));
                             break;
                         }
                         case LIMIT_PERMISSION: {
-                            player.sendMessage(instance.messageBetLimitReachedPermission.replace("{Price}", partial + ""));
+                            player.sendMessage(instance.messageBetLimitReachedPermission.replace("{Price}", StringUtils.formatComma(partial)));
                             break;
                         }
                     }
@@ -547,7 +547,7 @@ public class LotteryPluginGUI implements Listener {
             }
             return true;
         }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetPartialConfirm, instance, game))
-                .map(each -> each.replace("{Price}", price + "").replace("{PricePartial}", partial + "")).toArray(String[]::new)));
+                .map(each -> each.replace("{Price}", StringUtils.formatComma(price)).replace("{PricePartial}", StringUtils.formatComma(partial))).toArray(String[]::new)));
         gui.addElement(new StaticGuiElement('i', XMaterial.GREEN_WOOL.parseItem(), click -> {
             if (game != null && game.isValid()) {
                 if (instance.backendBungeecordMode) {
@@ -556,23 +556,23 @@ public class LotteryPluginGUI implements Listener {
                     AddBetResult result = game.addBet(player.getName(), player.getUniqueId(), price, BetUnitType.FULL, betNumbers);
                     switch (result) {
                         case SUCCESS: {
-                            player.sendMessage(instance.messageBetPlaced.replace("{Price}", price + ""));
+                            player.sendMessage(instance.messageBetPlaced.replace("{Price}", StringUtils.formatComma(price)));
                             break;
                         }
                         case GAME_LOCKED: {
-                            player.sendMessage(instance.messageGameLocked.replace("{Price}", price + ""));
+                            player.sendMessage(instance.messageGameLocked.replace("{Price}", StringUtils.formatComma(price)));
                             break;
                         }
                         case NOT_ENOUGH_MONEY: {
-                            player.sendMessage(instance.messageNotEnoughMoney.replace("{Price}", price + ""));
+                            player.sendMessage(instance.messageNotEnoughMoney.replace("{Price}", StringUtils.formatComma(price)));
                             break;
                         }
                         case LIMIT_SELF: {
-                            player.sendMessage(instance.messageBetLimitReachedSelf.replace("{Price}", price + ""));
+                            player.sendMessage(instance.messageBetLimitReachedSelf.replace("{Price}", StringUtils.formatComma(price)));
                             break;
                         }
                         case LIMIT_PERMISSION: {
-                            player.sendMessage(instance.messageBetLimitReachedPermission.replace("{Price}", price + ""));
+                            player.sendMessage(instance.messageBetLimitReachedPermission.replace("{Price}", StringUtils.formatComma(price)));
                             break;
                         }
                     }
@@ -584,7 +584,7 @@ public class LotteryPluginGUI implements Listener {
             }
             return true;
         }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetConfirm, instance, game))
-                .map(each -> each.replace("{Price}", price + "").replace("{PricePartial}", partial + "")).toArray(String[]::new)));
+                .map(each -> each.replace("{Price}", StringUtils.formatComma(price)).replace("{PricePartial}", StringUtils.formatComma(partial))).toArray(String[]::new)));
         gui.addElement(new StaticGuiElement('j', XMaterial.BARRIER.parseItem(), click -> {
             Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
             return true;
@@ -608,7 +608,7 @@ public class LotteryPluginGUI implements Listener {
             gui.addElement(new StaticGuiElement(c++, getNumberItem(i), getNumberColor(i) + "" + i));
         }
         gui.addElement(new StaticGuiElement('g', XMaterial.BEACON.parseItem(), Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetLotteryInfo, instance, game))
-                .map(each -> each.replace("{Price}", price + "")).toArray(String[]::new)));
+                .map(each -> each.replace("{Price}", StringUtils.formatComma(price))).toArray(String[]::new)));
         gui.addElement(new StaticGuiElement('h', XMaterial.GREEN_WOOL.parseItem(), click -> {
             if (game != null && game.isValid()) {
                 if (instance.backendBungeecordMode) {
@@ -617,23 +617,23 @@ public class LotteryPluginGUI implements Listener {
                     AddBetResult result = game.addBet(player.getName(), player.getUniqueId(), instance.pricePerBet, BetUnitType.FULL, betNumbers);
                     switch (result) {
                         case SUCCESS: {
-                            player.sendMessage(instance.messageBetPlaced.replace("{Price}", price + ""));
+                            player.sendMessage(instance.messageBetPlaced.replace("{Price}", StringUtils.formatComma(price)));
                             break;
                         }
                         case GAME_LOCKED: {
-                            player.sendMessage(instance.messageGameLocked.replace("{Price}", price + ""));
+                            player.sendMessage(instance.messageGameLocked.replace("{Price}", StringUtils.formatComma(price)));
                             break;
                         }
                         case NOT_ENOUGH_MONEY: {
-                            player.sendMessage(instance.messageNotEnoughMoney.replace("{Price}", price + ""));
+                            player.sendMessage(instance.messageNotEnoughMoney.replace("{Price}", StringUtils.formatComma(price)));
                             break;
                         }
                         case LIMIT_SELF: {
-                            player.sendMessage(instance.messageBetLimitReachedSelf.replace("{Price}", price + ""));
+                            player.sendMessage(instance.messageBetLimitReachedSelf.replace("{Price}", StringUtils.formatComma(price)));
                             break;
                         }
                         case LIMIT_PERMISSION: {
-                            player.sendMessage(instance.messageBetLimitReachedPermission.replace("{Price}", price + ""));
+                            player.sendMessage(instance.messageBetLimitReachedPermission.replace("{Price}", StringUtils.formatComma(price)));
                             break;
                         }
                     }
@@ -645,7 +645,7 @@ public class LotteryPluginGUI implements Listener {
             }
             return true;
         }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetConfirm, instance, game))
-                .map(each -> each.replace("{Price}", price + "")).toArray(String[]::new)));
+                .map(each -> each.replace("{Price}", StringUtils.formatComma(price))).toArray(String[]::new)));
         gui.addElement(new StaticGuiElement('i', XMaterial.BARRIER.parseItem(), click -> {
             Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
             return true;
@@ -665,10 +665,10 @@ public class LotteryPluginGUI implements Listener {
         long price = betNumbers.stream().mapToLong(each -> LotteryUtils.calculatePrice(each, instance)).sum();
         InventoryGui gui = new InventoryGui(plugin, LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetTitle, instance, game), guiSetup);
         String[] numbersStr = betNumbers.stream().map(each -> StringUtils.wrapAtSpace(each.toColoredString(), 6)
-                .replace("{Price}", price + "")).toArray(String[]::new);
+                .replace("{Price}", StringUtils.formatComma(price))).toArray(String[]::new);
         gui.addElement(new StaticGuiElement('a', XMaterial.GOLD_BLOCK.parseItem(), numbersStr));
         gui.addElement(new StaticGuiElement('g', XMaterial.BEACON.parseItem(), Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetLotteryInfo, instance, game))
-                .map(each -> each.replace("{Price}", price + "")).toArray(String[]::new)));
+                .map(each -> each.replace("{Price}", StringUtils.formatComma(price))).toArray(String[]::new)));
         gui.addElement(new StaticGuiElement('h', XMaterial.GREEN_WOOL.parseItem(), click -> {
             if (game != null && game.isValid()) {
                 if (instance.backendBungeecordMode) {
@@ -677,23 +677,23 @@ public class LotteryPluginGUI implements Listener {
                     AddBetResult result = game.addBet(player.getName(), player.getUniqueId(), instance.pricePerBet, BetUnitType.FULL, betNumbers);
                     switch (result) {
                         case SUCCESS: {
-                            player.sendMessage(instance.messageBetPlaced.replace("{Price}", price + ""));
+                            player.sendMessage(instance.messageBetPlaced.replace("{Price}", StringUtils.formatComma(price)));
                             break;
                         }
                         case GAME_LOCKED: {
-                            player.sendMessage(instance.messageGameLocked.replace("{Price}", price + ""));
+                            player.sendMessage(instance.messageGameLocked.replace("{Price}", StringUtils.formatComma(price)));
                             break;
                         }
                         case NOT_ENOUGH_MONEY: {
-                            player.sendMessage(instance.messageNotEnoughMoney.replace("{Price}", price + ""));
+                            player.sendMessage(instance.messageNotEnoughMoney.replace("{Price}", StringUtils.formatComma(price)));
                             break;
                         }
                         case LIMIT_SELF: {
-                            player.sendMessage(instance.messageBetLimitReachedSelf.replace("{Price}", price + ""));
+                            player.sendMessage(instance.messageBetLimitReachedSelf.replace("{Price}", StringUtils.formatComma(price)));
                             break;
                         }
                         case LIMIT_PERMISSION: {
-                            player.sendMessage(instance.messageBetLimitReachedPermission.replace("{Price}", price + ""));
+                            player.sendMessage(instance.messageBetLimitReachedPermission.replace("{Price}", StringUtils.formatComma(price)));
                             break;
                         }
                     }
@@ -705,7 +705,7 @@ public class LotteryPluginGUI implements Listener {
             }
             return true;
         }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetConfirm, instance, game))
-                .map(each -> each.replace("{Price}", price + "")).toArray(String[]::new)));
+                .map(each -> each.replace("{Price}", StringUtils.formatComma(price))).toArray(String[]::new)));
         gui.addElement(new StaticGuiElement('i', XMaterial.BARRIER.parseItem(), click -> {
             Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
             return true;
@@ -758,7 +758,7 @@ public class LotteryPluginGUI implements Listener {
                             if (winnings.isCombination(game)) {
                                 str += ChatColor.BLACK + "(" + winnings.getWinningCombination().toColoredString() + ChatColor.BLACK + ")\n";
                             }
-                            str += ChatColor.GOLD + "" + winnings.getTier().getShortHand() + " $" + winnings.getWinnings() + " ($" + game.getPricePerBet(winnings.getWinningBet(game).getType()) + ")";
+                            str += ChatColor.GOLD + "" + winnings.getTier().getShortHand() + " $" + StringUtils.formatComma(winnings.getWinnings()) + " ($" + StringUtils.formatComma(game.getPricePerBet(winnings.getWinningBet(game).getType())) + ")";
                             pages.add(str);
                         }
                         for (PlayerBets bets : game.getPlayerBets(player.getUniqueId())) {
@@ -767,7 +767,7 @@ public class LotteryPluginGUI implements Listener {
                             }
                             if (winningsList.stream().noneMatch(each -> each.getWinningBet(game).getBetId().equals(bets.getBetId()))) {
                                 String str = winningNumberStr + "\n\n" + bets.getChosenNumbers().toColoredString() + "\n"
-                                        + LotteryUtils.formatPlaceholders(player, instance.guiLastResultsNoWinnings, instance, game) + " $0 ($" + game.getPricePerBet(bets.getType()) + ")";
+                                        + LotteryUtils.formatPlaceholders(player, instance.guiLastResultsNoWinnings, instance, game) + " $0 ($" + StringUtils.formatComma(game.getPricePerBet(bets.getType())) + ")";
                                 pages.add(str);
                             }
                         }

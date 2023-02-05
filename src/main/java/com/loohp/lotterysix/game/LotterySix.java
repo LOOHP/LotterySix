@@ -60,6 +60,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
 import java.util.Timer;
@@ -99,6 +100,7 @@ public class LotterySix implements AutoCloseable {
     public String explanationURL;
     public String[] explanationGUIItem;
 
+    public Locale locale;
     public SimpleDateFormat dateFormat;
 
     public boolean updaterEnabled;
@@ -565,7 +567,9 @@ public class LotterySix implements AutoCloseable {
         }
         timezone = TimeZone.getTimeZone(config.getConfiguration().getString("LotterySix.TimeZone"));
 
-        dateFormat = new SimpleDateFormat(ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Formatting.Date")));
+        String[] localeStr = config.getConfiguration().getString("Formatting.Locale").split("_");
+        locale = new Locale(localeStr[0], localeStr[1]);
+        dateFormat = new SimpleDateFormat(ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Formatting.Date")), locale);
         dateFormat.setTimeZone(timezone);
 
         updaterEnabled = config.getConfiguration().getBoolean("Options.Updater");

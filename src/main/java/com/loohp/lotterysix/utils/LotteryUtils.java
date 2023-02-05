@@ -94,7 +94,7 @@ public class LotteryUtils {
     }
 
     public static String formatPlaceholders(OfflinePlayer player, String str, LotterySix lotterySix) {
-        str = str.replace("{PricePerBet}", lotterySix.pricePerBet + "");
+        str = str.replace("{PricePerBet}", StringUtils.formatComma(lotterySix.pricePerBet));
         for (PrizeTier prizeTier : PrizeTier.values()) {
             str = str.replace("{" + prizeTier.name() + "Odds}", ODDS_FORMAT.format(calculateOddsOneOver(lotterySix.numberOfChoices, prizeTier)));
         }
@@ -116,9 +116,9 @@ public class LotteryUtils {
         str = str
                 .replace("{Date}", lotterySix.dateFormat.format(new Date(game.getScheduledDateTime())))
                 .replace("{GameNumber}", game.getGameNumber() + "")
-                .replace("{PricePerBet}", lotterySix.pricePerBet + "")
-                .replace("{TotalBets}", game.getTotalBets() + "")
-                .replace("{PrizePool}", game.estimatedPrizePool(lotterySix.taxPercentage) + "");
+                .replace("{PricePerBet}", StringUtils.formatComma(lotterySix.pricePerBet))
+                .replace("{TotalBets}", StringUtils.formatComma(game.getTotalBets()))
+                .replace("{PrizePool}", StringUtils.formatComma(game.estimatedPrizePool(lotterySix.taxPercentage)));
         if (str.contains("{BetPlayerNames}")) {
             str = str.replace("{BetPlayerNames}", chainPlayerBetNames(game.getBets()));
         }
@@ -143,9 +143,9 @@ public class LotteryUtils {
         str = str
                 .replace("{Date}", lotterySix.dateFormat.format(new Date(game.getDatetime())))
                 .replace("{GameNumber}", game.getGameNumber() + "")
-                .replace("{PricePerBet}", lotterySix.pricePerBet + "")
-                .replace("{TotalBets}", game.getTotalBets() + "")
-                .replace("{TotalPrizes}", game.getTotalPrizes() + "")
+                .replace("{PricePerBet}", StringUtils.formatComma(lotterySix.pricePerBet))
+                .replace("{TotalBets}", StringUtils.formatComma(game.getTotalBets()))
+                .replace("{TotalPrizes}", StringUtils.formatComma(game.getTotalPrizes()))
                 .replace("{FirstToThirdPlaceWinnersCount}", game.getWinnings().stream().filter(each -> each.getTier().ordinal() < 3).count() + "")
                 .replace("{FirstNumber}", ChatColorUtils.applyNumberColor(game.getDrawResult().getNumber(0)))
                 .replace("{SecondNumber}", ChatColorUtils.applyNumberColor(game.getDrawResult().getNumber(1)))
@@ -167,7 +167,7 @@ public class LotteryUtils {
             String prizeTierName = prizeTier.name();
             str = str
                     .replace("{" + prizeTierName + "Odds}", calculateOddsOneOver(lotterySix.numberOfChoices, prizeTier) + "")
-                    .replace("{" + prizeTierName + "Prize}", game.getPrizeForTier(prizeTier) + "")
+                    .replace("{" + prizeTierName + "Prize}", StringUtils.formatComma(game.getPrizeForTier(prizeTier)))
                     .replace("{" + prizeTierName + "PrizeCount}", BET_COUNT_FORMAT.format(game.getWinnerCountForTier(prizeTier)) + "");
             if (str.contains("{" + prizeTierName + "PlayerNames}")) {
                 str = str.replace("{" + prizeTierName + "PlayerNames}", chainPlayerWinningsNames(game.getWinnings(prizeTier)));

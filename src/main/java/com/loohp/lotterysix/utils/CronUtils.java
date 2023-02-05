@@ -37,7 +37,10 @@ public class CronUtils {
 
     public static final CronDefinition CRON_DEFINITION = CronDefinitionBuilder.instanceDefinitionFor(CronType.UNIX);
     public static final CronParser PARSER = new CronParser(CRON_DEFINITION);
-    public static final CronDescriptor DESCRIPTOR = CronDescriptor.instance(Locale.US);
+
+    public static CronDescriptor getDescriptor(Locale locale) {
+        return CronDescriptor.instance(locale);
+    }
 
     public static ZonedDateTime getNow(TimeZone timeZone) {
         return ZonedDateTime.now(timeZone.toZoneId());
