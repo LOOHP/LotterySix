@@ -30,6 +30,7 @@ import com.loohp.lotterysix.game.objects.PlayerWinnings;
 import com.loohp.lotterysix.game.objects.PrizeTier;
 import com.loohp.lotterysix.game.objects.WinningNumbers;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -42,6 +43,8 @@ import java.util.stream.Collectors;
 public class CompletedLotterySixGame implements IDedGame {
 
     public static final Comparator<PlayerWinnings> PLAYER_WINNINGS_COMPARATOR = Comparator.comparing(playerWinnings -> playerWinnings.getTier());
+
+    private transient Map<PrizeTier, List<PlayerWinnings>> winnersByTierCache;
 
     private final UUID gameId;
     private final long datetime;
@@ -67,6 +70,15 @@ public class CompletedLotterySixGame implements IDedGame {
         this.bets = Collections.unmodifiableMap(bets);
         this.totalPrizes = totalPrizes;
         this.remainingFunds = remainingFunds;
+    }
+
+    private synchronized void cacheWinnersByTier() {
+        if (winnersByTierCache == null) {
+            winnersByTierCache = new HashMap<>();
+            for (PlayerWinnings winnings : winners) {
+                winnersByTierCache.computeIfAbsent(winnings.getTier(), k -> new ArrayList<>()).add(winnings);
+            }
+        }
     }
 
     @Override
@@ -115,7 +127,8 @@ public class CompletedLotterySixGame implements IDedGame {
     }
 
     public List<PlayerWinnings> getWinnings(PrizeTier prizeTier) {
-        return Collections.unmodifiableList(winners.stream().filter(each -> each.getTier().equals(prizeTier)).collect(Collectors.toList()));
+        cacheWinnersByTier();
+        return Collections.unmodifiableList(winnersByTierCache.getOrDefault(prizeTier, Collections.emptyList()));
     }
 
     public Collection<PlayerBets> getBets() {
@@ -151,7 +164,12 @@ public class CompletedLotterySixGame implements IDedGame {
     }
 
     public double getWinnerCountForTier(PrizeTier prizeTier) {
-        return winners.stream().filter(each -> each.getTier().equals(prizeTier)).mapToDouble(each -> each.getWinningBet(this).getType().getUnit()).sum();
+        cacheWinnersByTier();
+        List<PlayerWinnings> winningsList = winnersByTierCache.get(prizeTier);
+        if (winningsList == null) {
+            return 0;
+        }
+        return winningsList.stream().mapToDouble(each -> each.getWinningBet(this).getType().getUnit()).sum();
     }
 
     public long getRemainingFunds() {
