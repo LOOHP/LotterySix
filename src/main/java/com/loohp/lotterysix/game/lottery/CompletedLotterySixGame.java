@@ -23,6 +23,7 @@ package com.loohp.lotterysix.game.lottery;
 import com.loohp.lotterysix.game.LotterySix;
 import com.loohp.lotterysix.game.objects.BetUnitType;
 import com.loohp.lotterysix.game.objects.LotteryPlayer;
+import com.loohp.lotterysix.game.objects.NumberStatistics;
 import com.loohp.lotterysix.game.objects.PlayerBets;
 import com.loohp.lotterysix.game.objects.PlayerStatsKey;
 import com.loohp.lotterysix.game.objects.PlayerWinnings;
@@ -46,6 +47,7 @@ public class CompletedLotterySixGame implements IDedGame {
     private final long datetime;
     private final GameNumber gameNumber;
     private final WinningNumbers drawResult;
+    private final Map<Integer, NumberStatistics> numberStatistics;
     private final long pricePerBet;
     private final Map<PrizeTier, Long> prizeForTier;
     private final List<PlayerWinnings> winners;
@@ -53,11 +55,12 @@ public class CompletedLotterySixGame implements IDedGame {
     private final long totalPrizes;
     private final long remainingFunds;
 
-    public CompletedLotterySixGame(UUID gameId, long datetime, GameNumber gameNumber, WinningNumbers drawResult, long pricePerBet, Map<PrizeTier, Long> prizeForTier, List<PlayerWinnings> winners, Map<UUID, PlayerBets> bets, long totalPrizes, long remainingFunds) {
+    public CompletedLotterySixGame(UUID gameId, long datetime, GameNumber gameNumber, WinningNumbers drawResult, Map<Integer, NumberStatistics> numberStatistics, long pricePerBet, Map<PrizeTier, Long> prizeForTier, List<PlayerWinnings> winners, Map<UUID, PlayerBets> bets, long totalPrizes, long remainingFunds) {
         this.gameId = gameId;
         this.datetime = datetime;
         this.gameNumber = gameNumber;
         this.drawResult = drawResult;
+        this.numberStatistics = numberStatistics;
         this.pricePerBet = pricePerBet;
         this.prizeForTier = prizeForTier;
         this.winners = Collections.unmodifiableList(winners);
@@ -90,6 +93,17 @@ public class CompletedLotterySixGame implements IDedGame {
 
     public WinningNumbers getDrawResult() {
         return drawResult;
+    }
+
+    public NumberStatistics getNumberStatistics(int number) {
+        if (numberStatistics == null) {
+            return NumberStatistics.NOT_EVER_DRAWN;
+        }
+        return numberStatistics.getOrDefault(number, NumberStatistics.NOT_EVER_DRAWN);
+    }
+
+    public Map<Integer, NumberStatistics> getNumberStatistics() {
+        return numberStatistics == null ? Collections.emptyMap() : Collections.unmodifiableMap(numberStatistics);
     }
 
     public long getPricePerBet(BetUnitType type) {

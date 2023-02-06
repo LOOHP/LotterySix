@@ -24,6 +24,7 @@ import com.loohp.lotterysix.game.LotterySix;
 import com.loohp.lotterysix.game.objects.AddBetResult;
 import com.loohp.lotterysix.game.objects.BetUnitType;
 import com.loohp.lotterysix.game.objects.LotteryPlayer;
+import com.loohp.lotterysix.game.objects.NumberStatistics;
 import com.loohp.lotterysix.game.objects.Pair;
 import com.loohp.lotterysix.game.objects.PlayerBets;
 import com.loohp.lotterysix.game.objects.PlayerPreferenceKey;
@@ -40,18 +41,20 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 public class PlayableLotterySixGame implements IDedGame {
 
-    public static PlayableLotterySixGame createNewGame(LotterySix instance, long scheduledDateTime, long carryOverFund, long lowestTopPlacesPrize) {
-        return new PlayableLotterySixGame(instance, UUID.randomUUID(), scheduledDateTime, lowestTopPlacesPrize, carryOverFund, true);
+    public static PlayableLotterySixGame createNewGame(LotterySix instance, long scheduledDateTime, Map<Integer, NumberStatistics> numberStatistics, long carryOverFund, long lowestTopPlacesPrize) {
+        return new PlayableLotterySixGame(instance, UUID.randomUUID(), scheduledDateTime, numberStatistics, lowestTopPlacesPrize, carryOverFund, true);
     }
 
     private transient LotterySix instance;
@@ -60,15 +63,17 @@ public class PlayableLotterySixGame implements IDedGame {
     private final UUID gameId;
     private volatile long scheduledDateTime;
     private volatile GameNumber gameNumber;
+    private final ConcurrentHashMap<Integer, NumberStatistics> numberStatistics;
     private final LinkedHashMap<UUID, PlayerBets> bets;
     private final long carryOverFund;
     private volatile long lowestTopPlacesPrize;
     private volatile boolean valid;
 
-    private PlayableLotterySixGame(LotterySix instance, UUID gameId, long scheduledDateTime, long lowestTopPlacesPrize, long carryOverFund, boolean valid) {
+    private PlayableLotterySixGame(LotterySix instance, UUID gameId, long scheduledDateTime, Map<Integer, NumberStatistics> numberStatistics, long lowestTopPlacesPrize, long carryOverFund, boolean valid) {
         this.instance = instance;
         this.gameId = gameId;
         this.scheduledDateTime = scheduledDateTime;
+        this.numberStatistics = new ConcurrentHashMap<>(numberStatistics);
         this.gameNumber = instance.dateToGameNumber(scheduledDateTime);
         this.bets = new LinkedHashMap<>();
         this.carryOverFund = carryOverFund;
@@ -110,6 +115,17 @@ public class PlayableLotterySixGame implements IDedGame {
 
     public long getScheduledDateTime() {
         return scheduledDateTime;
+    }
+
+    public NumberStatistics getNumberStatistics(int number) {
+        if (numberStatistics == null) {
+            return NumberStatistics.NOT_EVER_DRAWN;
+        }
+        return numberStatistics.getOrDefault(number, NumberStatistics.NOT_EVER_DRAWN);
+    }
+
+    public Map<Integer, NumberStatistics> getNumberStatistics() {
+        return numberStatistics == null ? Collections.emptyMap() : Collections.unmodifiableMap(numberStatistics);
     }
 
     public long getCarryOverFund() {
@@ -383,9 +399,14 @@ public class PlayableLotterySixGame implements IDedGame {
             carryOverNext += firstTierPrizeTotal;
         }
 
+        Map<Integer, NumberStatistics> newNumberStats = new HashMap<>();
+        for (int i = 1; i <= maxNumber; i++) {
+            newNumberStats.put(i, getNumberStatistics(i).increment(winningNumbers.containsAnywhere(i)));
+        }
+
         this.valid = false;
 
-        return new CompletedLotterySixGame(gameId, scheduledDateTime, gameNumber, winningNumbers, pricePerBet, prizeForTier, winnings, bets, totalPrizes, (long) Math.floor(carryOverNext * (1 - taxPercentage)));
+        return new CompletedLotterySixGame(gameId, scheduledDateTime, gameNumber, winningNumbers, newNumberStats, pricePerBet, prizeForTier, winnings, bets, totalPrizes, (long) Math.floor(carryOverNext * (1 - taxPercentage)));
     }
 
 }

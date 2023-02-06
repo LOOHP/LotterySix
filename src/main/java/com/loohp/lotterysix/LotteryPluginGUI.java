@@ -27,6 +27,7 @@ import com.loohp.lotterysix.game.lottery.GameNumber;
 import com.loohp.lotterysix.game.lottery.PlayableLotterySixGame;
 import com.loohp.lotterysix.game.objects.AddBetResult;
 import com.loohp.lotterysix.game.objects.BetUnitType;
+import com.loohp.lotterysix.game.objects.NumberStatistics;
 import com.loohp.lotterysix.game.objects.PlayerBets;
 import com.loohp.lotterysix.game.objects.PlayerPreferenceKey;
 import com.loohp.lotterysix.game.objects.PlayerWinnings;
@@ -221,7 +222,7 @@ public class LotteryPluginGUI implements Listener {
         String[] guiSetup = {
                 "         ",
                 " aaaaaaa ",
-                " abacada ",
+                " bacadae ",
                 " aaaaaaa ",
                 "        z"
         };
@@ -261,6 +262,10 @@ public class LotteryPluginGUI implements Listener {
                 }, LotteryUtils.formatPlaceholders(player, instance.guiMainMenuPlaceNewBets, instance, currentGame));
             }
         }));
+        gui.addElement(new StaticGuiElement('e', XMaterial.OAK_SIGN.parseItem(), click -> {
+            Bukkit.getScheduler().runTaskLater(plugin, () -> getNumberStatistics((Player) click.getWhoClicked(), instance.getCompletedGames().isEmpty() ? null : instance.getCompletedGames().get(0)).show(click.getWhoClicked()), 1);
+            return true;
+        }, LotteryUtils.formatPlaceholders(null, instance.guiMainMenuStatistics, instance)));
         gui.addElement(new StaticGuiElement('z', XMaterial.LIME_STAINED_GLASS_PANE.parseItem(), click -> {
             TextComponent message = new TextComponent(LotteryUtils.formatPlaceholders(player, instance.explanationMessage, instance));
             message.setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, instance.explanationURL));
@@ -817,6 +822,27 @@ public class LotteryPluginGUI implements Listener {
                 return true;
             }, LotteryUtils.formatPlaceholders(player, instance.guiLastResultsLookupHistoricGames, instance, game)));
         }
+
+        return gui;
+    }
+
+    public InventoryGui getNumberStatistics(Player player, CompletedLotterySixGame game) {
+        int num = instance.numberOfChoices;
+        String[] guiSetup = fillChars((num + 1) / 9 + 1);
+        String last = guiSetup[guiSetup.length - 1];
+        guiSetup[guiSetup.length - 1] = last.substring(0, last.length() - 1) + "\0";
+        InventoryGui gui = new InventoryGui(plugin, LotteryUtils.formatPlaceholders(player, instance.guiNumberStatisticsTitle, instance, game), guiSetup);
+        char c = 'a';
+        for (int i = 0; i < num; i++) {
+            int number = i + 1;
+            NumberStatistics stats = game == null ? NumberStatistics.NOT_EVER_DRAWN : game.getNumberStatistics(number);
+            gui.addElement(new StaticGuiElement(c++, getNumberItem(number, stats.getLastDrawn() == 0),
+                    getNumberColor(number) + "" + number,
+                    LotteryUtils.formatPlaceholders(player, instance.guiNumberStatisticsLastDrawn.replace("{Number}", number + ""), instance, game),
+                    LotteryUtils.formatPlaceholders(player, instance.guiNumberStatisticsTimesDrawn.replace("{Number}", number + ""), instance, game)
+            ));
+        }
+        gui.addElement(new StaticGuiElement('\0', XMaterial.OAK_SIGN.parseItem(), LotteryUtils.formatPlaceholders(player, instance.guiNumberStatisticsNote, instance, game)));
 
         return gui;
     }

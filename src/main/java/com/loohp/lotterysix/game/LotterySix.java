@@ -56,6 +56,7 @@ import java.time.Instant;
 import java.time.Year;
 import java.time.ZonedDateTime;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -120,6 +121,7 @@ public class LotterySix implements AutoCloseable {
     public String[] guiMainMenuNoLotteryGamesScheduled;
     public String[] guiMainMenuCheckOwnBets;
     public String[] guiMainMenuPlaceNewBets;
+    public String[] guiMainMenuStatistics;
     public String guiLastResultsTitle;
     public String[] guiLastResultsLotteryInfo;
     public String[] guiLastResultsYourBets;
@@ -146,6 +148,11 @@ public class LotterySix implements AutoCloseable {
     public String[] guiConfirmNewBetConfirm;
     public String[] guiConfirmNewBetPartialConfirm;
     public String[] guiConfirmNewBetCancel;
+    public String guiNumberStatisticsTitle;
+    public String guiNumberStatisticsLastDrawn;
+    public String guiNumberStatisticsTimesDrawn;
+    public String guiNumberStatisticsNever;
+    public String[] guiNumberStatisticsNote;
 
     public String announcerPeriodicMessageMessage;
     public String announcerPeriodicMessageHover;
@@ -353,7 +360,8 @@ public class LotterySix implements AutoCloseable {
         if (backendBungeecordMode) {
             throw new IllegalStateException("method cannot be ran on backend server while on bungeecord mode");
         }
-        currentGame = PlayableLotterySixGame.createNewGame(this, Math.max(dateTime, System.currentTimeMillis()), completedGames.isEmpty() ? 0 : completedGames.get(0).getRemainingFunds(), lowestTopPlacesPrize);
+        CompletedLotterySixGame lastGame = completedGames.isEmpty() ? null : completedGames.get(0);
+        currentGame = PlayableLotterySixGame.createNewGame(this, Math.max(dateTime, System.currentTimeMillis()), lastGame == null ? Collections.emptyMap() : lastGame.getNumberStatistics(), lastGame == null ? 0 : lastGame.getRemainingFunds(), lowestTopPlacesPrize);
         saveData(true);
         actionListener.accept(LotterySixAction.START);
         return currentGame;
@@ -591,6 +599,7 @@ public class LotterySix implements AutoCloseable {
         guiMainMenuNoLotteryGamesScheduled = config.getConfiguration().getStringList("GUI.MainMenu.NoLotteryGamesScheduled").toArray(new String[0]);
         guiMainMenuCheckOwnBets = config.getConfiguration().getStringList("GUI.MainMenu.CheckOwnBets").toArray(new String[0]);
         guiMainMenuPlaceNewBets = config.getConfiguration().getStringList("GUI.MainMenu.PlaceNewBets").toArray(new String[0]);
+        guiMainMenuStatistics = config.getConfiguration().getStringList("GUI.MainMenu.Statistics").toArray(new String[0]);
         guiLastResultsTitle = config.getConfiguration().getString("GUI.LastResults.Title");
         guiLastResultsLotteryInfo = config.getConfiguration().getStringList("GUI.LastResults.LotteryInfo").toArray(new String[0]);
         guiLastResultsYourBets = config.getConfiguration().getStringList("GUI.LastResults.YourBets").toArray(new String[0]);
@@ -617,6 +626,11 @@ public class LotterySix implements AutoCloseable {
         guiConfirmNewBetConfirm = config.getConfiguration().getStringList("GUI.ConfirmNewBet.Confirm").toArray(new String[0]);
         guiConfirmNewBetPartialConfirm = config.getConfiguration().getStringList("GUI.ConfirmNewBet.PartialConfirm").toArray(new String[0]);
         guiConfirmNewBetCancel = config.getConfiguration().getStringList("GUI.ConfirmNewBet.Cancel").toArray(new String[0]);
+        guiNumberStatisticsTitle = config.getConfiguration().getString("GUI.NumberStatistics.Title");
+        guiNumberStatisticsLastDrawn = config.getConfiguration().getString("GUI.NumberStatistics.LastDrawn");
+        guiNumberStatisticsTimesDrawn = config.getConfiguration().getString("GUI.NumberStatistics.TimesDrawn");
+        guiNumberStatisticsNever = config.getConfiguration().getString("GUI.NumberStatistics.Never");
+        guiNumberStatisticsNote = config.getConfiguration().getStringList("GUI.NumberStatistics.Note").toArray(new String[0]);
 
         announcerPeriodicMessageMessage = config.getConfiguration().getString("Announcer.PeriodicMessage.Message");
         announcerPeriodicMessageHover = config.getConfiguration().getString("Announcer.PeriodicMessage.Hover");

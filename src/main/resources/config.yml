@@ -105,6 +105,9 @@ GUI:
       - "&7Fifth: 1 in {FIFTHOdds}"
       - "&7Sixth: 1 in {SIXTHOdds}"
       - "&7Seventh: 1 in {SEVENTHOdds}"
+    Statistics:
+      - "&aView Number Statistics"
+      - "&7Want some inspiration of what numbers to pick?"
   LastResults:
     Title: "&2Last Results"
     LotteryInfo:
@@ -190,6 +193,14 @@ GUI:
       - "&aConfirm Partial Unit Investment (${PricePartial})"
     Cancel:
       - "&cCancel"
+  NumberStatistics:
+    Title: "&9Statistics"
+    LastDrawn: "&eNumber of Lotteries Since Last Drawn: {{Number}LastDrawn}"
+    TimesDrawn: "&aNumber of Times Drawn: {{Number}TimesDrawn}"
+    Never: "&cNever"
+    Note:
+      - "&7Statistics last updated {Date}"
+      - "&7(Game Number {GameNumber})"
 
 Announcer:
   PeriodicMessage:

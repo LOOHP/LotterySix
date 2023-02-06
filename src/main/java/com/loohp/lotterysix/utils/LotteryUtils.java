@@ -23,6 +23,7 @@ package com.loohp.lotterysix.utils;
 import com.loohp.lotterysix.game.LotterySix;
 import com.loohp.lotterysix.game.lottery.CompletedLotterySixGame;
 import com.loohp.lotterysix.game.lottery.PlayableLotterySixGame;
+import com.loohp.lotterysix.game.objects.NumberStatistics;
 import com.loohp.lotterysix.game.objects.PlayerBets;
 import com.loohp.lotterysix.game.objects.PlayerWinnings;
 import com.loohp.lotterysix.game.objects.PrizeTier;
@@ -94,9 +95,17 @@ public class LotteryUtils {
     }
 
     public static String formatPlaceholders(OfflinePlayer player, String str, LotterySix lotterySix) {
-        str = str.replace("{PricePerBet}", StringUtils.formatComma(lotterySix.pricePerBet));
+        str = str
+                .replace("{PricePerBet}", StringUtils.formatComma(lotterySix.pricePerBet))
+                .replace("{Date}", "-")
+                .replace("{GameNumber}", "-");
         for (PrizeTier prizeTier : PrizeTier.values()) {
             str = str.replace("{" + prizeTier.name() + "Odds}", ODDS_FORMAT.format(calculateOddsOneOver(lotterySix.numberOfChoices, prizeTier)));
+        }
+        NumberStatistics stats = NumberStatistics.NOT_EVER_DRAWN;
+        for (int i = 1; i <= lotterySix.numberOfChoices; i++) {
+            str = str.replace("{" + i + "LastDrawn}", stats.isNotEverDrawn() ? lotterySix.guiNumberStatisticsNever : (stats.getLastDrawn() == 0 ? "-" : stats.getLastDrawn() + ""));
+            str = str.replace("{" + i + "TimesDrawn}", stats.getTimesDrawn() + "");
         }
         return ChatColorUtils.translateAlternateColorCodes('&', player == null ? str : PlaceholderAPI.setPlaceholders(player, str));
     }
@@ -124,6 +133,11 @@ public class LotteryUtils {
         }
         for (PrizeTier prizeTier : PrizeTier.values()) {
             str = str.replace("{" + prizeTier.name() + "Odds}", ODDS_FORMAT.format(calculateOddsOneOver(lotterySix.numberOfChoices, prizeTier)));
+        }
+        for (int i = 1; i <= lotterySix.numberOfChoices; i++) {
+            NumberStatistics stats = game.getNumberStatistics(i);
+            str = str.replace("{" + i + "LastDrawn}", stats.isNotEverDrawn() ? lotterySix.guiNumberStatisticsNever : (stats.getLastDrawn() == 0 ? "-" : stats.getLastDrawn() + ""));
+            str = str.replace("{" + i + "TimesDrawn}", stats.getTimesDrawn() + "");
         }
         return ChatColorUtils.translateAlternateColorCodes('&', player == null ? str : PlaceholderAPI.setPlaceholders(player, str));
     }
@@ -172,6 +186,11 @@ public class LotteryUtils {
             if (str.contains("{" + prizeTierName + "PlayerNames}")) {
                 str = str.replace("{" + prizeTierName + "PlayerNames}", chainPlayerWinningsNames(game.getWinnings(prizeTier)));
             }
+        }
+        for (int i = 1; i <= lotterySix.numberOfChoices; i++) {
+            NumberStatistics stats = game.getNumberStatistics(i);
+            str = str.replace("{" + i + "LastDrawn}", stats.isNotEverDrawn() ? lotterySix.guiNumberStatisticsNever : (stats.getLastDrawn() == 0 ? "-" : stats.getLastDrawn() + ""));
+            str = str.replace("{" + i + "TimesDrawn}", stats.getTimesDrawn() + "");
         }
         return ChatColorUtils.translateAlternateColorCodes('&', player == null ? str : PlaceholderAPI.setPlaceholders(player, str));
     }

@@ -55,6 +55,10 @@ public class WinningNumbers {
         return Collections.unmodifiableList(numbers.stream().sorted().collect(Collectors.toList()));
     }
 
+    public boolean containsAnywhere(int number) {
+        return numbers.contains(number) || specialNumber == number;
+    }
+
     public int getNumber(int index) {
         return numbers.get(index);
     }
