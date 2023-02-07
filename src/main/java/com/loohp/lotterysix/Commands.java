@@ -43,6 +43,7 @@ import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 
 import java.time.ZonedDateTime;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
@@ -249,6 +250,32 @@ public class Commands implements CommandExecutor, TabCompleter {
                 sender.sendMessage(LotterySixPlugin.getInstance().messageNoPermission);
             }
             return true;
+        } else if (args[0].equalsIgnoreCase("setspecialname")) {
+            if (sender.hasPermission("lotterysix.setspecialname")) {
+                if (args.length > 1) {
+                    try {
+                        String name = String.join(" ", Arrays.copyOfRange(args, 1, args.length));
+                        PlayableLotterySixGame game = LotterySixPlugin.getInstance().getCurrentGame();
+                        if (game == null) {
+                            sender.sendMessage(LotterySixPlugin.getInstance().messageNoGameRunning);
+                        } else {
+                            if (name.equalsIgnoreCase("clear")) {
+                                game.setSpecialName(null);
+                            } else {
+                                game.setSpecialName(ChatColorUtils.translateAlternateColorCodes('&', name));
+                            }
+                            sender.sendMessage(LotterySixPlugin.getInstance().messageGameSettingsUpdated);
+                        }
+                    } catch (NumberFormatException e) {
+                        sender.sendMessage(LotterySixPlugin.getInstance().messageInvalidUsage);
+                    }
+                } else {
+                    sender.sendMessage(LotterySixPlugin.getInstance().messageInvalidUsage);
+                }
+            } else {
+                sender.sendMessage(LotterySixPlugin.getInstance().messageNoPermission);
+            }
+            return true;
         } else if (args[0].equalsIgnoreCase("admininfo")) {
             if (sender.hasPermission("lotterysix.admininfo")) {
                 if (args.length > 1) {
@@ -325,6 +352,9 @@ public class Commands implements CommandExecutor, TabCompleter {
                 if (sender.hasPermission("lotterysix.setdrawtime")) {
                     tab.add("setdrawtime");
                 }
+                if (sender.hasPermission("lotterysix.setspecialname")) {
+                    tab.add("setspecialname");
+                }
                 return tab;
             case 1:
                 if (sender.hasPermission("lotterysix.reload")) {
@@ -372,6 +402,11 @@ public class Commands implements CommandExecutor, TabCompleter {
                         tab.add("setdrawtime");
                     }
                 }
+                if (sender.hasPermission("lotterysix.setspecialname")) {
+                    if ("setspecialname".startsWith(args[0].toLowerCase())) {
+                        tab.add("setspecialname");
+                    }
+                }
                 return tab;
             case 2:
                 if (sender.hasPermission("lotterysix.preference")) {
@@ -416,6 +451,13 @@ public class Commands implements CommandExecutor, TabCompleter {
                                     tab.add(Long.toString(time));
                                 }
                             }
+                        }
+                    }
+                }
+                if (sender.hasPermission("lotterysix.setspecialname")) {
+                    if ("setspecialname".equalsIgnoreCase(args[0])) {
+                        if ("clear".startsWith(args[1].toLowerCase())) {
+                            tab.add("clear");
                         }
                     }
                 }

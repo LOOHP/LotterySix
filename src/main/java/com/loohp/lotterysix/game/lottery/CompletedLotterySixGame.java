@@ -49,6 +49,7 @@ public class CompletedLotterySixGame implements IDedGame {
     private final UUID gameId;
     private final long datetime;
     private final GameNumber gameNumber;
+    private final String specialName;
     private final WinningNumbers drawResult;
     private final Map<Integer, NumberStatistics> numberStatistics;
     private final long pricePerBet;
@@ -58,10 +59,11 @@ public class CompletedLotterySixGame implements IDedGame {
     private final long totalPrizes;
     private final long remainingFunds;
 
-    public CompletedLotterySixGame(UUID gameId, long datetime, GameNumber gameNumber, WinningNumbers drawResult, Map<Integer, NumberStatistics> numberStatistics, long pricePerBet, Map<PrizeTier, Long> prizeForTier, List<PlayerWinnings> winners, Map<UUID, PlayerBets> bets, long totalPrizes, long remainingFunds) {
+    public CompletedLotterySixGame(UUID gameId, long datetime, GameNumber gameNumber, String specialName, WinningNumbers drawResult, Map<Integer, NumberStatistics> numberStatistics, long pricePerBet, Map<PrizeTier, Long> prizeForTier, List<PlayerWinnings> winners, Map<UUID, PlayerBets> bets, long totalPrizes, long remainingFunds) {
         this.gameId = gameId;
         this.datetime = datetime;
         this.gameNumber = gameNumber;
+        this.specialName = specialName;
         this.drawResult = drawResult;
         this.numberStatistics = numberStatistics;
         this.pricePerBet = pricePerBet;
@@ -101,6 +103,14 @@ public class CompletedLotterySixGame implements IDedGame {
 
     public long getDatetime() {
         return datetime;
+    }
+
+    public boolean hasSpecialName() {
+        return specialName != null;
+    }
+
+    public String getSpecialName() {
+        return specialName;
     }
 
     public WinningNumbers getDrawResult() {

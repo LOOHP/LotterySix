@@ -98,6 +98,7 @@ public class LotteryUtils {
         str = str
                 .replace("{PricePerBet}", StringUtils.formatComma(lotterySix.pricePerBet))
                 .replace("{Date}", "-")
+                .replace("{GameNumberRaw}", "-")
                 .replace("{GameNumber}", "-");
         for (PrizeTier prizeTier : PrizeTier.values()) {
             str = str.replace("{" + prizeTier.name() + "Odds}", ODDS_FORMAT.format(calculateOddsOneOver(lotterySix.numberOfChoices, prizeTier)));
@@ -124,7 +125,8 @@ public class LotteryUtils {
         }
         str = str
                 .replace("{Date}", lotterySix.dateFormat.format(new Date(game.getScheduledDateTime())))
-                .replace("{GameNumber}", game.getGameNumber() + "")
+                .replace("{GameNumberRaw}", game.getGameNumber() + "")
+                .replace("{GameNumber}", game.getGameNumber() + (game.hasSpecialName() ? " " + game.getSpecialName() : ""))
                 .replace("{PricePerBet}", StringUtils.formatComma(lotterySix.pricePerBet))
                 .replace("{TotalBets}", StringUtils.formatComma(game.getTotalBets()))
                 .replace("{PrizePool}", StringUtils.formatComma(game.estimatedPrizePool(lotterySix.taxPercentage)));
@@ -156,7 +158,8 @@ public class LotteryUtils {
         }
         str = str
                 .replace("{Date}", lotterySix.dateFormat.format(new Date(game.getDatetime())))
-                .replace("{GameNumber}", game.getGameNumber() + "")
+                .replace("{GameNumberRaw}", game.getGameNumber() + "")
+                .replace("{GameNumber}", game.getGameNumber() + (game.hasSpecialName() ? " " + game.getSpecialName() : ""))
                 .replace("{PricePerBet}", StringUtils.formatComma(lotterySix.pricePerBet))
                 .replace("{TotalBets}", StringUtils.formatComma(game.getTotalBets()))
                 .replace("{TotalPrizes}", StringUtils.formatComma(game.getTotalPrizes()))

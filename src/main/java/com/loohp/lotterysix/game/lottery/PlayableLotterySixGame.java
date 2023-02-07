@@ -34,6 +34,7 @@ import com.loohp.lotterysix.game.objects.PrizeTier;
 import com.loohp.lotterysix.game.objects.WinningCombination;
 import com.loohp.lotterysix.game.objects.WinningNumbers;
 import com.loohp.lotterysix.game.objects.betnumbers.BetNumbers;
+import com.loohp.lotterysix.utils.MathUtils;
 import com.loohp.lotterysix.utils.StringUtils;
 
 import java.security.SecureRandom;
@@ -53,8 +54,8 @@ import java.util.stream.Collectors;
 
 public class PlayableLotterySixGame implements IDedGame {
 
-    public static PlayableLotterySixGame createNewGame(LotterySix instance, long scheduledDateTime, Map<Integer, NumberStatistics> numberStatistics, long carryOverFund, long lowestTopPlacesPrize) {
-        return new PlayableLotterySixGame(instance, UUID.randomUUID(), scheduledDateTime, numberStatistics, lowestTopPlacesPrize, carryOverFund, true);
+    public static PlayableLotterySixGame createNewGame(LotterySix instance, long scheduledDateTime, String specialName, Map<Integer, NumberStatistics> numberStatistics, long carryOverFund, long lowestTopPlacesPrize) {
+        return new PlayableLotterySixGame(instance, UUID.randomUUID(), scheduledDateTime, specialName, numberStatistics, lowestTopPlacesPrize, carryOverFund, true);
     }
 
     private transient LotterySix instance;
@@ -63,16 +64,18 @@ public class PlayableLotterySixGame implements IDedGame {
     private final UUID gameId;
     private volatile long scheduledDateTime;
     private volatile GameNumber gameNumber;
+    private volatile String specialName;
     private final ConcurrentHashMap<Integer, NumberStatistics> numberStatistics;
     private final LinkedHashMap<UUID, PlayerBets> bets;
     private final long carryOverFund;
     private volatile long lowestTopPlacesPrize;
     private volatile boolean valid;
 
-    private PlayableLotterySixGame(LotterySix instance, UUID gameId, long scheduledDateTime, Map<Integer, NumberStatistics> numberStatistics, long lowestTopPlacesPrize, long carryOverFund, boolean valid) {
+    private PlayableLotterySixGame(LotterySix instance, UUID gameId, long scheduledDateTime, String specialName, Map<Integer, NumberStatistics> numberStatistics, long lowestTopPlacesPrize, long carryOverFund, boolean valid) {
         this.instance = instance;
         this.gameId = gameId;
         this.scheduledDateTime = scheduledDateTime;
+        this.specialName = specialName;
         this.numberStatistics = new ConcurrentHashMap<>(numberStatistics);
         this.gameNumber = instance.dateToGameNumber(scheduledDateTime);
         this.bets = new LinkedHashMap<>();
@@ -104,6 +107,18 @@ public class PlayableLotterySixGame implements IDedGame {
     @Override
     public GameNumber getGameNumber() {
         return gameNumber;
+    }
+
+    public boolean hasSpecialName() {
+        return specialName != null;
+    }
+
+    public String getSpecialName() {
+        return specialName;
+    }
+
+    public void setSpecialName(String specialName) {
+        this.specialName = specialName;
     }
 
     public void setScheduledDateTime(long scheduledDateTime) {
@@ -242,7 +257,7 @@ public class PlayableLotterySixGame implements IDedGame {
     }
 
     public long estimatedPrizePool(double taxPercentage) {
-        return Math.max(lowestTopPlacesPrize, carryOverFund + (long) Math.floor(getTotalBets() * (1.0 - taxPercentage)));
+        return MathUtils.followRound(lowestTopPlacesPrize, Math.max(lowestTopPlacesPrize, (lowestTopPlacesPrize / 2) + carryOverFund + (long) Math.floor(getTotalBets() * (1.0 - taxPercentage))));
     }
 
     public synchronized CompletedLotterySixGame runLottery(int maxNumber, long pricePerBet, double taxPercentage) {
@@ -253,17 +268,14 @@ public class PlayableLotterySixGame implements IDedGame {
         int[] num = random.ints(1, maxNumber + 1).distinct().limit(7).toArray();
         WinningNumbers winningNumbers = new WinningNumbers(num[0], num[1], num[2], num[3], num[4], num[5], num[6]);
         Map<PrizeTier, List<Pair<PlayerBets, WinningCombination>>> tiers = new EnumMap<>(PrizeTier.class);
-        for (PrizeTier prizeTier : PrizeTier.values()) {
-            tiers.put(prizeTier, new ArrayList<>());
-        }
-        long totalPrize = carryOverFund + (long) Math.floor(getTotalBets() * (1.0 - taxPercentage));
+        long totalPrize = (lowestTopPlacesPrize / 2) + carryOverFund + (long) Math.floor(getTotalBets() * (1.0 - taxPercentage));
         Set<UUID> participants = new HashSet<>();
         synchronized (getBetsLock()) {
             for (PlayerBets playerBets : bets.values()) {
                 participants.add(playerBets.getPlayer());
                 List<Pair<PrizeTier, WinningCombination>> prizeTiersPairs = winningNumbers.checkWinning(playerBets.getChosenNumbers());
                 for (Pair<PrizeTier, WinningCombination> prizeTiersPair : prizeTiersPairs) {
-                    tiers.get(prizeTiersPair.getFirst()).add(Pair.of(playerBets, prizeTiersPair.getSecond()));
+                    tiers.computeIfAbsent(prizeTiersPair.getFirst(), k -> new ArrayList<>()).add(Pair.of(playerBets, prizeTiersPair.getSecond()));
                 }
             }
         }
@@ -406,7 +418,7 @@ public class PlayableLotterySixGame implements IDedGame {
 
         this.valid = false;
 
-        return new CompletedLotterySixGame(gameId, scheduledDateTime, gameNumber, winningNumbers, newNumberStats, pricePerBet, prizeForTier, winnings, bets, totalPrizes, (long) Math.floor(carryOverNext * (1 - taxPercentage)));
+        return new CompletedLotterySixGame(gameId, scheduledDateTime, gameNumber, specialName, winningNumbers, newNumberStats, pricePerBet, prizeForTier, winnings, bets, totalPrizes, carryOverNext);
     }
 
 }

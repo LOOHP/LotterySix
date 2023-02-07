@@ -26,6 +26,7 @@ import com.loohp.lotterysix.game.objects.LotteryPlayer;
 import com.loohp.lotterysix.game.objects.PlayerPreferenceKey;
 import com.loohp.lotterysix.game.objects.PlayerStatsKey;
 import com.loohp.lotterysix.game.objects.betnumbers.BetNumbersType;
+import com.loohp.lotterysix.utils.ChatColorUtils;
 import com.loohp.lotterysix.utils.CronUtils;
 import com.loohp.lotterysix.utils.LotteryUtils;
 import com.loohp.lotterysix.utils.StringUtils;
@@ -37,6 +38,7 @@ import net.md_5.bungee.api.plugin.Command;
 import net.md_5.bungee.api.plugin.TabExecutor;
 
 import java.time.ZonedDateTime;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
@@ -243,6 +245,32 @@ public class CommandsBungee extends Command implements TabExecutor {
                     sender.sendMessage(LotterySixBungee.getInstance().messageNoPermission);
                 }
                 return;
+            } else if (args[0].equalsIgnoreCase("setspecialname")) {
+                if (sender.hasPermission("lotterysix.setspecialname")) {
+                    if (args.length > 1) {
+                        try {
+                            String name = String.join(" ", Arrays.copyOfRange(args, 1, args.length));
+                            PlayableLotterySixGame game = LotterySixBungee.getInstance().getCurrentGame();
+                            if (game == null) {
+                                sender.sendMessage(LotterySixBungee.getInstance().messageNoGameRunning);
+                            } else {
+                                if (name.equalsIgnoreCase("clear")) {
+                                    game.setSpecialName(null);
+                                } else {
+                                    game.setSpecialName(ChatColorUtils.translateAlternateColorCodes('&', name));
+                                }
+                                sender.sendMessage(LotterySixBungee.getInstance().messageGameSettingsUpdated);
+                            }
+                        } catch (NumberFormatException e) {
+                            sender.sendMessage(LotterySixBungee.getInstance().messageInvalidUsage);
+                        }
+                    } else {
+                        sender.sendMessage(LotterySixBungee.getInstance().messageInvalidUsage);
+                    }
+                } else {
+                    sender.sendMessage(LotterySixBungee.getInstance().messageNoPermission);
+                }
+                return;
             } else if (args[0].equalsIgnoreCase("admininfo")) {
                 if (sender.hasPermission("lotterysix.admininfo")) {
                     if (args.length > 1) {
@@ -323,6 +351,9 @@ public class CommandsBungee extends Command implements TabExecutor {
                 if (sender.hasPermission("lotterysix.setdrawtime")) {
                     tab.add("setdrawtime");
                 }
+                if (sender.hasPermission("lotterysix.setspecialname")) {
+                    tab.add("setspecialname");
+                }
                 return tab;
             case 1:
                 if (sender.hasPermission("lotterysix.reload")) {
@@ -370,6 +401,11 @@ public class CommandsBungee extends Command implements TabExecutor {
                         tab.add("setdrawtime");
                     }
                 }
+                if (sender.hasPermission("lotterysix.setspecialname")) {
+                    if ("setspecialname".startsWith(args[0].toLowerCase())) {
+                        tab.add("setspecialname");
+                    }
+                }
                 return tab;
             case 2:
                 if (sender.hasPermission("lotterysix.preference")) {
@@ -414,6 +450,13 @@ public class CommandsBungee extends Command implements TabExecutor {
                                     tab.add(Long.toString(time));
                                 }
                             }
+                        }
+                    }
+                }
+                if (sender.hasPermission("lotterysix.setspecialname")) {
+                    if ("setspecialname".equalsIgnoreCase(args[0])) {
+                        if ("clear".startsWith(args[1].toLowerCase())) {
+                            tab.add("clear");
                         }
                     }
                 }
