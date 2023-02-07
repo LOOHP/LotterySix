@@ -418,7 +418,7 @@ public class LotteryPluginGUI implements Listener {
                                         for (int banker : ((BetNumbersBuilder.BankerBuilder) builder).getBankers()) {
                                             char bankerC = (char) ('a' + banker - 1);
                                             gui.removeElement(bankerC);
-                                            gui.addElement(new StaticGuiElement(bankerC, XMaterial.YELLOW_WOOL.parseItem(), ChatColor.LIGHT_PURPLE + "" + number));
+                                            gui.addElement(new StaticGuiElement(bankerC, XMaterial.YELLOW_WOOL.parseItem(), ChatColor.YELLOW + "" + number));
                                         }
                                     } else if (builder.completed() || (isBanker && !((BetNumbersBuilder.BankerBuilder) builder).inSelectionPhase() && !((BetNumbersBuilder.BankerBuilder) builder).getBankers().isEmpty())) {
                                         gui.removeElement('\0');
@@ -440,7 +440,7 @@ public class LotteryPluginGUI implements Listener {
                                                 for (int banker : ((BetNumbersBuilder.BankerBuilder) builder).getBankers()) {
                                                     char bankerC = (char) ('a' + banker - 1);
                                                     gui.removeElement(bankerC);
-                                                    gui.addElement(new StaticGuiElement(bankerC, XMaterial.YELLOW_WOOL.parseItem(), ChatColor.LIGHT_PURPLE + "" + number));
+                                                    gui.addElement(new StaticGuiElement(bankerC, XMaterial.YELLOW_WOOL.parseItem(), ChatColor.YELLOW + "" + number));
                                                 }
                                                 Bukkit.getScheduler().runTaskLater(plugin, () -> gui.close(click.getWhoClicked()), 1);
                                                 Bukkit.getScheduler().runTaskLater(plugin, () -> gui.show(click.getWhoClicked()), 2);
