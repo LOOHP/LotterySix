@@ -418,7 +418,7 @@ public class LotteryPluginGUI implements Listener {
                                         for (int banker : ((BetNumbersBuilder.BankerBuilder) builder).getBankers()) {
                                             char bankerC = (char) ('a' + banker - 1);
                                             gui.removeElement(bankerC);
-                                            gui.addElement(new StaticGuiElement(bankerC, XMaterial.MAGENTA_WOOL.parseItem(), ChatColor.LIGHT_PURPLE + "" + number));
+                                            gui.addElement(new StaticGuiElement(bankerC, XMaterial.YELLOW_WOOL.parseItem(), ChatColor.LIGHT_PURPLE + "" + number));
                                         }
                                     } else if (builder.completed() || (isBanker && !((BetNumbersBuilder.BankerBuilder) builder).inSelectionPhase() && !((BetNumbersBuilder.BankerBuilder) builder).getBankers().isEmpty())) {
                                         gui.removeElement('\0');
@@ -440,7 +440,7 @@ public class LotteryPluginGUI implements Listener {
                                                 for (int banker : ((BetNumbersBuilder.BankerBuilder) builder).getBankers()) {
                                                     char bankerC = (char) ('a' + banker - 1);
                                                     gui.removeElement(bankerC);
-                                                    gui.addElement(new StaticGuiElement(bankerC, XMaterial.MAGENTA_WOOL.parseItem(), ChatColor.LIGHT_PURPLE + "" + number));
+                                                    gui.addElement(new StaticGuiElement(bankerC, XMaterial.YELLOW_WOOL.parseItem(), ChatColor.LIGHT_PURPLE + "" + number));
                                                 }
                                                 Bukkit.getScheduler().runTaskLater(plugin, () -> gui.close(click.getWhoClicked()), 1);
                                                 Bukkit.getScheduler().runTaskLater(plugin, () -> gui.show(click.getWhoClicked()), 2);
@@ -512,11 +512,11 @@ public class LotteryPluginGUI implements Listener {
         long price = LotteryUtils.calculatePrice(betNumbers, instance);
         long partial = price / BetUnitType.PARTIAL.getDivisor();
         InventoryGui gui = new InventoryGui(plugin, LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetTitle, instance, game), guiSetup);
-        gui.addElement(new StaticGuiElement('a', XMaterial.GOLD_BLOCK.parseItem(), StringUtils.wrapAtSpace(betNumbers.toColoredString(), 6)
+        gui.addElement(new StaticGuiElement('a', XMaterial.PAPER.parseItem(), StringUtils.wrapAtSpace(betNumbers.toColoredString(), 6)
                 .replace("{Price}", StringUtils.formatComma(price)).replace("{PricePartial}", StringUtils.formatComma(partial))));
         gui.addElement(new StaticGuiElement('g', XMaterial.BEACON.parseItem(), Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetLotteryInfo, instance, game))
                 .map(each -> each.replace("{Price}", StringUtils.formatComma(price)).replace("{PricePartial}", StringUtils.formatComma(partial))).toArray(String[]::new)));
-        gui.addElement(new StaticGuiElement('h', XMaterial.YELLOW_WOOL.parseItem(), click -> {
+        gui.addElement(new StaticGuiElement('h', XMaterial.GOLD_NUGGET.parseItem(), click -> {
             if (game != null && game.isValid()) {
                 if (instance.backendBungeecordMode) {
                     LotterySixPlugin.getPluginMessageHandler().requestAddBet(player.getName(), player.getUniqueId(), partial, BetUnitType.PARTIAL, betNumbers);
@@ -553,7 +553,7 @@ public class LotteryPluginGUI implements Listener {
             return true;
         }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetPartialConfirm, instance, game))
                 .map(each -> each.replace("{Price}", StringUtils.formatComma(price)).replace("{PricePartial}", StringUtils.formatComma(partial))).toArray(String[]::new)));
-        gui.addElement(new StaticGuiElement('i', XMaterial.GREEN_WOOL.parseItem(), click -> {
+        gui.addElement(new StaticGuiElement('i', XMaterial.GOLD_INGOT.parseItem(), click -> {
             if (game != null && game.isValid()) {
                 if (instance.backendBungeecordMode) {
                     LotterySixPlugin.getPluginMessageHandler().requestAddBet(player.getName(), player.getUniqueId(), price, BetUnitType.FULL, betNumbers);
@@ -614,7 +614,7 @@ public class LotteryPluginGUI implements Listener {
         }
         gui.addElement(new StaticGuiElement('g', XMaterial.BEACON.parseItem(), Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetLotteryInfo, instance, game))
                 .map(each -> each.replace("{Price}", StringUtils.formatComma(price))).toArray(String[]::new)));
-        gui.addElement(new StaticGuiElement('h', XMaterial.GREEN_WOOL.parseItem(), click -> {
+        gui.addElement(new StaticGuiElement('h', XMaterial.GOLD_INGOT.parseItem(), click -> {
             if (game != null && game.isValid()) {
                 if (instance.backendBungeecordMode) {
                     LotterySixPlugin.getPluginMessageHandler().requestAddBet(player.getName(), player.getUniqueId(), instance.pricePerBet, BetUnitType.FULL, betNumbers);
@@ -671,10 +671,10 @@ public class LotteryPluginGUI implements Listener {
         InventoryGui gui = new InventoryGui(plugin, LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetTitle, instance, game), guiSetup);
         String[] numbersStr = betNumbers.stream().map(each -> StringUtils.wrapAtSpace(each.toColoredString(), 6)
                 .replace("{Price}", StringUtils.formatComma(price))).toArray(String[]::new);
-        gui.addElement(new StaticGuiElement('a', XMaterial.GOLD_BLOCK.parseItem(), numbersStr));
+        gui.addElement(new StaticGuiElement('a', XMaterial.PAPER.parseItem(), numbersStr));
         gui.addElement(new StaticGuiElement('g', XMaterial.BEACON.parseItem(), Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetLotteryInfo, instance, game))
                 .map(each -> each.replace("{Price}", StringUtils.formatComma(price))).toArray(String[]::new)));
-        gui.addElement(new StaticGuiElement('h', XMaterial.GREEN_WOOL.parseItem(), click -> {
+        gui.addElement(new StaticGuiElement('h', XMaterial.GOLD_INGOT.parseItem(), click -> {
             if (game != null && game.isValid()) {
                 if (instance.backendBungeecordMode) {
                     LotterySixPlugin.getPluginMessageHandler().requestAddBet(player.getName(), player.getUniqueId(), instance.pricePerBet, BetUnitType.FULL, betNumbers);
@@ -744,9 +744,9 @@ public class LotteryPluginGUI implements Listener {
             }
             int specialNumber = game.getDrawResult().getSpecialNumber();
             gui.addElement(new StaticGuiElement(c, getNumberItem(specialNumber, true), getNumberColor(specialNumber) + "" + specialNumber));
-            gui.addElement(new StaticGuiElement('h', XMaterial.GOLD_BLOCK.parseItem(), LotteryUtils.formatPlaceholders(player, instance.guiLastResultsLotteryInfo, instance, game)));
+            gui.addElement(new StaticGuiElement('h', XMaterial.CLOCK.parseItem(), LotteryUtils.formatPlaceholders(player, instance.guiLastResultsLotteryInfo, instance, game)));
 
-            gui.addElement(new StaticGuiElement('i', XMaterial.GREEN_WOOL.parseItem(), click -> {
+            gui.addElement(new StaticGuiElement('i', XMaterial.GOLD_INGOT.parseItem(), click -> {
                 Bukkit.getScheduler().runTaskLater(plugin, () -> {
                     close(click.getWhoClicked(), click.getGui(), false);
 

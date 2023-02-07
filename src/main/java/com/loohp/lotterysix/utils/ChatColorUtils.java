@@ -22,9 +22,20 @@ package com.loohp.lotterysix.utils;
 
 import net.md_5.bungee.api.ChatColor;
 
+import static net.md_5.bungee.api.ChatColor.RED;
+import static net.md_5.bungee.api.ChatColor.AQUA;
+import static net.md_5.bungee.api.ChatColor.GREEN;
+
 public class ChatColorUtils {
 
-    private static final ChatColor[] NUMBER_COLOR = getNumberColors();
+    private static final ChatColor[] NUMBER_COLOR = new ChatColor[] {
+            RED, RED, AQUA, AQUA, GREEN, GREEN, RED, RED, AQUA,
+            GREEN, RED, RED, AQUA, AQUA, GREEN, GREEN, RED, RED,
+            GREEN, GREEN, RED, RED, AQUA, AQUA, GREEN, GREEN, RED,
+            AQUA, GREEN, GREEN, RED, RED, AQUA, AQUA, GREEN, GREEN,
+            AQUA, AQUA, GREEN, GREEN, RED, RED, AQUA, AQUA, GREEN,
+            RED, AQUA, AQUA, GREEN
+    };
 
     public static String applyNumberColor(int i) {
         return getNumberColor(i) + "" + i;
@@ -32,34 +43,6 @@ public class ChatColorUtils {
 
     public static ChatColor getNumberColor(int i) {
         return NUMBER_COLOR[i - 1];
-    }
-
-    private static ChatColor[] getNumberColors() {
-        ChatColor[] array = new ChatColor[49];
-        ChatColor currentColor = ChatColor.RED;
-        int c = 0;
-        for (int i = 0; i < 49; i++) {
-            array[i] = currentColor;
-            if (c++ >= 1) {
-                currentColor = nextNumberColor(currentColor);
-                c = 0;
-            } else if (i % 9 == 0 && i % 18 != 0) {
-                currentColor = nextNumberColor(currentColor);
-                c = 0;
-            }
-        }
-        return array;
-    }
-
-    private static ChatColor nextNumberColor(ChatColor currentColor) {
-        if (currentColor.equals(ChatColor.RED)) {
-            return ChatColor.AQUA;
-        } else if (currentColor.equals(ChatColor.AQUA)) {
-            return ChatColor.GREEN;
-        } else if (currentColor.equals(ChatColor.GREEN)) {
-            return ChatColor.RED;
-        }
-        return null;
     }
 
     public static String translateAlternateColorCodes(char code, String text) {
