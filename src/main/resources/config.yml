@@ -286,6 +286,8 @@ DiscordSRV:
       - "**Game Number: {GameNumber}**"
       - "**Draw Date: {Date}**"
       - "**Draw Results: {FirstNumberOrdered} {SecondNumberOrdered} {ThirdNumberOrdered} {FourthNumberOrdered} {FifthNumberOrdered} {SixthNumberOrdered} + {SpecialNumber}**"
+      - "**Turnover: ${TotalBets}**"
+      - "**Total Prizes: ${TotalPrizes}**"
       - ""
       - "1st Tier Prize: ${FIRSTPrize} x{FIRSTPrizeCount}"
       - "2nd Tier Prize: ${SECONDPrize} x{SECONDPrizeCount}"
