@@ -34,6 +34,7 @@ import com.loohp.lotterysix.game.lottery.LazyCompletedLotterySixGameList;
 import com.loohp.lotterysix.game.lottery.PlayableLotterySixGame;
 import com.loohp.lotterysix.game.objects.BetResultConsumer;
 import com.loohp.lotterysix.game.objects.BossBarInfo;
+import com.loohp.lotterysix.game.objects.CarryOverMode;
 import com.loohp.lotterysix.game.objects.LotteryPlayer;
 import com.loohp.lotterysix.game.objects.LotterySixAction;
 import com.loohp.lotterysix.game.objects.MessageConsumer;
@@ -118,6 +119,8 @@ public class LotterySix implements AutoCloseable {
     public long lowestTopPlacesPrize;
     public long estimationRoundToNearest;
     public double taxPercentage;
+    public CarryOverMode carryOverMode;
+    public long maxTopPlacesPrize;
 
     public String guiMainMenuTitle;
     public String[] guiMainMenuCheckPastResults;
@@ -426,7 +429,7 @@ public class LotterySix implements AutoCloseable {
         }
         consoleMessageConsumer.accept("Calculating Lottery Wins, this might take a while...");
         long start = System.currentTimeMillis();
-        CompletedLotterySixGame completed = currentGame.runLottery(numberOfChoices, pricePerBet, taxPercentage);
+        CompletedLotterySixGame completed = currentGame.runLottery(numberOfChoices, pricePerBet, maxTopPlacesPrize, taxPercentage);
         long end = System.currentTimeMillis();
         consoleMessageConsumer.accept("Lottery Wins Calculation Completed! (" + (end - start) + "ms)");
         completedGames.add(0, completed);
@@ -652,6 +655,8 @@ public class LotterySix implements AutoCloseable {
         lowestTopPlacesPrize = config.getConfiguration().getLong("LotterySix.LowestTopPlacesPrize");
         estimationRoundToNearest = config.getConfiguration().getLong("LotterySix.EstimationRoundToNearest");
         taxPercentage = config.getConfiguration().getDouble("LotterySix.TaxPercentage");
+        carryOverMode = CarryOverMode.valueOf(config.getConfiguration().getString("LotterySix.CarryOverMode").toUpperCase());
+        maxTopPlacesPrize = config.getConfiguration().getLong("LotterySix.MaxTopPlacesPrize");
 
         guiMainMenuTitle = config.getConfiguration().getString("GUI.MainMenu.Title");
         guiMainMenuCheckPastResults = config.getConfiguration().getStringList("GUI.MainMenu.CheckPastResults").toArray(new String[0]);

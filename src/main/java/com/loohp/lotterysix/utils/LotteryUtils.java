@@ -133,7 +133,7 @@ public class LotteryUtils {
                 .replace("{NumberOfChoices}", lotterySix.numberOfChoices + "")
                 .replace("{PricePerBet}", StringUtils.formatComma(lotterySix.pricePerBet))
                 .replace("{TotalBets}", StringUtils.formatComma(game.getTotalBets()))
-                .replace("{PrizePool}", StringUtils.formatComma(game.estimatedPrizePool(lotterySix.taxPercentage, lotterySix.estimationRoundToNearest)));
+                .replace("{PrizePool}", StringUtils.formatComma(game.estimatedPrizePool(lotterySix.maxTopPlacesPrize, lotterySix.taxPercentage, lotterySix.estimationRoundToNearest)));
         if (str.contains("{BetPlayerNames}")) {
             str = str.replace("{BetPlayerNames}", chainPlayerBetNames(game.getBets()));
         }
@@ -169,7 +169,6 @@ public class LotteryUtils {
                 .replace("{PricePerBet}", StringUtils.formatComma(lotterySix.pricePerBet))
                 .replace("{TotalBets}", StringUtils.formatComma(game.getTotalBets()))
                 .replace("{TotalPrizes}", StringUtils.formatComma(game.getTotalPrizes()))
-                .replace("{FirstToThirdPlaceWinnersCount}", game.getWinnings().stream().filter(each -> each.getTier().ordinal() < 3).count() + "")
                 .replace("{FirstNumber}", ChatColorUtils.applyNumberColor(game.getDrawResult().getNumber(0)))
                 .replace("{SecondNumber}", ChatColorUtils.applyNumberColor(game.getDrawResult().getNumber(1)))
                 .replace("{ThirdNumber}", ChatColorUtils.applyNumberColor(game.getDrawResult().getNumber(2)))

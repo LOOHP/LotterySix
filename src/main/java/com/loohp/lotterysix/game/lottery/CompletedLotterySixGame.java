@@ -45,6 +45,7 @@ public class CompletedLotterySixGame implements IDedGame {
     public static final Comparator<PlayerWinnings> PLAYER_WINNINGS_COMPARATOR = Comparator.comparing(playerWinnings -> playerWinnings.getTier());
 
     private transient Map<PrizeTier, List<PlayerWinnings>> winnersByTierCache;
+    private transient Map<PrizeTier, Double> winnerCountForTierCache;
 
     private final UUID gameId;
     private final long datetime;
@@ -79,6 +80,15 @@ public class CompletedLotterySixGame implements IDedGame {
             winnersByTierCache = new HashMap<>();
             for (PlayerWinnings winnings : winners) {
                 winnersByTierCache.computeIfAbsent(winnings.getTier(), k -> new ArrayList<>()).add(winnings);
+            }
+        }
+    }
+
+    private synchronized void cacheWinnerCountForTier() {
+        if (winnersByTierCache == null) {
+            winnerCountForTierCache = new HashMap<>();
+            for (PrizeTier prizeTier : PrizeTier.values()) {
+                winnerCountForTierCache.put(prizeTier, getWinnings(prizeTier).stream().mapToDouble(each -> each.getWinningBet(this).getType().getUnit()).sum());
             }
         }
     }
@@ -174,12 +184,8 @@ public class CompletedLotterySixGame implements IDedGame {
     }
 
     public double getWinnerCountForTier(PrizeTier prizeTier) {
-        cacheWinnersByTier();
-        List<PlayerWinnings> winningsList = winnersByTierCache.get(prizeTier);
-        if (winningsList == null) {
-            return 0;
-        }
-        return winningsList.stream().mapToDouble(each -> each.getWinningBet(this).getType().getUnit()).sum();
+        cacheWinnerCountForTier();
+        return winnerCountForTierCache.get(prizeTier);
     }
 
     public long getRemainingFunds() {

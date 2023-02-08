@@ -23,6 +23,7 @@ package com.loohp.lotterysix.game.objects;
 import com.loohp.lotterysix.game.lottery.CompletedLotterySixGame;
 import com.loohp.lotterysix.game.objects.betnumbers.BetNumbersType;
 
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -44,6 +45,15 @@ public class PlayerWinnings {
         this.winnings = winnings;
     }
 
+    private PlayerWinnings(String name, UUID player, PrizeTier tier, UUID winningBetId, WinningCombination winningCombination, long winnings) {
+        this.name = name;
+        this.player = player;
+        this.tier = tier;
+        this.winningBetId = winningBetId;
+        this.winningCombination = winningCombination;
+        this.winnings = winnings;
+    }
+
     public String getName() {
         return name;
     }
@@ -60,6 +70,10 @@ public class PlayerWinnings {
         return game.getBet(winningBetId);
     }
 
+    public PlayerBets getWinningBet(Map<UUID, PlayerBets> bets) {
+        return bets.get(winningBetId);
+    }
+
     public WinningCombination getWinningCombination() {
         return winningCombination;
     }
@@ -71,6 +85,10 @@ public class PlayerWinnings {
 
     public long getWinnings() {
         return winnings;
+    }
+
+    public PlayerWinnings winnings(long winnings) {
+        return new PlayerWinnings(name, player, tier, winningBetId, winningCombination, winnings);
     }
 
     @Override

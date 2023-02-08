@@ -23,6 +23,7 @@ package com.loohp.lotterysix.game.lottery;
 import com.loohp.lotterysix.game.LotterySix;
 import com.loohp.lotterysix.game.objects.AddBetResult;
 import com.loohp.lotterysix.game.objects.BetUnitType;
+import com.loohp.lotterysix.game.objects.CarryOverMode;
 import com.loohp.lotterysix.game.objects.LotteryPlayer;
 import com.loohp.lotterysix.game.objects.NumberStatistics;
 import com.loohp.lotterysix.game.objects.Pair;
@@ -260,11 +261,22 @@ public class PlayableLotterySixGame implements IDedGame {
         }
     }
 
-    public long estimatedPrizePool(double taxPercentage, long rounding) {
-        return MathUtils.followRound(rounding, Math.max(lowestTopPlacesPrize, (lowestTopPlacesPrize / 2) + carryOverFund + (long) Math.floor(getTotalBets() * (1.0 - taxPercentage))));
+    public long estimatedPrizePool(long maxTopPlacesPrize, double taxPercentage, long rounding) {
+        CarryOverMode carryOverMode = instance == null ? CarryOverMode.DEFAULT : instance.carryOverMode;
+        switch (carryOverMode) {
+            case DEFAULT: {
+                return MathUtils.followRound(rounding, Math.min(maxTopPlacesPrize, Math.max(lowestTopPlacesPrize, (lowestTopPlacesPrize / 2) + carryOverFund + (long) Math.floor(getTotalBets() * (1.0 - taxPercentage)))));
+            }
+            case ONLY_TICKET_SALES: {
+                return MathUtils.followRound(rounding, Math.min(maxTopPlacesPrize, Math.max(lowestTopPlacesPrize, lowestTopPlacesPrize + carryOverFund + (long) Math.floor(getTotalBets() * (1.0 - taxPercentage)))));
+            }
+            default: {
+                throw new RuntimeException("Unknown carry over mode: " + carryOverMode);
+            }
+        }
     }
 
-    public synchronized CompletedLotterySixGame runLottery(int maxNumber, long pricePerBet, double taxPercentage) {
+    public synchronized CompletedLotterySixGame runLottery(int maxNumber, long pricePerBet, long maxTopPlacesPrize, double taxPercentage) {
         if (instance != null && instance.backendBungeecordMode) {
             throw new IllegalStateException("lottery cannot be run on backend server while on bungeecord mode");
         }
@@ -275,7 +287,23 @@ public class PlayableLotterySixGame implements IDedGame {
         for (PrizeTier prizeTier : PrizeTier.values()) {
             tiers.put(prizeTier, new ArrayList<>());
         }
-        long totalPrize = (lowestTopPlacesPrize / 2) + carryOverFund + (long) Math.floor(getTotalBets() * (1.0 - taxPercentage));
+
+        long totalPrize;
+        CarryOverMode carryOverMode = instance == null ? CarryOverMode.DEFAULT : instance.carryOverMode;
+        switch (carryOverMode) {
+            case DEFAULT: {
+                totalPrize = (lowestTopPlacesPrize / 2) + carryOverFund + (long) Math.floor(getTotalBets() * (1.0 - taxPercentage));
+                break;
+            }
+            case ONLY_TICKET_SALES: {
+                totalPrize = lowestTopPlacesPrize + carryOverFund + (long) Math.floor(getTotalBets() * (1.0 - taxPercentage));
+                break;
+            }
+            default: {
+                throw new RuntimeException("Unknown carry over mode: " + carryOverMode);
+            }
+        }
+
         Set<UUID> participants = new HashSet<>();
         synchronized (getBetsLock()) {
             for (PlayerBets playerBets : bets.values()) {
@@ -339,7 +367,7 @@ public class PlayableLotterySixGame implements IDedGame {
             winnings.add(playerWinnings);
         }
 
-        long totalRemaining = Math.max(lowestTopPlacesPrize, totalPrize - totalFourthToSeventh);
+        long totalRemaining = Math.min(maxTopPlacesPrize, Math.max(lowestTopPlacesPrize, totalPrize - totalFourthToSeventh));
 
         boolean thirdPlaceEmpty = tiers.get(PrizeTier.THIRD).isEmpty();
         boolean secondPlaceEmpty = tiers.get(PrizeTier.SECOND).isEmpty();
@@ -418,12 +446,55 @@ public class PlayableLotterySixGame implements IDedGame {
             carryOverNext += firstTierPrizeTotal;
         }
 
+        PrizeTier[] prizeTiers = PrizeTier.values();
+        long prize = Long.MAX_VALUE;
+        for (int i = 0; i < prizeTiers.length - 1; i++) {
+            PrizeTier prizeTier = prizeTiers[i];
+            PrizeTier lowerTier = prizeTiers[i + 1];
+            Long tierPrize = prizeForTier.get(prizeTier);
+            if (tierPrize != null) {
+                prize = tierPrize;
+            }
+            long lowerPrize = prizeForTier.getOrDefault(lowerTier, 0L);
+            if (lowerPrize * prizeTier.getMinimumMultiplierFromLast() <= prize) {
+                continue;
+            }
+            long newLowerPrize = prize / prizeTier.getMinimumMultiplierFromLast();
+            prizeForTier.put(lowerTier, newLowerPrize);
+            long prizeMoneyRemoved = 0;
+            for (int u = 0; u < winnings.size(); u++) {
+                PlayerWinnings playerWinnings = winnings.get(u);
+                if (playerWinnings.getTier().equals(lowerTier)) {
+                    long currentPrize = playerWinnings.getWinnings();
+                    long newPrize = newLowerPrize / playerWinnings.getWinningBet(bets).getType().getDivisor();
+                    prizeMoneyRemoved += (currentPrize - newPrize);
+                    winnings.set(u, playerWinnings.winnings(newPrize));
+                }
+            }
+            if (lowerTier.isTopTier()) {
+                carryOverNext += prizeMoneyRemoved;
+            }
+            totalPrizes -= prizeMoneyRemoved;
+        }
+
         Map<Integer, NumberStatistics> newNumberStats = new HashMap<>();
         for (int i = 1; i <= maxNumber; i++) {
             newNumberStats.put(i, getNumberStatistics(i).increment(winningNumbers.containsAnywhere(i)));
         }
 
         this.valid = false;
+
+        if (instance != null) {
+            //noinspection SwitchStatementWithTooFewBranches
+            switch (instance.carryOverMode) {
+                case ONLY_TICKET_SALES: {
+                    long left = carryOverFund + (long) Math.floor(getTotalBets() * (1.0 - taxPercentage));
+                    left = Math.round((double) left * ((double) carryOverNext / (double) totalRemaining));
+                    carryOverNext = Math.max(0, Math.min(maxTopPlacesPrize - lowestTopPlacesPrize, left));
+                    break;
+                }
+            }
+        }
 
         return new CompletedLotterySixGame(gameId, scheduledDateTime, gameNumber, specialName, winningNumbers, newNumberStats, pricePerBet, prizeForTier, winnings, bets, totalPrizes, carryOverNext);
     }
