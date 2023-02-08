@@ -51,6 +51,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 
 import java.awt.Color;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -60,6 +61,7 @@ public class DiscordSRVHook implements Listener, SlashCommandProvider {
 
     public static final String PAST_DRAW_LABEL = "pastdraw";
     public static final String MY_BETS_LABEL = "mybets";
+    public static final String NUMBER_STATS_LABEL = "numberstats";
 
     private boolean init;
 
@@ -116,6 +118,9 @@ public class DiscordSRVHook implements Listener, SlashCommandProvider {
         }
         if (LotterySixPlugin.getInstance().discordSRVSlashCommandsViewCurrentBetsEnabled) {
             commands.add(new PluginSlashCommand(LotterySixPlugin.plugin, new CommandData(MY_BETS_LABEL, LotterySixPlugin.getInstance().discordSRVSlashCommandsViewCurrentBetsDescription), guild.getId()));
+        }
+        if (LotterySixPlugin.getInstance().discordSRVSlashCommandsViewNumberStatisticsEnabled) {
+            commands.add(new PluginSlashCommand(LotterySixPlugin.plugin, new CommandData(NUMBER_STATS_LABEL, LotterySixPlugin.getInstance().discordSRVSlashCommandsViewNumberStatisticsDescription), guild.getId()));
         }
 
         return commands;
@@ -245,12 +250,36 @@ public class DiscordSRVHook implements Listener, SlashCommandProvider {
                 }
 
                 EmbedBuilder builder = new EmbedBuilder()
-                        .setColor(Color.YELLOW)
+                        .setColor(Color.GREEN)
                         .setTitle(ChatColor.stripColor(LotteryUtils.formatPlaceholders(player, lotterySix.discordSRVSlashCommandsViewCurrentBetsTitle, lotterySix, game)))
                         .setDescription(sb.substring(0, sb.length() - 1))
                         .setThumbnail(lotterySix.discordSRVSlashCommandsViewCurrentBetsThumbnailURL);
                 event.replyEmbeds(builder.build()).setEphemeral(true).queue();
             }
+            return;
+        } else if (LotterySixPlugin.getInstance().discordSRVSlashCommandsViewNumberStatisticsEnabled && label.equalsIgnoreCase(NUMBER_STATS_LABEL)) {
+            CompletedLotterySixGame game = lotterySix.getCompletedGames().isEmpty() ? null : lotterySix.getCompletedGames().get(0);
+            EmbedBuilder builder = new EmbedBuilder()
+                    .setColor(Color.CYAN)
+                    .setTitle(ChatColor.stripColor(LotteryUtils.formatPlaceholders(null, lotterySix.guiNumberStatisticsTitle, lotterySix, game)))
+                    .setDescription(ChatColor.stripColor(String.join("\n", LotteryUtils.formatPlaceholders(null, lotterySix.guiNumberStatisticsNote, lotterySix, game))))
+                    .setThumbnail(lotterySix.discordSRVSlashCommandsViewNumberStatisticsThumbnailURL);
+
+            List<String> numbers = new ArrayList<>(lotterySix.numberOfChoices);
+
+            for (int i = 1; i <= lotterySix.numberOfChoices; i++) {
+                numbers.add(String.format("%2s", i) + " / "
+                    + ChatColor.stripColor(LotteryUtils.formatPlaceholders(null, "{" + i + "LastDrawn}", lotterySix, game)) + " / "
+                    + ChatColor.stripColor(LotteryUtils.formatPlaceholders(null, "{" + i + "TimesDrawn}", lotterySix, game)));
+            }
+
+            String title = lotterySix.discordSRVSlashCommandsViewNumberStatisticsNumberField + " / "
+                    + lotterySix.discordSRVSlashCommandsViewNumberStatisticsLastDrawnField + " / "
+                    + lotterySix.discordSRVSlashCommandsViewNumberStatisticsTimesDrawnField;
+
+            builder.addField(title, String.join("\n", numbers), false);
+
+            event.replyEmbeds(builder.build()).setEphemeral(true).queue();
             return;
         }
     }

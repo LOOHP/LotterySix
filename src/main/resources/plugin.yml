@@ -43,6 +43,9 @@ permissions:
   lotterysix.setspecialname:
     default: op
     description: Allow players to set a special name for the current round
+  lotterysix.resetcarryoverfund:
+    default: op
+    description: Allow players to reset the carryover fund for the current round
   lotterysix.admininfo:
     default: op
     description: Split out every bit of internal information about a player

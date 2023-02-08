@@ -64,6 +64,11 @@ public class Commands implements CommandExecutor, TabCompleter {
                 if (LotterySixPlugin.discordSRVHook != null) {
                     LotterySixPlugin.discordSRVHook.reload();
                 }
+                for (Player player : Bukkit.getOnlinePlayers()) {
+                    if (!LotterySixPlugin.activeBossBar.getPlayers().contains(player)) {
+                        LotterySixPlugin.activeBossBar.addPlayer(player);
+                    }
+                }
                 sender.sendMessage(LotterySixPlugin.getInstance().messageReloaded);
             } else {
                 sender.sendMessage(LotterySixPlugin.getInstance().messageNoPermission);
@@ -276,6 +281,19 @@ public class Commands implements CommandExecutor, TabCompleter {
                 sender.sendMessage(LotterySixPlugin.getInstance().messageNoPermission);
             }
             return true;
+        } else if (args[0].equalsIgnoreCase("resetcarryoverfund")) {
+            if (sender.hasPermission("lotterysix.resetcarryoverfund")) {
+                PlayableLotterySixGame game = LotterySixPlugin.getInstance().getCurrentGame();
+                if (game == null) {
+                    sender.sendMessage(LotterySixPlugin.getInstance().messageNoGameRunning);
+                } else {
+                    game.setCarryOverFund(0);
+                    sender.sendMessage(LotterySixPlugin.getInstance().messageGameSettingsUpdated);
+                }
+            } else {
+                sender.sendMessage(LotterySixPlugin.getInstance().messageNoPermission);
+            }
+            return true;
         } else if (args[0].equalsIgnoreCase("admininfo")) {
             if (sender.hasPermission("lotterysix.admininfo")) {
                 if (args.length > 1) {
@@ -355,6 +373,9 @@ public class Commands implements CommandExecutor, TabCompleter {
                 if (sender.hasPermission("lotterysix.setspecialname")) {
                     tab.add("setspecialname");
                 }
+                if (sender.hasPermission("lotterysix.resetcarryoverfund")) {
+                    tab.add("resetcarryoverfund");
+                }
                 return tab;
             case 1:
                 if (sender.hasPermission("lotterysix.reload")) {
@@ -405,6 +426,11 @@ public class Commands implements CommandExecutor, TabCompleter {
                 if (sender.hasPermission("lotterysix.setspecialname")) {
                     if ("setspecialname".startsWith(args[0].toLowerCase())) {
                         tab.add("setspecialname");
+                    }
+                }
+                if (sender.hasPermission("lotterysix.resetcarryoverfund")) {
+                    if ("resetcarryoverfund".startsWith(args[0].toLowerCase())) {
+                        tab.add("resetcarryoverfund");
                     }
                 }
                 return tab;

@@ -27,6 +27,7 @@ import com.loohp.lotterysix.game.lottery.IDedGame;
 import com.loohp.lotterysix.game.lottery.PlayableLotterySixGame;
 import com.loohp.lotterysix.game.objects.AddBetResult;
 import com.loohp.lotterysix.game.objects.BetUnitType;
+import com.loohp.lotterysix.game.objects.BossBarInfo;
 import com.loohp.lotterysix.game.objects.LotteryPlayer;
 import com.loohp.lotterysix.game.objects.LotterySixAction;
 import com.loohp.lotterysix.game.objects.betnumbers.BetNumbers;
@@ -441,6 +442,33 @@ public class PluginMessageBungee implements Listener {
             DataOutputStream out = new DataOutputStream(outputStream);
             DataTypeIO.writeUUID(out, player.getUniqueId());
             sendData(player.getServer().getInfo(), 0x10, outputStream.toByteArray());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void updateBossBar(BossBarInfo bossBarInfo, IDedGame game) {
+        try {
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            DataOutputStream out = new DataOutputStream(outputStream);
+            if (bossBarInfo.getMessage() == null) {
+                out.writeBoolean(false);
+            } else {
+                out.writeBoolean(true);
+                DataTypeIO.writeString(out, bossBarInfo.getMessage(), StandardCharsets.UTF_8);
+            }
+            DataTypeIO.writeString(out, bossBarInfo.getColor(), StandardCharsets.UTF_8);
+            DataTypeIO.writeString(out, bossBarInfo.getStyle(), StandardCharsets.UTF_8);
+            out.writeDouble(bossBarInfo.getProgress());
+            if (game == null) {
+                out.writeBoolean(false);
+            } else {
+                out.writeBoolean(true);
+                DataTypeIO.writeUUID(out, game.getGameId());
+            }
+            for (ServerInfo info : ProxyServer.getInstance().getServers().values()) {
+                sendData(info, 0x11, outputStream.toByteArray());
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }

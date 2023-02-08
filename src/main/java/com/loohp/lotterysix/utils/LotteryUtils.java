@@ -96,10 +96,12 @@ public class LotteryUtils {
 
     public static String formatPlaceholders(OfflinePlayer player, String str, LotterySix lotterySix) {
         str = str
+                .replace("{Now}", lotterySix.dateFormat.format(new Date()))
                 .replace("{PricePerBet}", StringUtils.formatComma(lotterySix.pricePerBet))
                 .replace("{Date}", "-")
                 .replace("{GameNumberRaw}", "-")
-                .replace("{GameNumber}", "-");
+                .replace("{GameNumber}", "-")
+                .replace("{NumberOfChoices}", lotterySix.numberOfChoices + "");
         for (PrizeTier prizeTier : PrizeTier.values()) {
             str = str.replace("{" + prizeTier.name() + "Odds}", ODDS_FORMAT.format(calculateOddsOneOver(lotterySix.numberOfChoices, prizeTier)));
         }
@@ -124,12 +126,14 @@ public class LotteryUtils {
             return formatPlaceholders(player, str, lotterySix);
         }
         str = str
+                .replace("{Now}", lotterySix.dateFormat.format(new Date()))
                 .replace("{Date}", lotterySix.dateFormat.format(new Date(game.getScheduledDateTime())))
                 .replace("{GameNumberRaw}", game.getGameNumber() + "")
                 .replace("{GameNumber}", game.getGameNumber() + (game.hasSpecialName() ? " " + game.getSpecialName() : ""))
+                .replace("{NumberOfChoices}", lotterySix.numberOfChoices + "")
                 .replace("{PricePerBet}", StringUtils.formatComma(lotterySix.pricePerBet))
                 .replace("{TotalBets}", StringUtils.formatComma(game.getTotalBets()))
-                .replace("{PrizePool}", StringUtils.formatComma(game.estimatedPrizePool(lotterySix.taxPercentage)));
+                .replace("{PrizePool}", StringUtils.formatComma(game.estimatedPrizePool(lotterySix.taxPercentage, lotterySix.estimationRoundToNearest)));
         if (str.contains("{BetPlayerNames}")) {
             str = str.replace("{BetPlayerNames}", chainPlayerBetNames(game.getBets()));
         }
@@ -157,9 +161,11 @@ public class LotteryUtils {
             return formatPlaceholders(player, str, lotterySix);
         }
         str = str
+                .replace("{Now}", lotterySix.dateFormat.format(new Date()))
                 .replace("{Date}", lotterySix.dateFormat.format(new Date(game.getDatetime())))
                 .replace("{GameNumberRaw}", game.getGameNumber() + "")
                 .replace("{GameNumber}", game.getGameNumber() + (game.hasSpecialName() ? " " + game.getSpecialName() : ""))
+                .replace("{NumberOfChoices}", lotterySix.numberOfChoices + "")
                 .replace("{PricePerBet}", StringUtils.formatComma(lotterySix.pricePerBet))
                 .replace("{TotalBets}", StringUtils.formatComma(game.getTotalBets()))
                 .replace("{TotalPrizes}", StringUtils.formatComma(game.getTotalPrizes()))

@@ -67,7 +67,7 @@ public class PlayableLotterySixGame implements IDedGame {
     private volatile String specialName;
     private final ConcurrentHashMap<Integer, NumberStatistics> numberStatistics;
     private final LinkedHashMap<UUID, PlayerBets> bets;
-    private final long carryOverFund;
+    private volatile long carryOverFund;
     private volatile long lowestTopPlacesPrize;
     private volatile boolean valid;
 
@@ -145,6 +145,10 @@ public class PlayableLotterySixGame implements IDedGame {
 
     public long getCarryOverFund() {
         return carryOverFund;
+    }
+
+    public void setCarryOverFund(long carryOverFund) {
+        this.carryOverFund = carryOverFund;
     }
 
     public long getLowestTopPlacesPrize() {
@@ -256,8 +260,8 @@ public class PlayableLotterySixGame implements IDedGame {
         }
     }
 
-    public long estimatedPrizePool(double taxPercentage) {
-        return MathUtils.followRound(lowestTopPlacesPrize, Math.max(lowestTopPlacesPrize, (lowestTopPlacesPrize / 2) + carryOverFund + (long) Math.floor(getTotalBets() * (1.0 - taxPercentage))));
+    public long estimatedPrizePool(double taxPercentage, long rounding) {
+        return MathUtils.followRound(rounding, Math.max(lowestTopPlacesPrize, (lowestTopPlacesPrize / 2) + carryOverFund + (long) Math.floor(getTotalBets() * (1.0 - taxPercentage))));
     }
 
     public synchronized CompletedLotterySixGame runLottery(int maxNumber, long pricePerBet, double taxPercentage) {
@@ -268,6 +272,9 @@ public class PlayableLotterySixGame implements IDedGame {
         int[] num = random.ints(1, maxNumber + 1).distinct().limit(7).toArray();
         WinningNumbers winningNumbers = new WinningNumbers(num[0], num[1], num[2], num[3], num[4], num[5], num[6]);
         Map<PrizeTier, List<Pair<PlayerBets, WinningCombination>>> tiers = new EnumMap<>(PrizeTier.class);
+        for (PrizeTier prizeTier : PrizeTier.values()) {
+            tiers.put(prizeTier, new ArrayList<>());
+        }
         long totalPrize = (lowestTopPlacesPrize / 2) + carryOverFund + (long) Math.floor(getTotalBets() * (1.0 - taxPercentage));
         Set<UUID> participants = new HashSet<>();
         synchronized (getBetsLock()) {
@@ -275,7 +282,7 @@ public class PlayableLotterySixGame implements IDedGame {
                 participants.add(playerBets.getPlayer());
                 List<Pair<PrizeTier, WinningCombination>> prizeTiersPairs = winningNumbers.checkWinning(playerBets.getChosenNumbers());
                 for (Pair<PrizeTier, WinningCombination> prizeTiersPair : prizeTiersPairs) {
-                    tiers.computeIfAbsent(prizeTiersPair.getFirst(), k -> new ArrayList<>()).add(Pair.of(playerBets, prizeTiersPair.getSecond()));
+                    tiers.get(prizeTiersPair.getFirst()).add(Pair.of(playerBets, prizeTiersPair.getSecond()));
                 }
             }
         }

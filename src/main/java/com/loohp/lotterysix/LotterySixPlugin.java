@@ -51,6 +51,9 @@ import net.milkbowl.vault.economy.Economy;
 import net.milkbowl.vault.permission.Permission;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
+import org.bukkit.boss.BarColor;
+import org.bukkit.boss.BarStyle;
+import org.bukkit.boss.BossBar;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -81,6 +84,16 @@ public class LotterySixPlugin extends JavaPlugin implements Listener {
     private static LotteryPluginGUI guiProvider;
     private static Economy econ = null;
     private static Permission perms = null;
+
+    public static BossBar activeBossBar;
+
+    static {
+        try {
+            activeBossBar = Bukkit.createBossBar("", BarColor.YELLOW, BarStyle.SOLID);
+        } catch (Throwable e) {
+            activeBossBar = null;
+        }
+    }
 
     @Override
     public void onEnable() {
@@ -158,6 +171,25 @@ public class LotterySixPlugin extends JavaPlugin implements Listener {
         }, lotteryPlayer -> {
         }, message -> {
             Bukkit.getConsoleSender().sendMessage(message);
+        }, (bossBarInfo, game) -> {
+            if (activeBossBar == null) {
+                return;
+            }
+            String message = bossBarInfo.getMessage();
+            if (message == null) {
+                activeBossBar.setVisible(false);
+                return;
+            }
+            activeBossBar.setVisible(true);
+            activeBossBar.setProgress(bossBarInfo.getProgress());
+            activeBossBar.setColor(BarColor.valueOf(bossBarInfo.getColor()));
+            activeBossBar.setStyle(BarStyle.valueOf(bossBarInfo.getStyle()));
+            if (game instanceof PlayableLotterySixGame) {
+                message = LotteryUtils.formatPlaceholders(null, message, instance, (PlayableLotterySixGame) game);
+            } else if (game instanceof CompletedLotterySixGame) {
+                message = LotteryUtils.formatPlaceholders(null, message, instance, (CompletedLotterySixGame) game);
+            }
+            activeBossBar.setTitle(message);
         });
         instance.reloadConfig();
 
@@ -186,6 +218,12 @@ public class LotterySixPlugin extends JavaPlugin implements Listener {
 
         if (instance.updaterEnabled) {
             getServer().getPluginManager().registerEvents(new Updater(), this);
+        }
+
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            if (!activeBossBar.getPlayers().contains(player)) {
+                activeBossBar.addPlayer(player);
+            }
         }
 
         getServer().getConsoleSender().sendMessage(ChatColor.GREEN + "[LotterySix] LotterySix has been Enabled!");
@@ -277,6 +315,7 @@ public class LotterySixPlugin extends JavaPlugin implements Listener {
 
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
+        activeBossBar.addPlayer(event.getPlayer());
         Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
             LotteryPlayer lotteryPlayer = instance.getPlayerPreferenceManager().loadLotteryPlayer(event.getPlayer().getUniqueId(), true);
             if (!instance.backendBungeecordMode) {
@@ -294,6 +333,7 @@ public class LotterySixPlugin extends JavaPlugin implements Listener {
 
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
+        activeBossBar.removePlayer(event.getPlayer());
         Bukkit.getScheduler().runTaskAsynchronously(this, () -> instance.getPlayerPreferenceManager().unloadLotteryPlayer(event.getPlayer().getUniqueId(), true));
     }
 }

@@ -65,6 +65,9 @@ LotterySix:
   #so you don't win more if you bet every number
   #(MUCH LOWER is still pretty high for high number of choices)
   LowestTopPlacesPrize: 8000000
+  #When displaying the estimated prize values
+  #Round to the nearest value below (uses the first sig. fig. to the right)
+  EstimationRoundToNearest: 1000000
   #This percentage of total bets acquired will be taken from the prize pool
   TaxPercentage: 0.25
 
@@ -212,6 +215,39 @@ Announcer:
     #Send this message one more time one minute before scheduled draw
     OneMinuteBefore: true
 
+  #This section is only available on Minecraft 1.9+
+  #Shows a bossbar leading up to the scheduled draw
+  PreDrawBossBar:
+    Enabled: true
+    #How long before the draw should the bossbar appear
+    TimeBeforeDraw: 600
+    Message: "&eLotterySix &a{GameNumber} {Date}  &6Estimated: &b${PrizePool}"
+    #https://hub.spigotmc.org/javadocs/spigot/org/bukkit/boss/BarColor.html
+    Color: "YELLOW"
+    #https://hub.spigotmc.org/javadocs/spigot/org/bukkit/boss/BarStyle.html
+    Style: "SOLID"
+
+  #This section is only available on Minecraft 1.9+
+  #Shows a bossbar listing the drawn numbers during the draw
+  #Only appears if the 'LiveDrawAnnouncer' is enabled
+  DrawBossBar:
+    Enabled: true
+    #Each line here shows corresponding to each line in 'Messages' in the 'LiveDrawAnnouncer'
+    Messages:
+      - "&6_ _ _ _ _ _ + _"
+      - "{FirstNumber} &6_ _ _ _ _ + _"
+      - "{FirstNumber} {SecondNumber} &6_ _ _ _ + _"
+      - "{FirstNumber} {SecondNumber} {ThirdNumber} &6_ _ _ + _"
+      - "{FirstNumber} {SecondNumber} {ThirdNumber} {FourthNumber} &6_ _ + _"
+      - "{FirstNumber} {SecondNumber} {ThirdNumber} {FourthNumber} {FifthNumber} &6_ + _"
+      - "{FirstNumber} {SecondNumber} {ThirdNumber} {FourthNumber} {FifthNumber} {SixthNumber} &6+ _"
+      - "{FirstNumber} {SecondNumber} {ThirdNumber} {FourthNumber} {FifthNumber} {SixthNumber} &6+ {SpecialNumber}"
+      - "{FirstNumberOrdered} {SecondNumberOrdered} {ThirdNumberOrdered} {FourthNumberOrdered} {FifthNumberOrdered} {SixthNumberOrdered} &6+ {SpecialNumber}"
+    #https://hub.spigotmc.org/javadocs/spigot/org/bukkit/boss/BarColor.html
+    Color: "YELLOW"
+    #https://hub.spigotmc.org/javadocs/spigot/org/bukkit/boss/BarStyle.html
+    Style: "SOLID"
+
   DrawCancelledMessage: "&e[LotterySix] LotterySix game {GameNumber} on {Date} had been cancelled by an admin or because there are no bets submitted"
 
   BetPlacedAnnouncement:
@@ -327,6 +363,14 @@ DiscordSRV:
         - "Estimated Prize Pool: ${PrizePool}"
       NoBets: "You haven't placed any bets"
       NoGame: "There are no LotterySix games scheduled"
+      ThumbnailURL: "https://static.wikia.nocookie.net/minecraft_gamepedia/images/8/8a/Gold_Ingot_JE4_BE2.png"
+    #SlashCommand /numberstats
+    ViewNumberStatistics:
+      Enabled: true
+      Description: "View number statistics for LotterySix"
+      NumberField: "Number"
+      LastDrawnField: "Since Last Drawn"
+      TimesDrawnField: "Times Drawn"
       ThumbnailURL: "https://static.wikia.nocookie.net/minecraft_gamepedia/images/8/8a/Gold_Ingot_JE4_BE2.png"
 
 Options:

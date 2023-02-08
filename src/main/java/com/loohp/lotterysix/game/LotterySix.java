@@ -33,6 +33,7 @@ import com.loohp.lotterysix.game.lottery.IDedGame;
 import com.loohp.lotterysix.game.lottery.LazyCompletedLotterySixGameList;
 import com.loohp.lotterysix.game.lottery.PlayableLotterySixGame;
 import com.loohp.lotterysix.game.objects.BetResultConsumer;
+import com.loohp.lotterysix.game.objects.BossBarInfo;
 import com.loohp.lotterysix.game.objects.LotteryPlayer;
 import com.loohp.lotterysix.game.objects.LotterySixAction;
 import com.loohp.lotterysix.game.objects.MessageConsumer;
@@ -67,6 +68,7 @@ import java.util.TimeZone;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.UUID;
+import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -114,6 +116,7 @@ public class LotterySix implements AutoCloseable {
     public long pricePerBet;
     public int numberOfChoices;
     public long lowestTopPlacesPrize;
+    public long estimationRoundToNearest;
     public double taxPercentage;
 
     public String guiMainMenuTitle;
@@ -161,6 +164,18 @@ public class LotterySix implements AutoCloseable {
     public String announcerDrawCancelledMessage;
     public boolean announcerBetPlacedAnnouncementEnabled;
     public String announcerBetPlacedAnnouncementMessage;
+
+    public boolean announcerPreDrawBossBarEnabled;
+    public long announcerPreDrawBossBarTimeBeforeDraw;
+    public String announcerPreDrawBossBarMessage;
+    public String announcerPreDrawBossBarColor;
+    public String announcerPreDrawBossBarStyle;
+
+    public boolean announcerDrawBossBarEnabled;
+    public List<String> announcerDrawBossBarMessages;
+    public String announcerDrawBossBarColor;
+    public String announcerDrawBossBarStyle;
+
     public boolean liveDrawAnnouncerEnabled;
     public boolean liveDrawAnnouncerSendMessagesTitle;
     public int liveDrawAnnouncerTimeBetween;
@@ -190,6 +205,12 @@ public class LotterySix implements AutoCloseable {
     public String discordSRVSlashCommandsViewCurrentBetsNoBets;
     public String discordSRVSlashCommandsViewCurrentBetsNoGame;
     public String discordSRVSlashCommandsViewCurrentBetsThumbnailURL;
+    public boolean discordSRVSlashCommandsViewNumberStatisticsEnabled;
+    public String discordSRVSlashCommandsViewNumberStatisticsDescription;
+    public String discordSRVSlashCommandsViewNumberStatisticsNumberField;
+    public String discordSRVSlashCommandsViewNumberStatisticsLastDrawnField;
+    public String discordSRVSlashCommandsViewNumberStatisticsTimesDrawnField;
+    public String discordSRVSlashCommandsViewNumberStatisticsThumbnailURL;
 
     public Map<String, Long> playerBetLimit;
 
@@ -211,8 +232,9 @@ public class LotterySix implements AutoCloseable {
     private final Consumer<LotterySixAction> actionListener;
     private final Consumer<LotteryPlayer> lotteryPlayerUpdateListener;
     private final Consumer<String> consoleMessageConsumer;
+    private final BiConsumer<BossBarInfo, IDedGame> bossBarUpdater;
 
-    public LotterySix(boolean isBackend, File dataFolder, String configId, Consumer<Collection<PlayerWinnings>> givePrizesConsumer, Consumer<Collection<PlayerBets>> refundBetsConsumer, BiPredicate<UUID, Long> takeMoneyConsumer, BiPredicate<UUID, String> hasPermissionPredicate, Consumer<Boolean> lockRunnable, Supplier<Collection<UUID>> onlinePlayersSupplier, MessageConsumer messageSendingConsumer, MessageConsumer titleSendingConsumer, BetResultConsumer playerBetListener, Consumer<LotterySixAction> actionListener, Consumer<LotteryPlayer> lotteryPlayerUpdateListener, Consumer<String> consoleMessageConsumer) {
+    public LotterySix(boolean isBackend, File dataFolder, String configId, Consumer<Collection<PlayerWinnings>> givePrizesConsumer, Consumer<Collection<PlayerBets>> refundBetsConsumer, BiPredicate<UUID, Long> takeMoneyConsumer, BiPredicate<UUID, String> hasPermissionPredicate, Consumer<Boolean> lockRunnable, Supplier<Collection<UUID>> onlinePlayersSupplier, MessageConsumer messageSendingConsumer, MessageConsumer titleSendingConsumer, BetResultConsumer playerBetListener, Consumer<LotterySixAction> actionListener, Consumer<LotteryPlayer> lotteryPlayerUpdateListener, Consumer<String> consoleMessageConsumer, BiConsumer<BossBarInfo, IDedGame> bossBarUpdater) {
         this.dataFolder = dataFolder;
         this.configId = configId;
         this.givePrizesConsumer = givePrizesConsumer;
@@ -227,6 +249,7 @@ public class LotterySix implements AutoCloseable {
         this.actionListener = actionListener;
         this.lotteryPlayerUpdateListener = lotteryPlayerUpdateListener;
         this.consoleMessageConsumer = consoleMessageConsumer;
+        this.bossBarUpdater = bossBarUpdater;
 
         File lotteryDataFolder = new File(getDataFolder(), "data");
         lotteryDataFolder.mkdirs();
@@ -249,16 +272,32 @@ public class LotterySix implements AutoCloseable {
             private boolean oneMinuteAnnounced = false;
             @Override
             public void run() {
+                if (!announcerPreDrawBossBarEnabled && !announcerDrawBossBarEnabled) {
+                    bossBarUpdater.accept(BossBarInfo.CLEAR, null);
+                }
                 long now = System.currentTimeMillis();
                 if (!backendBungeecordMode) {
                     if (currentGame == null) {
+                        if ((announcerPreDrawBossBarEnabled || announcerDrawBossBarEnabled) && !gameLocked) {
+                            bossBarUpdater.accept(BossBarInfo.CLEAR, null);
+                        }
                         if (runInterval != null && CronUtils.satisfyByCurrentMinute(runInterval, timezone)) {
                             startNewGame();
                             counter = 0;
                         }
                     } else {
+                        long timeLeft = currentGame.getScheduledDateTime() - now;
+                        if (announcerPreDrawBossBarEnabled) {
+                            if (timeLeft > 0 && timeLeft < announcerPreDrawBossBarTimeBeforeDraw) {
+                                double progress = Math.max(0.0, Math.min(1.0, (double) timeLeft / (double) announcerPreDrawBossBarTimeBeforeDraw));
+                                BossBarInfo info = new BossBarInfo(announcerPreDrawBossBarMessage, announcerPreDrawBossBarColor, announcerPreDrawBossBarStyle, progress);
+                                bossBarUpdater.accept(info, currentGame);
+                            } else {
+                                bossBarUpdater.accept(BossBarInfo.CLEAR, null);
+                            }
+                        }
                         boolean announce = false;
-                        if (currentGame.getScheduledDateTime() <= now) {
+                        if (timeLeft <= 0) {
                             runCurrentGame();
                         } else if (counter % announcerPeriodicMessageFrequency == 0) {
                             announce = true;
@@ -407,6 +446,9 @@ public class LotterySix implements AutoCloseable {
                                 messageSendingConsumer.accept(uuid, liveDrawAnnouncerPostMessages.get(i), hover, completed);
                             }
                         }
+                        if (announcerDrawBossBarEnabled) {
+                            bossBarUpdater.accept(BossBarInfo.CLEAR, completed);
+                        }
                         completed.givePrizesAndUpdateStats(LotterySix.this);
                         setGameLocked(false);
                         announcementTask = null;
@@ -415,7 +457,7 @@ public class LotterySix implements AutoCloseable {
                         return;
                     }
                     if (counter >= 0 && counter % liveDrawAnnouncerTimeBetween == 0) {
-                        String message = liveDrawAnnouncerMessages.get(index++);
+                        String message = liveDrawAnnouncerMessages.get(index);
                         for (UUID uuid : onlinePlayersSupplier.get()) {
                             messageSendingConsumer.accept(uuid, message, completed);
                             if (liveDrawAnnouncerSendMessagesTitle) {
@@ -424,6 +466,18 @@ public class LotterySix implements AutoCloseable {
                                 }
                             }
                         }
+                        if (announcerDrawBossBarEnabled) {
+                            String title;
+                            if (announcerDrawBossBarMessages.isEmpty()) {
+                                title = "";
+                            } else if (index >= announcerDrawBossBarMessages.size()) {
+                                title = announcerDrawBossBarMessages.get(announcerDrawBossBarMessages.size() - 1);
+                            } else {
+                                title = announcerDrawBossBarMessages.get(index);
+                            }
+                            bossBarUpdater.accept(new BossBarInfo(title, announcerDrawBossBarColor, announcerDrawBossBarStyle, 1.0), completed);
+                        }
+                        index++;
                     }
                     counter++;
                 }
@@ -519,6 +573,10 @@ public class LotterySix implements AutoCloseable {
         return lotteryPlayerUpdateListener;
     }
 
+    public BiConsumer<BossBarInfo, IDedGame> getBossBarUpdater() {
+        return bossBarUpdater;
+    }
+
     public long getPlayerBetLimit(UUID uuid) {
         if (hasPermissionPredicate.test(uuid, "lotterysix.betlimit.unlimited")) {
             return -1;
@@ -592,6 +650,7 @@ public class LotterySix implements AutoCloseable {
         }
         numberOfChoices = Math.max(7, Math.min(49, config.getConfiguration().getInt("LotterySix.NumberOfChoices")));
         lowestTopPlacesPrize = config.getConfiguration().getLong("LotterySix.LowestTopPlacesPrize");
+        estimationRoundToNearest = config.getConfiguration().getLong("LotterySix.EstimationRoundToNearest");
         taxPercentage = config.getConfiguration().getDouble("LotterySix.TaxPercentage");
 
         guiMainMenuTitle = config.getConfiguration().getString("GUI.MainMenu.Title");
@@ -639,6 +698,18 @@ public class LotterySix implements AutoCloseable {
         announcerDrawCancelledMessage = config.getConfiguration().getString("Announcer.DrawCancelledMessage");
         announcerBetPlacedAnnouncementEnabled = config.getConfiguration().getBoolean("Announcer.BetPlacedAnnouncement.Enabled");
         announcerBetPlacedAnnouncementMessage = config.getConfiguration().getString("Announcer.BetPlacedAnnouncement.Message");
+
+        announcerPreDrawBossBarEnabled = config.getConfiguration().getBoolean("Announcer.PreDrawBossBar.Enabled");
+        announcerPreDrawBossBarTimeBeforeDraw = config.getConfiguration().getLong("Announcer.PreDrawBossBar.TimeBeforeDraw") * 1000;
+        announcerPreDrawBossBarMessage = config.getConfiguration().getString("Announcer.PreDrawBossBar.Message");
+        announcerPreDrawBossBarColor = config.getConfiguration().getString("Announcer.PreDrawBossBar.Color");
+        announcerPreDrawBossBarStyle = config.getConfiguration().getString("Announcer.PreDrawBossBar.Style");
+
+        announcerDrawBossBarEnabled = config.getConfiguration().getBoolean("Announcer.DrawBossBar.Enabled");
+        announcerDrawBossBarMessages = config.getConfiguration().getStringList("Announcer.DrawBossBar.Messages");
+        announcerDrawBossBarColor = config.getConfiguration().getString("Announcer.DrawBossBar.Color");
+        announcerDrawBossBarStyle = config.getConfiguration().getString("Announcer.DrawBossBar.Style");
+
         liveDrawAnnouncerEnabled = config.getConfiguration().getBoolean("Announcer.LiveDrawAnnouncer.Enabled");
         liveDrawAnnouncerSendMessagesTitle = config.getConfiguration().getBoolean("Announcer.LiveDrawAnnouncer.SendMessagesTitle");
         liveDrawAnnouncerTimeBetween = config.getConfiguration().getInt("Announcer.LiveDrawAnnouncer.TimeBetween");
@@ -668,6 +739,12 @@ public class LotterySix implements AutoCloseable {
         discordSRVSlashCommandsViewCurrentBetsNoBets = config.getConfiguration().getString("DiscordSRV.SlashCommands.ViewCurrentBets.NoBets");
         discordSRVSlashCommandsViewCurrentBetsNoGame = config.getConfiguration().getString("DiscordSRV.SlashCommands.ViewCurrentBets.NoGame");
         discordSRVSlashCommandsViewCurrentBetsThumbnailURL = config.getConfiguration().getString("DiscordSRV.SlashCommands.ViewPastDraw.ThumbnailURL");
+        discordSRVSlashCommandsViewNumberStatisticsEnabled = config.getConfiguration().getBoolean("DiscordSRV.SlashCommands.ViewNumberStatistics.Enabled");
+        discordSRVSlashCommandsViewNumberStatisticsDescription = config.getConfiguration().getString("DiscordSRV.SlashCommands.ViewNumberStatistics.Description");
+        discordSRVSlashCommandsViewNumberStatisticsNumberField = config.getConfiguration().getString("DiscordSRV.SlashCommands.ViewNumberStatistics.NumberField");
+        discordSRVSlashCommandsViewNumberStatisticsLastDrawnField = config.getConfiguration().getString("DiscordSRV.SlashCommands.ViewNumberStatistics.LastDrawnField");
+        discordSRVSlashCommandsViewNumberStatisticsTimesDrawnField = config.getConfiguration().getString("DiscordSRV.SlashCommands.ViewNumberStatistics.TimesDrawnField");
+        discordSRVSlashCommandsViewNumberStatisticsThumbnailURL = config.getConfiguration().getString("DiscordSRV.SlashCommands.ViewNumberStatistics.ThumbnailURL");
 
         playerBetLimit = new HashMap<>();
         for (String group : config.getConfiguration().getConfigurationSection("Restrictions.BetLimitPerRound").getKeys(false)) {

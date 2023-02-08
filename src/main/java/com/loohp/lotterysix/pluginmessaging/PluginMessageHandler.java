@@ -51,6 +51,8 @@ import net.md_5.bungee.api.chat.BaseComponent;
 import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
+import org.bukkit.boss.BarColor;
+import org.bukkit.boss.BarStyle;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.messaging.PluginMessageListener;
 
@@ -250,6 +252,13 @@ public class PluginMessageHandler implements PluginMessageListener {
                             if (LotterySixPlugin.discordSRVHook != null) {
                                 LotterySixPlugin.discordSRVHook.reload();
                             }
+                            Bukkit.getScheduler().runTask(LotterySixPlugin.plugin, () -> {
+                                for (Player player : Bukkit.getOnlinePlayers()) {
+                                    if (!LotterySixPlugin.activeBossBar.getPlayers().contains(player)) {
+                                        LotterySixPlugin.activeBossBar.addPlayer(player);
+                                    }
+                                }
+                            });
                             break;
                         }
                         case 0x0B: { // Past Games Sync Check
@@ -349,6 +358,34 @@ public class PluginMessageHandler implements PluginMessageListener {
                                     Bukkit.dispatchCommand(player, "lotterysix update");
                                 }
                             });
+                            break;
+                        }
+                        case 0x11: { // Update BossBar
+                            if (LotterySixPlugin.activeBossBar != null) {
+                                String nullableMessage = in.readBoolean() ? DataTypeIO.readString(in, StandardCharsets.UTF_8) : null;
+                                String color = DataTypeIO.readString(in, StandardCharsets.UTF_8);
+                                String style = DataTypeIO.readString(in, StandardCharsets.UTF_8);
+                                double progress = in.readDouble();
+                                UUID gameId = in.readBoolean() ? DataTypeIO.readUUID(in) : null;
+                                Bukkit.getScheduler().runTask(LotterySixPlugin.plugin, () -> {
+                                    String message = nullableMessage;
+                                    if (message == null) {
+                                        LotterySixPlugin.activeBossBar.setVisible(false);
+                                        return;
+                                    }
+                                    LotterySixPlugin.activeBossBar.setVisible(true);
+                                    LotterySixPlugin.activeBossBar.setProgress(progress);
+                                    LotterySixPlugin.activeBossBar.setColor(BarColor.valueOf(color));
+                                    LotterySixPlugin.activeBossBar.setStyle(BarStyle.valueOf(style));
+                                    IDedGame game = gameId == null ? null : instance.getGame(gameId);
+                                    if (game instanceof PlayableLotterySixGame) {
+                                        message = LotteryUtils.formatPlaceholders(null, message, instance, (PlayableLotterySixGame) game);
+                                    } else if (game instanceof CompletedLotterySixGame) {
+                                        message = LotteryUtils.formatPlaceholders(null, message, instance, (CompletedLotterySixGame) game);
+                                    }
+                                    LotterySixPlugin.activeBossBar.setTitle(message);
+                                });
+                            }
                             break;
                         }
                     }

@@ -24,6 +24,7 @@ import com.google.common.collect.Collections2;
 import com.loohp.lotterysix.config.Config;
 import com.loohp.lotterysix.game.LotterySix;
 import com.loohp.lotterysix.game.lottery.IDedGame;
+import com.loohp.lotterysix.game.objects.BossBarInfo;
 import com.loohp.lotterysix.game.objects.LotteryPlayer;
 import com.loohp.lotterysix.game.objects.LotterySixAction;
 import com.loohp.lotterysix.game.objects.PlayerBets;
@@ -63,6 +64,9 @@ public class LotterySixBungee extends Plugin implements Listener {
 
     private static LotterySix instance;
     private static PluginMessageBungee pluginMessageBungee;
+
+    private static volatile BossBarInfo latestBossBar = BossBarInfo.CLEAR;
+    private static volatile IDedGame latestBossBarGame = null;
 
     @Override
     public void onEnable() {
@@ -119,6 +123,10 @@ public class LotterySixBungee extends Plugin implements Listener {
             pluginMessageBungee.syncPlayerData(lotteryPlayer);
         }, message -> {
             ProxyServer.getInstance().getConsole().sendMessage(message);
+        }, (bossBarInfo, game) -> {
+            latestBossBar = bossBarInfo;
+            latestBossBarGame = game;
+            pluginMessageBungee.updateBossBar(bossBarInfo, game);
         });
         instance.reloadConfig();
 
@@ -240,6 +248,7 @@ public class LotterySixBungee extends Plugin implements Listener {
                     pluginMessageBungee.updateCurrentGameData(event.getServer().getInfo());
                     pluginMessageBungee.requestPastGameSyncCheck(event.getServer().getInfo());
                     pluginMessageBungee.syncPlayerData(lotteryPlayer);
+                    pluginMessageBungee.updateBossBar(latestBossBar, latestBossBarGame);
                     this.cancel();
                 }
             }

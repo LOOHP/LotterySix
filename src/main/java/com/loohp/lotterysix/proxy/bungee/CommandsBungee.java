@@ -271,6 +271,19 @@ public class CommandsBungee extends Command implements TabExecutor {
                     sender.sendMessage(LotterySixBungee.getInstance().messageNoPermission);
                 }
                 return;
+            } else if (args[0].equalsIgnoreCase("resetcarryoverfund")) {
+                if (sender.hasPermission("lotterysix.resetcarryoverfund")) {
+                    PlayableLotterySixGame game = LotterySixBungee.getInstance().getCurrentGame();
+                    if (game == null) {
+                        sender.sendMessage(LotterySixBungee.getInstance().messageNoGameRunning);
+                    } else {
+                        game.setCarryOverFund(0);
+                        sender.sendMessage(LotterySixBungee.getInstance().messageGameSettingsUpdated);
+                    }
+                } else {
+                    sender.sendMessage(LotterySixBungee.getInstance().messageNoPermission);
+                }
+                return;
             } else if (args[0].equalsIgnoreCase("admininfo")) {
                 if (sender.hasPermission("lotterysix.admininfo")) {
                     if (args.length > 1) {
@@ -354,6 +367,9 @@ public class CommandsBungee extends Command implements TabExecutor {
                 if (sender.hasPermission("lotterysix.setspecialname")) {
                     tab.add("setspecialname");
                 }
+                if (sender.hasPermission("lotterysix.resetcarryoverfund")) {
+                    tab.add("resetcarryoverfund");
+                }
                 return tab;
             case 1:
                 if (sender.hasPermission("lotterysix.reload")) {
@@ -404,6 +420,11 @@ public class CommandsBungee extends Command implements TabExecutor {
                 if (sender.hasPermission("lotterysix.setspecialname")) {
                     if ("setspecialname".startsWith(args[0].toLowerCase())) {
                         tab.add("setspecialname");
+                    }
+                }
+                if (sender.hasPermission("lotterysix.resetcarryoverfund")) {
+                    if ("resetcarryoverfund".startsWith(args[0].toLowerCase())) {
+                        tab.add("resetcarryoverfund");
                     }
                 }
                 return tab;
