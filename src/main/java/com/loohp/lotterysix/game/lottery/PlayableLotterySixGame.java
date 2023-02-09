@@ -447,7 +447,7 @@ public class PlayableLotterySixGame implements IDedGame {
         }
 
         PrizeTier[] prizeTiers = PrizeTier.values();
-        long prize = Long.MAX_VALUE;
+        long prize = firstTierPrizeTotal;
         for (int i = 0; i < prizeTiers.length - 1; i++) {
             PrizeTier prizeTier = prizeTiers[i];
             PrizeTier lowerTier = prizeTiers[i + 1];
