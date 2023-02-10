@@ -248,11 +248,12 @@ public class DiscordSRVHook implements Listener, SlashCommandProvider {
                         }
                     }
                 }
+                String description = sb.charAt(sb.length() - 1) == '\n' ? sb.substring(0, sb.length() - 1) : sb.toString();
 
                 EmbedBuilder builder = new EmbedBuilder()
                         .setColor(Color.GREEN)
                         .setTitle(ChatColor.stripColor(LotteryUtils.formatPlaceholders(player, lotterySix.discordSRVSlashCommandsViewCurrentBetsTitle, lotterySix, game)))
-                        .setDescription(sb.substring(0, sb.length() - 1))
+                        .setDescription(description)
                         .setThumbnail(lotterySix.discordSRVSlashCommandsViewCurrentBetsThumbnailURL);
                 event.replyEmbeds(builder.build()).setEphemeral(true).queue();
             }
