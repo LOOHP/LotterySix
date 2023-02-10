@@ -41,6 +41,7 @@ import com.loohp.lotterysix.game.objects.MessageConsumer;
 import com.loohp.lotterysix.game.objects.PlayerBets;
 import com.loohp.lotterysix.game.objects.PlayerPreferenceKey;
 import com.loohp.lotterysix.game.objects.PlayerWinnings;
+import com.loohp.lotterysix.game.objects.PrizeCalculationMode;
 import com.loohp.lotterysix.game.player.LotteryPlayerManager;
 import com.loohp.lotterysix.utils.ChatColorUtils;
 import com.loohp.lotterysix.utils.CronUtils;
@@ -119,6 +120,7 @@ public class LotterySix implements AutoCloseable {
     public long lowestTopPlacesPrize;
     public long estimationRoundToNearest;
     public double taxPercentage;
+    public PrizeCalculationMode prizeCalculationMode;
     public CarryOverMode carryOverMode;
     public long maxTopPlacesPrize;
 
@@ -655,6 +657,7 @@ public class LotterySix implements AutoCloseable {
         lowestTopPlacesPrize = config.getConfiguration().getLong("LotterySix.LowestTopPlacesPrize");
         estimationRoundToNearest = config.getConfiguration().getLong("LotterySix.EstimationRoundToNearest");
         taxPercentage = config.getConfiguration().getDouble("LotterySix.TaxPercentage");
+        prizeCalculationMode = PrizeCalculationMode.valueOf(config.getConfiguration().getString("LotterySix.PrizeCalculationMode").toUpperCase());
         carryOverMode = CarryOverMode.valueOf(config.getConfiguration().getString("LotterySix.CarryOverMode").toUpperCase());
         maxTopPlacesPrize = config.getConfiguration().getLong("LotterySix.MaxTopPlacesPrize");
 

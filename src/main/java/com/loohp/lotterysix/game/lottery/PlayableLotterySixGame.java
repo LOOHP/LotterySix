@@ -31,6 +31,7 @@ import com.loohp.lotterysix.game.objects.PlayerBets;
 import com.loohp.lotterysix.game.objects.PlayerPreferenceKey;
 import com.loohp.lotterysix.game.objects.PlayerStatsKey;
 import com.loohp.lotterysix.game.objects.PlayerWinnings;
+import com.loohp.lotterysix.game.objects.PrizeCalculationMode;
 import com.loohp.lotterysix.game.objects.PrizeTier;
 import com.loohp.lotterysix.game.objects.WinningCombination;
 import com.loohp.lotterysix.game.objects.WinningNumbers;
@@ -38,6 +39,7 @@ import com.loohp.lotterysix.game.objects.betnumbers.BetNumbers;
 import com.loohp.lotterysix.utils.MathUtils;
 import com.loohp.lotterysix.utils.StringUtils;
 
+import java.math.BigDecimal;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -262,16 +264,21 @@ public class PlayableLotterySixGame implements IDedGame {
     }
 
     public long estimatedPrizePool(long maxTopPlacesPrize, double taxPercentage, long rounding) {
-        CarryOverMode carryOverMode = instance == null ? CarryOverMode.DEFAULT : instance.carryOverMode;
-        switch (carryOverMode) {
-            case DEFAULT: {
-                return MathUtils.followRound(rounding, Math.min(maxTopPlacesPrize, Math.max(lowestTopPlacesPrize, (lowestTopPlacesPrize / 2) + carryOverFund + (long) Math.floor(getTotalBets() * (1.0 - taxPercentage)))));
-            }
-            case ONLY_TICKET_SALES: {
-                return MathUtils.followRound(rounding, Math.min(maxTopPlacesPrize, Math.max(lowestTopPlacesPrize, lowestTopPlacesPrize + carryOverFund + (long) Math.floor(getTotalBets() * (1.0 - taxPercentage)))));
-            }
-            default: {
-                throw new RuntimeException("Unknown carry over mode: " + carryOverMode);
+        PrizeCalculationMode prizeCalculationMode = instance == null ? PrizeCalculationMode.DEFAULT : instance.prizeCalculationMode;
+        if (prizeCalculationMode.equals(PrizeCalculationMode.HKJC)) {
+            return MathUtils.followRound(rounding, Math.min(maxTopPlacesPrize, carryOverFund + lowestTopPlacesPrize));
+        } else {
+            CarryOverMode carryOverMode = instance == null ? CarryOverMode.DEFAULT : instance.carryOverMode;
+            switch (carryOverMode) {
+                case DEFAULT: {
+                    return MathUtils.followRound(rounding, Math.min(maxTopPlacesPrize, Math.max(lowestTopPlacesPrize, (lowestTopPlacesPrize / 2) + carryOverFund + (long) Math.floor(getTotalBets() * (1.0 - taxPercentage)))));
+                }
+                case ONLY_TICKET_SALES: {
+                    return MathUtils.followRound(rounding, Math.min(maxTopPlacesPrize, Math.max(lowestTopPlacesPrize, lowestTopPlacesPrize + carryOverFund + (long) Math.floor(getTotalBets() * (1.0 - taxPercentage)))));
+                }
+                default: {
+                    throw new RuntimeException("Unknown carry over mode: " + carryOverMode);
+                }
             }
         }
     }
@@ -283,25 +290,15 @@ public class PlayableLotterySixGame implements IDedGame {
         SecureRandom random = new SecureRandom();
         int[] num = random.ints(1, maxNumber + 1).distinct().limit(7).toArray();
         WinningNumbers winningNumbers = new WinningNumbers(num[0], num[1], num[2], num[3], num[4], num[5], num[6]);
+
+        Map<Integer, NumberStatistics> newNumberStats = new HashMap<>();
+        for (int i = 1; i <= maxNumber; i++) {
+            newNumberStats.put(i, getNumberStatistics(i).increment(winningNumbers.containsAnywhere(i)));
+        }
+
         Map<PrizeTier, List<Pair<PlayerBets, WinningCombination>>> tiers = new EnumMap<>(PrizeTier.class);
         for (PrizeTier prizeTier : PrizeTier.values()) {
             tiers.put(prizeTier, new ArrayList<>());
-        }
-
-        long totalPrize;
-        CarryOverMode carryOverMode = instance == null ? CarryOverMode.DEFAULT : instance.carryOverMode;
-        switch (carryOverMode) {
-            case DEFAULT: {
-                totalPrize = (lowestTopPlacesPrize / 2) + carryOverFund + (long) Math.floor(getTotalBets() * (1.0 - taxPercentage));
-                break;
-            }
-            case ONLY_TICKET_SALES: {
-                totalPrize = lowestTopPlacesPrize + carryOverFund + (long) Math.floor(getTotalBets() * (1.0 - taxPercentage));
-                break;
-            }
-            default: {
-                throw new RuntimeException("Unknown carry over mode: " + carryOverMode);
-            }
         }
 
         Set<UUID> participants = new HashSet<>();
@@ -321,47 +318,69 @@ public class PlayableLotterySixGame implements IDedGame {
                 }
             }).start();
         }
+
+        PrizeCalculationMode prizeCalculationMode = instance == null ? PrizeCalculationMode.DEFAULT : instance.prizeCalculationMode;
+        if (prizeCalculationMode.equals(PrizeCalculationMode.HKJC)) {
+            return hkjcCalculation(pricePerBet, maxTopPlacesPrize, taxPercentage, tiers, winningNumbers, newNumberStats);
+        }
+
+        CarryOverMode carryOverMode = instance == null ? CarryOverMode.DEFAULT : instance.carryOverMode;
+        long totalPrize;
+        switch (carryOverMode) {
+            case DEFAULT: {
+                totalPrize = (lowestTopPlacesPrize / 2) + carryOverFund + (long) Math.floor(getTotalBets() * (1.0 - taxPercentage));
+                break;
+            }
+            case ONLY_TICKET_SALES: {
+                totalPrize = lowestTopPlacesPrize + carryOverFund + (long) Math.floor(getTotalBets() * (1.0 - taxPercentage));
+                break;
+            }
+            default: {
+                throw new RuntimeException("Unknown carry over mode: " + carryOverMode);
+            }
+        }
+
         Map<PrizeTier, Long> prizeForTier = new EnumMap<>(PrizeTier.class);
 
         List<PlayerWinnings> winnings = new ArrayList<>();
         long totalPrizes = 0;
         long totalFourthToSeventh = 0;
         if (!tiers.get(PrizeTier.SEVENTH).isEmpty()) {
-            prizeForTier.put(PrizeTier.SEVENTH, pricePerBet * 4);
+            prizeForTier.put(PrizeTier.SEVENTH, pricePerBet * PrizeTier.SEVENTH.getFixedPrizeMultiplier());
         }
         for (Pair<PlayerBets, WinningCombination> pair : tiers.get(PrizeTier.SEVENTH)) {
             PlayerBets playerBets = pair.getFirst();
-            PlayerWinnings playerWinnings = new PlayerWinnings(playerBets.getName(), playerBets.getPlayer(), PrizeTier.SEVENTH, playerBets, pair.getSecond(), (pricePerBet * 4) / playerBets.getType().getDivisor());
+            PlayerWinnings playerWinnings = new PlayerWinnings(playerBets.getName(), playerBets.getPlayer(), PrizeTier.SEVENTH, playerBets, pair.getSecond(), (pricePerBet * PrizeTier.SEVENTH.getFixedPrizeMultiplier()) / playerBets.getType().getDivisor());
             totalPrizes += playerWinnings.getWinnings();
             totalFourthToSeventh += playerWinnings.getWinnings();
             winnings.add(playerWinnings);
         }
         if (!tiers.get(PrizeTier.SIXTH).isEmpty()) {
-            prizeForTier.put(PrizeTier.SIXTH, pricePerBet * 32);
+            prizeForTier.put(PrizeTier.SIXTH, pricePerBet * PrizeTier.SIXTH.getFixedPrizeMultiplier());
         }
         for (Pair<PlayerBets, WinningCombination> pair : tiers.get(PrizeTier.SIXTH)) {
             PlayerBets playerBets = pair.getFirst();
-            PlayerWinnings playerWinnings = new PlayerWinnings(playerBets.getName(), playerBets.getPlayer(), PrizeTier.SIXTH, playerBets, pair.getSecond(), (pricePerBet * 32) / playerBets.getType().getDivisor());
+            PlayerWinnings playerWinnings = new PlayerWinnings(playerBets.getName(), playerBets.getPlayer(), PrizeTier.SIXTH, playerBets, pair.getSecond(), (pricePerBet * PrizeTier.SIXTH.getFixedPrizeMultiplier()) / playerBets.getType().getDivisor());
             totalPrizes += playerWinnings.getWinnings();
             totalFourthToSeventh += playerWinnings.getWinnings();
             winnings.add(playerWinnings);
         }
         if (!tiers.get(PrizeTier.FIFTH).isEmpty()) {
-            prizeForTier.put(PrizeTier.FIFTH, pricePerBet * 64);
+            prizeForTier.put(PrizeTier.FIFTH, pricePerBet * PrizeTier.FIFTH.getFixedPrizeMultiplier());
         }
         for (Pair<PlayerBets, WinningCombination> pair : tiers.get(PrizeTier.FIFTH)) {
             PlayerBets playerBets = pair.getFirst();
-            PlayerWinnings playerWinnings = new PlayerWinnings(playerBets.getName(), playerBets.getPlayer(), PrizeTier.FIFTH, playerBets, pair.getSecond(), (pricePerBet * 64) / playerBets.getType().getDivisor());
+            PlayerWinnings playerWinnings = new PlayerWinnings(playerBets.getName(), playerBets.getPlayer(), PrizeTier.FIFTH, playerBets, pair.getSecond(), (pricePerBet * PrizeTier.FIFTH.getFixedPrizeMultiplier()) / playerBets.getType().getDivisor());
             totalPrizes += playerWinnings.getWinnings();
             totalFourthToSeventh += playerWinnings.getWinnings();
             winnings.add(playerWinnings);
         }
         if (!tiers.get(PrizeTier.FOURTH).isEmpty()) {
-            prizeForTier.put(PrizeTier.FOURTH, pricePerBet * 960);
+            prizeForTier.put(PrizeTier.FOURTH, pricePerBet * PrizeTier.FOURTH.getFixedPrizeMultiplier());
         }
         for (Pair<PlayerBets, WinningCombination> pair : tiers.get(PrizeTier.FOURTH)) {
             PlayerBets playerBets = pair.getFirst();
-            PlayerWinnings playerWinnings = new PlayerWinnings(playerBets.getName(), playerBets.getPlayer(), PrizeTier.FOURTH, playerBets, pair.getSecond(), (pricePerBet * 960) / playerBets.getType().getDivisor());
+            PlayerWinnings playerWinnings = new PlayerWinnings(playerBets.getName(), playerBets.getPlayer(), PrizeTier.FOURTH, playerBets, pair.getSecond(), (pricePerBet * PrizeTier.FOURTH.getFixedPrizeMultiplier()) / playerBets.getType().getDivisor());
             totalPrizes += playerWinnings.getWinnings();
             totalFourthToSeventh += playerWinnings.getWinnings();
             winnings.add(playerWinnings);
@@ -477,10 +496,16 @@ public class PlayableLotterySixGame implements IDedGame {
             totalPrizes -= prizeMoneyRemoved;
         }
 
-        Map<Integer, NumberStatistics> newNumberStats = new HashMap<>();
-        for (int i = 1; i <= maxNumber; i++) {
-            newNumberStats.put(i, getNumberStatistics(i).increment(winningNumbers.containsAnywhere(i)));
+        for (int u = 0; u < winnings.size(); u++) {
+            PlayerWinnings playerWinnings = winnings.get(u);
+            long currentPrize = playerWinnings.getWinnings();
+            long rounded = MathUtils.followRoundDown(pricePerBet, currentPrize);
+            if (currentPrize > rounded) {
+                winnings.set(u, playerWinnings.winnings(rounded));
+                carryOverNext += (currentPrize - rounded);
+            }
         }
+        prizeForTier.replaceAll((k, v) -> MathUtils.followRoundDown(pricePerBet, v));
 
         this.valid = false;
 
@@ -495,6 +520,252 @@ public class PlayableLotterySixGame implements IDedGame {
                 }
             }
         }
+
+        return new CompletedLotterySixGame(gameId, scheduledDateTime, gameNumber, specialName, winningNumbers, newNumberStats, pricePerBet, prizeForTier, winnings, bets, totalPrizes, carryOverNext);
+    }
+
+    private synchronized CompletedLotterySixGame hkjcCalculation(long pricePerBet, long maxTopPlacesPrize, double taxPercentage, Map<PrizeTier, List<Pair<PlayerBets, WinningCombination>>> tiers, WinningNumbers winningNumbers, Map<Integer, NumberStatistics> newNumberStats) {
+        PrizeTier[] prizeTiers = PrizeTier.values();
+        long totalFund = (long) Math.floor(getTotalBets() * (1.0 - taxPercentage));
+        long totalFundForFourthToSeventh = (long) Math.floor((double) totalFund * 0.6);
+        long totalFourthToSeventhFundRequired = 0;
+
+        Map<PrizeTier, Long> portionsFourthToSeventh = new EnumMap<>(PrizeTier.class);
+        Map<PrizeTier, Double> unitsFourthToSeventh = new EnumMap<>(PrizeTier.class);
+        for (Map.Entry<PrizeTier, List<Pair<PlayerBets, WinningCombination>>> entry : tiers.entrySet()) {
+            PrizeTier prizeTier = entry.getKey();
+            if (!prizeTier.isTopTier() && !entry.getValue().isEmpty()) {
+                double unit = entry.getValue().stream().mapToDouble(each -> each.getFirst().getType().getUnit()).sum();
+                unitsFourthToSeventh.put(prizeTier, unit);
+                long portion = Math.round(BigDecimal.valueOf(unit).multiply(BigDecimal.valueOf(pricePerBet)).multiply(BigDecimal.valueOf(prizeTier.getFixedPrizeMultiplier())).doubleValue());
+                totalFourthToSeventhFundRequired += portion;
+                portionsFourthToSeventh.put(prizeTier, portion);
+            }
+        }
+
+        boolean carryOverRequiredForFourthToSeventh = totalFourthToSeventhFundRequired > totalFundForFourthToSeventh;
+
+        long total = totalFourthToSeventhFundRequired;
+        long bigTotalFund = carryOverRequiredForFourthToSeventh ? totalFundForFourthToSeventh + carryOverFund : totalFundForFourthToSeventh;
+
+        Map<PrizeTier, Long> maxPrizeInTier = new EnumMap<>(PrizeTier.class);
+        for (Map.Entry<PrizeTier, Long> entry : portionsFourthToSeventh.entrySet()) {
+            PrizeTier prizeTier = entry.getKey();
+            if (!prizeTier.isTopTier()) {
+                Double unit = unitsFourthToSeventh.get(prizeTier);
+                if (unit == null) {
+                    maxPrizeInTier.put(prizeTier, 0L);
+                } else {
+                    maxPrizeInTier.put(prizeTier, (long) Math.ceil(bigTotalFund * ((double) entry.getValue() / (double) total) / unit));
+                }
+            }
+        }
+
+        Map<PrizeTier, Long> prizeForTier = new EnumMap<>(PrizeTier.class);
+        List<PlayerWinnings> winnings = new ArrayList<>();
+        long totalPrizes = 0;
+        long totalFourthToSeventh = 0;
+        for (int i = prizeTiers.length - 1; i >= 3; i--) {
+            PrizeTier prizeTier = prizeTiers[i];
+            if (!tiers.get(prizeTier).isEmpty()) {
+                long prizePerBetForTier = Math.max(0, Math.min(pricePerBet * prizeTier.getFixedPrizeMultiplier(), maxPrizeInTier.get(prizeTier)));
+                prizeForTier.put(prizeTier, prizePerBetForTier);
+                for (Pair<PlayerBets, WinningCombination> pair : tiers.get(prizeTier)) {
+                    PlayerBets playerBets = pair.getFirst();
+                    PlayerWinnings playerWinnings = new PlayerWinnings(playerBets.getName(), playerBets.getPlayer(), prizeTier, playerBets, pair.getSecond(), prizePerBetForTier / playerBets.getType().getDivisor());
+                    totalPrizes += playerWinnings.getWinnings();
+                    totalFourthToSeventh += playerWinnings.getWinnings();
+                    winnings.add(playerWinnings);
+                }
+            }
+        }
+
+        long carryOverRemaining = carryOverRequiredForFourthToSeventh ? carryOverFund - (long) Math.floor(totalFourthToSeventh - totalFundForFourthToSeventh) : carryOverFund;
+        long totalRemaining = Math.max(0, totalFund - Math.min(totalFourthToSeventh, totalFundForFourthToSeventh));
+
+        long lowestThirdTierPrize = 0;
+        for (int i = 3; i < prizeTiers.length; i++) {
+            PrizeTier prizeTier = prizeTiers[i];
+            Long prize = prizeForTier.get(prizeTier);
+            if (prize != null) {
+                lowestThirdTierPrize = prize;
+                for (int u = i - 1; u >= 2; u--) {
+                    lowestThirdTierPrize *= prizeTiers[u].getMinimumMultiplierFromLast();
+                }
+                break;
+            }
+        }
+        long lowestSecondTierPrize = lowestThirdTierPrize * PrizeTier.SECOND.getMinimumMultiplierFromLast();
+
+        boolean thirdPlaceEmpty = tiers.get(PrizeTier.THIRD).isEmpty();
+        boolean secondPlaceEmpty = tiers.get(PrizeTier.SECOND).isEmpty();
+        boolean firstPlaceEmpty = tiers.get(PrizeTier.FIRST).isEmpty();
+
+        double thirdTierWeightedWinners = Math.max(1, tiers.get(PrizeTier.THIRD).stream().mapToDouble(each -> each.getFirst().getType().getUnit()).sum());
+        double secondTierWeightedWinners = Math.max(1, tiers.get(PrizeTier.SECOND).stream().mapToDouble(each -> each.getFirst().getType().getUnit()).sum()) * 2.6;
+        double totalWeightedWinners = thirdTierWeightedWinners + secondTierWeightedWinners;
+
+        double carryOverPortion = 0;
+        double thirdPortion = (thirdTierWeightedWinners / totalWeightedWinners) * 0.55;
+        if (thirdPortion > 0.4) {
+            carryOverPortion += (thirdPortion - 0.4);
+            thirdPortion = 0.4;
+        }
+
+        double secondPortion = (secondTierWeightedWinners / totalWeightedWinners) * 0.55;
+        if (secondPortion > 0.4) {
+            carryOverPortion += (secondPortion - 0.4);
+            secondPortion = 0.4;
+        } else if (secondPortion < 0.15) {
+            carryOverPortion -= (0.15 - secondPortion);
+            secondPortion = 0.15;
+        }
+
+        long carryOverNext = (long) Math.floor(totalRemaining * carryOverPortion);
+
+        long thirdTierPrizeTotal = (long) Math.floor(totalRemaining * thirdPortion);
+        if (!thirdPlaceEmpty) {
+            long thirdTierPrize = (long) Math.floor(thirdTierPrizeTotal / Math.max(1.0, tiers.get(PrizeTier.THIRD).stream().mapToDouble(each -> each.getFirst().getType().getUnit()).sum()));
+            if (thirdTierPrize < lowestThirdTierPrize) {
+                carryOverRemaining -= (thirdTierPrize - lowestThirdTierPrize);
+                thirdTierPrize = lowestThirdTierPrize;
+                if (carryOverRemaining < 0) {
+                    thirdTierPrize += carryOverRemaining;
+                    carryOverRemaining = 0;
+                }
+            }
+            prizeForTier.put(PrizeTier.THIRD, thirdTierPrize);
+            long thirdTierTotal = 0;
+            for (Pair<PlayerBets, WinningCombination> pair : tiers.get(PrizeTier.THIRD)) {
+                PlayerBets playerBets = pair.getFirst();
+                PlayerWinnings playerWinnings = new PlayerWinnings(playerBets.getName(), playerBets.getPlayer(), PrizeTier.THIRD, playerBets, pair.getSecond(), thirdTierPrize / playerBets.getType().getDivisor());
+                totalPrizes += playerWinnings.getWinnings();
+                thirdTierTotal += playerWinnings.getWinnings();
+                winnings.add(playerWinnings);
+            }
+            if (thirdTierPrize > thirdTierTotal) {
+                carryOverNext += (thirdTierPrize - thirdTierTotal);
+            }
+        } else if (firstPlaceEmpty && secondPlaceEmpty) {
+            carryOverNext += thirdTierPrizeTotal;
+        }
+
+        long secondTierPrizeTotal = (long) Math.floor(totalRemaining * secondPortion);
+        if (!secondPlaceEmpty) {
+            if (thirdPlaceEmpty) {
+                if (firstPlaceEmpty) {
+                    secondTierPrizeTotal += thirdTierPrizeTotal;
+                } else {
+                    secondTierPrizeTotal += thirdTierPrizeTotal * 0.25;
+                }
+            }
+            long secondTierPrize = (long) Math.floor(secondTierPrizeTotal / Math.max(1.0, tiers.get(PrizeTier.SECOND).stream().mapToDouble(each -> each.getFirst().getType().getUnit()).sum()));
+            if (secondTierPrize < lowestSecondTierPrize) {
+                carryOverRemaining -= (secondTierPrize - lowestSecondTierPrize);
+                secondTierPrize = lowestSecondTierPrize;
+            }
+            if (carryOverRemaining < 0) {
+                secondTierPrize += carryOverRemaining;
+                carryOverRemaining = 0;
+            }
+            prizeForTier.put(PrizeTier.SECOND, secondTierPrize);
+            long secondTierTotal = 0;
+            for (Pair<PlayerBets, WinningCombination> pair : tiers.get(PrizeTier.SECOND)) {
+                PlayerBets playerBets = pair.getFirst();
+                PlayerWinnings playerWinnings = new PlayerWinnings(playerBets.getName(), playerBets.getPlayer(), PrizeTier.SECOND, playerBets, pair.getSecond(), secondTierPrize / playerBets.getType().getDivisor());
+                totalPrizes += playerWinnings.getWinnings();
+                secondTierTotal += playerWinnings.getWinnings();
+                winnings.add(playerWinnings);
+            }
+            if (secondTierPrize > secondTierTotal) {
+                carryOverNext += (secondTierPrize - secondTierTotal);
+            }
+        } else {
+            carryOverNext += secondTierPrizeTotal;
+        }
+
+        long firstTierPrizeTotal = Math.min(maxTopPlacesPrize, carryOverRemaining + Math.max(lowestTopPlacesPrize, (long) Math.floor(totalRemaining * 0.45)));
+        long firstTierCarryOver = 0;
+        if (!firstPlaceEmpty) {
+            if (thirdPlaceEmpty) {
+                if (secondPlaceEmpty) {
+                    firstTierPrizeTotal += thirdTierPrizeTotal;
+                } else {
+                    firstTierPrizeTotal += thirdTierPrizeTotal * 0.75;
+                }
+            }
+            long firstTierPrize = (long) Math.floor(firstTierPrizeTotal / Math.max(1.0, tiers.get(PrizeTier.FIRST).stream().mapToDouble(each -> each.getFirst().getType().getUnit()).sum()));
+            prizeForTier.put(PrizeTier.FIRST, firstTierPrize);
+            long firstTierTotal = 0;
+            for (Pair<PlayerBets, WinningCombination> pair : tiers.get(PrizeTier.FIRST)) {
+                PlayerBets playerBets = pair.getFirst();
+                PlayerWinnings playerWinnings = new PlayerWinnings(playerBets.getName(), playerBets.getPlayer(), PrizeTier.FIRST, playerBets, pair.getSecond(), firstTierPrize / playerBets.getType().getDivisor());
+                totalPrizes += playerWinnings.getWinnings();
+                firstTierTotal += playerWinnings.getWinnings();
+                winnings.add(playerWinnings);
+            }
+            if (firstTierPrize > firstTierTotal) {
+                firstTierCarryOver += (firstTierPrize - firstTierTotal);
+            }
+        } else {
+            firstTierCarryOver += firstTierPrizeTotal;
+        }
+
+        CarryOverMode carryOverMode = instance == null ? CarryOverMode.DEFAULT : instance.carryOverMode;
+        switch (carryOverMode) {
+            case DEFAULT: {
+                carryOverNext += firstTierCarryOver;
+                break;
+            }
+            case ONLY_TICKET_SALES: {
+                carryOverNext += Math.max(0, firstTierCarryOver - lowestTopPlacesPrize);
+                break;
+            }
+            default: {
+                throw new RuntimeException("Unknown carry over mode: " + carryOverMode);
+            }
+        }
+
+        long prize = firstTierPrizeTotal;
+        for (int i = 0; i < prizeTiers.length - 1; i++) {
+            PrizeTier prizeTier = prizeTiers[i];
+            PrizeTier lowerTier = prizeTiers[i + 1];
+            Long tierPrize = prizeForTier.get(prizeTier);
+            if (tierPrize != null) {
+                prize = tierPrize;
+            }
+            long lowerPrize = prizeForTier.getOrDefault(lowerTier, 0L);
+            if (lowerPrize * prizeTier.getMinimumMultiplierFromLast() <= prize) {
+                continue;
+            }
+            long newLowerPrize = prize / prizeTier.getMinimumMultiplierFromLast();
+            prizeForTier.put(lowerTier, newLowerPrize);
+            long prizeMoneyRemoved = 0;
+            for (int u = 0; u < winnings.size(); u++) {
+                PlayerWinnings playerWinnings = winnings.get(u);
+                if (playerWinnings.getTier().equals(lowerTier)) {
+                    long currentPrize = playerWinnings.getWinnings();
+                    long newPrize = newLowerPrize / playerWinnings.getWinningBet(bets).getType().getDivisor();
+                    prizeMoneyRemoved += (currentPrize - newPrize);
+                    winnings.set(u, playerWinnings.winnings(newPrize));
+                }
+            }
+            carryOverNext += prizeMoneyRemoved;
+            totalPrizes -= prizeMoneyRemoved;
+        }
+
+        for (int u = 0; u < winnings.size(); u++) {
+            PlayerWinnings playerWinnings = winnings.get(u);
+            long currentPrize = playerWinnings.getWinnings();
+            long rounded = MathUtils.followRoundDown(pricePerBet, currentPrize);
+            if (currentPrize > rounded) {
+                winnings.set(u, playerWinnings.winnings(rounded));
+                carryOverNext += (currentPrize - rounded);
+            }
+        }
+        prizeForTier.replaceAll((k, v) -> MathUtils.followRoundDown(pricePerBet, v));
+
+        this.valid = false;
 
         return new CompletedLotterySixGame(gameId, scheduledDateTime, gameNumber, specialName, winningNumbers, newNumberStats, pricePerBet, prizeForTier, winnings, bets, totalPrizes, carryOverNext);
     }

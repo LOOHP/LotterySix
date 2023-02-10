@@ -70,7 +70,16 @@ LotterySix:
   EstimationRoundToNearest: 1000000
   #This percentage of total bets acquired will be taken from the prize pool
   TaxPercentage: 0.25
+  #Prize Calculation Mode
+  #This affects carry over prize calculation as well
+  #HKJC mode is an IRL prize money calculation method used by the HKJC
+  #Where the LowestTopPlacesPrize is only applied to 1st tier instead of all 1st - 3rd
+  #NOT recommended unless you have a large server that buys a LOT of tickets (>50000)
+  #MODES: DEFAULT, HKJC
+  PrizeCalculationMode: "DEFAULT"
   #Choose carry-over fund calculation mode
+  #The difference between DEFAULT & ONLY_TICKET_SALES is that the for
+  #ONLY_TICKET_SALES that half of LowestTopPlacesPrize does not carry over to the next game
   #MODES: DEFAULT, ONLY_TICKET_SALES
   CarryOverMode: "DEFAULT"
   #Highest possible value is 9223372036854775807

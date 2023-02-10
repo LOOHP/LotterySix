@@ -33,7 +33,36 @@ public class MathUtils {
             }
         }
         double d = Math.pow(10, str.length() - i - 1);
+        if (value < d) {
+            int valurStrLength = Long.toString(value).length();
+            if (valurStrLength <= 1) {
+                return value * signNum;
+            }
+            return followRound((long) Math.pow(10, valurStrLength), value * signNum);
+        }
         long result = (long) (Math.round(value / d) * d);
+        return (result <= 0 ? value : result) * signNum;
+    }
+
+    public static long followRoundDown(long follow, long value) {
+        int signNum = value < 0 ? -1 : 1;
+        value = Math.abs(value);
+        String str = Long.toString(Math.abs(follow));
+        int i;
+        for (i = str.length() - 1; i >= 0; i--) {
+            if (str.charAt(i) != '0') {
+                break;
+            }
+        }
+        double d = Math.pow(10, str.length() - i - 1);
+        if (value < d) {
+            int valurStrLength = Long.toString(value).length();
+            if (valurStrLength <= 1) {
+                return value * signNum;
+            }
+            return followRound((long) Math.pow(10, valurStrLength), value * signNum);
+        }
+        long result = (long) (Math.floor(value / d) * d);
         return (result <= 0 ? value : result) * signNum;
     }
 

@@ -148,7 +148,7 @@ public class LotteryPluginGUI implements Listener {
 
     private void handleClick(InventoryInteractEvent event) {
         Player player = (Player) event.getWhoClicked();
-        long gameTick = player.getWorld().getGameTime();
+        long gameTick = player.getWorld().getFullTime();
         Long lastClick = lastGuiClick.get(player);
         if (lastClick == null || gameTick != lastClick) {
             lastGuiClick.put(player, gameTick);

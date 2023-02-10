@@ -22,30 +22,36 @@ package com.loohp.lotterysix.game.objects;
 
 public enum PrizeTier {
 
-    FIRST("1st", 2, true),
-    SECOND("2nd", 2, true),
-    THIRD("3rd", 2, true),
-    FOURTH("4th", 15),
-    FIFTH("5th", 2),
-    SIXTH("6th", 8),
-    SEVENTH("7th", 1);
+    FIRST("1st", -1, 2, true),
+    SECOND("2nd", -1, 2, true),
+    THIRD("3rd", -1, 2, true),
+    FOURTH("4th", 960, 15),
+    FIFTH("5th", 64, 2),
+    SIXTH("6th", 32, 8),
+    SEVENTH("7th", 4, 1);
 
     private final String shortHand;
+    private final int fixedPrizeMultiplier;
     private final int minimumMultiplierFromLast;
     private final boolean isTopTier;
 
-    PrizeTier(String shortHand, int minimumMultiplierFromLast, boolean isTopTier) {
+    PrizeTier(String shortHand, int fixedPrizeMultiplier, int minimumMultiplierFromLast, boolean isTopTier) {
         this.shortHand = shortHand;
+        this.fixedPrizeMultiplier = fixedPrizeMultiplier;
         this.minimumMultiplierFromLast = minimumMultiplierFromLast;
         this.isTopTier = isTopTier;
     }
 
-    PrizeTier(String shortHand, int minimumMultiplierFromLast) {
-        this(shortHand, minimumMultiplierFromLast, false);
+    PrizeTier(String shortHand, int fixedPrizeMultiplier, int minimumMultiplierFromLast) {
+        this(shortHand, fixedPrizeMultiplier, minimumMultiplierFromLast, false);
     }
 
     public String getShortHand() {
         return shortHand;
+    }
+
+    public int getFixedPrizeMultiplier() {
+        return fixedPrizeMultiplier;
     }
 
     public int getMinimumMultiplierFromLast() {
