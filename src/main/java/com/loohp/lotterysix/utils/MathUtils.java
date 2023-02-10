@@ -23,6 +23,10 @@ package com.loohp.lotterysix.utils;
 public class MathUtils {
 
     public static long followRound(long follow, long value) {
+        return followRound(follow, value, true);
+    }
+
+    private static long followRound(long follow, long value, boolean tryAgain) {
         int signNum = value < 0 ? -1 : 1;
         value = Math.abs(value);
         String str = Long.toString(Math.abs(follow));
@@ -34,17 +38,25 @@ public class MathUtils {
         }
         double d = Math.pow(10, str.length() - i - 1);
         if (value < d) {
+            if (!tryAgain) {
+                new RuntimeException("Please report this to the LotterySix developer! (" + value + ")").printStackTrace();
+                return value;
+            }
             int valurStrLength = Long.toString(value).length();
             if (valurStrLength <= 1) {
                 return value * signNum;
             }
-            return followRound((long) Math.pow(10, valurStrLength), value * signNum);
+            return followRound((long) Math.pow(10, valurStrLength - 1), value * signNum, false);
         }
         long result = (long) (Math.round(value / d) * d);
         return (result <= 0 ? value : result) * signNum;
     }
 
     public static long followRoundDown(long follow, long value) {
+        return followRoundDown(follow, value, true);
+    }
+
+    private static long followRoundDown(long follow, long value, boolean tryAgain) {
         int signNum = value < 0 ? -1 : 1;
         value = Math.abs(value);
         String str = Long.toString(Math.abs(follow));
@@ -56,11 +68,15 @@ public class MathUtils {
         }
         double d = Math.pow(10, str.length() - i - 1);
         if (value < d) {
+            if (!tryAgain) {
+                new RuntimeException("Please report this to the LotterySix developer! (" + value + ")").printStackTrace();
+                return value;
+            }
             int valurStrLength = Long.toString(value).length();
             if (valurStrLength <= 1) {
                 return value * signNum;
             }
-            return followRound((long) Math.pow(10, valurStrLength), value * signNum);
+            return followRoundDown((long) Math.pow(10, valurStrLength - 1), value * signNum, false);
         }
         long result = (long) (Math.floor(value / d) * d);
         return (result <= 0 ? value : result) * signNum;

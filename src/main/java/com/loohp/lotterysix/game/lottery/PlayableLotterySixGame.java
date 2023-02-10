@@ -496,16 +496,16 @@ public class PlayableLotterySixGame implements IDedGame {
             totalPrizes -= prizeMoneyRemoved;
         }
 
+        prizeForTier.replaceAll((k, v) -> MathUtils.followRoundDown(pricePerBet, v));
         for (int u = 0; u < winnings.size(); u++) {
             PlayerWinnings playerWinnings = winnings.get(u);
             long currentPrize = playerWinnings.getWinnings();
-            long rounded = MathUtils.followRoundDown(pricePerBet, currentPrize);
+            long rounded = prizeForTier.get(playerWinnings.getTier()) / playerWinnings.getWinningBet(bets).getType().getDivisor();
             if (currentPrize > rounded) {
                 winnings.set(u, playerWinnings.winnings(rounded));
                 carryOverNext += (currentPrize - rounded);
             }
         }
-        prizeForTier.replaceAll((k, v) -> MathUtils.followRoundDown(pricePerBet, v));
 
         this.valid = false;
 
@@ -556,7 +556,7 @@ public class PlayableLotterySixGame implements IDedGame {
                 if (unit == null) {
                     maxPrizeInTier.put(prizeTier, 0L);
                 } else {
-                    maxPrizeInTier.put(prizeTier, (long) Math.ceil(bigTotalFund * ((double) entry.getValue() / (double) total) / unit));
+                    maxPrizeInTier.put(prizeTier, (long) Math.floor(bigTotalFund * ((double) entry.getValue() / (double) total) / unit));
                 }
             }
         }
@@ -582,7 +582,7 @@ public class PlayableLotterySixGame implements IDedGame {
 
         long carryOverRemaining = carryOverRequiredForFourthToSeventh ? carryOverFund - (long) Math.floor(totalFourthToSeventh - totalFundForFourthToSeventh) : carryOverFund;
         long totalRemaining = Math.max(0, totalFund - Math.min(totalFourthToSeventh, totalFundForFourthToSeventh));
-
+        
         long lowestThirdTierPrize = 0;
         for (int i = 3; i < prizeTiers.length; i++) {
             PrizeTier prizeTier = prizeTiers[i];
@@ -622,12 +622,12 @@ public class PlayableLotterySixGame implements IDedGame {
         }
 
         long carryOverNext = (long) Math.floor(totalRemaining * carryOverPortion);
-
+        
         long thirdTierPrizeTotal = (long) Math.floor(totalRemaining * thirdPortion);
         if (!thirdPlaceEmpty) {
             long thirdTierPrize = (long) Math.floor(thirdTierPrizeTotal / Math.max(1.0, tiers.get(PrizeTier.THIRD).stream().mapToDouble(each -> each.getFirst().getType().getUnit()).sum()));
             if (thirdTierPrize < lowestThirdTierPrize) {
-                carryOverRemaining -= (thirdTierPrize - lowestThirdTierPrize);
+                carryOverRemaining -= (lowestThirdTierPrize - thirdTierPrize);
                 thirdTierPrize = lowestThirdTierPrize;
                 if (carryOverRemaining < 0) {
                     thirdTierPrize += carryOverRemaining;
@@ -649,7 +649,7 @@ public class PlayableLotterySixGame implements IDedGame {
         } else if (firstPlaceEmpty && secondPlaceEmpty) {
             carryOverNext += thirdTierPrizeTotal;
         }
-
+        
         long secondTierPrizeTotal = (long) Math.floor(totalRemaining * secondPortion);
         if (!secondPlaceEmpty) {
             if (thirdPlaceEmpty) {
@@ -661,7 +661,7 @@ public class PlayableLotterySixGame implements IDedGame {
             }
             long secondTierPrize = (long) Math.floor(secondTierPrizeTotal / Math.max(1.0, tiers.get(PrizeTier.SECOND).stream().mapToDouble(each -> each.getFirst().getType().getUnit()).sum()));
             if (secondTierPrize < lowestSecondTierPrize) {
-                carryOverRemaining -= (secondTierPrize - lowestSecondTierPrize);
+                carryOverRemaining -= (lowestSecondTierPrize - secondTierPrize);
                 secondTierPrize = lowestSecondTierPrize;
             }
             if (carryOverRemaining < 0) {
@@ -683,7 +683,7 @@ public class PlayableLotterySixGame implements IDedGame {
         } else {
             carryOverNext += secondTierPrizeTotal;
         }
-
+        
         long firstTierPrizeTotal = Math.min(maxTopPlacesPrize, carryOverRemaining + Math.max(lowestTopPlacesPrize, (long) Math.floor(totalRemaining * 0.45)));
         long firstTierCarryOver = 0;
         if (!firstPlaceEmpty) {
@@ -754,16 +754,16 @@ public class PlayableLotterySixGame implements IDedGame {
             totalPrizes -= prizeMoneyRemoved;
         }
 
+        prizeForTier.replaceAll((k, v) -> MathUtils.followRoundDown(pricePerBet, v));
         for (int u = 0; u < winnings.size(); u++) {
             PlayerWinnings playerWinnings = winnings.get(u);
             long currentPrize = playerWinnings.getWinnings();
-            long rounded = MathUtils.followRoundDown(pricePerBet, currentPrize);
+            long rounded = prizeForTier.get(playerWinnings.getTier()) / playerWinnings.getWinningBet(bets).getType().getDivisor();
             if (currentPrize > rounded) {
                 winnings.set(u, playerWinnings.winnings(rounded));
                 carryOverNext += (currentPrize - rounded);
             }
         }
-        prizeForTier.replaceAll((k, v) -> MathUtils.followRoundDown(pricePerBet, v));
 
         this.valid = false;
 
