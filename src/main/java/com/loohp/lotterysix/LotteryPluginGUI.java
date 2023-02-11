@@ -133,12 +133,13 @@ public class LotteryPluginGUI implements Listener {
     private final LotterySixPlugin plugin;
     private final LotterySix instance;
     private final Map<Player, Long> lastGuiClick;
-    private final AtomicInteger tickCounter = new AtomicInteger();
+    private final AtomicInteger tickCounter;
 
     public LotteryPluginGUI(LotterySixPlugin plugin) {
         this.plugin = plugin;
         this.instance = LotterySixPlugin.getInstance();
         this.lastGuiClick = new HashMap<>();
+        this.tickCounter = new AtomicInteger();
         Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             tickCounter.incrementAndGet();
         }, 0, 1);
@@ -155,7 +156,6 @@ public class LotteryPluginGUI implements Listener {
         Player player = (Player) event.getWhoClicked();
         long gameTick = tickCounter.get();
         Long lastClick = lastGuiClick.get(player);
-        System.out.println(gameTick + " " + lastClick);
         if (lastClick == null || gameTick != lastClick) {
             lastGuiClick.put(player, gameTick);
         } else {
