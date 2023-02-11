@@ -20,7 +20,7 @@
 
 package com.loohp.lotterysix.utils;
 
-import com.loohp.lotterysix.game.LazyReplaceString;
+import com.loohp.lotterysix.game.objects.LazyReplaceString;
 import com.loohp.lotterysix.game.LotterySix;
 import com.loohp.lotterysix.game.lottery.CompletedLotterySixGame;
 import com.loohp.lotterysix.game.lottery.PlayableLotterySixGame;
