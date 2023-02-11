@@ -77,6 +77,8 @@ import java.util.function.Supplier;
 
 public class LotterySix implements AutoCloseable {
 
+    public static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+
     private final TimerTask lotteryTask;
     private volatile TimerTask announcementTask;
     private final File dataFolder;
@@ -277,61 +279,65 @@ public class LotterySix implements AutoCloseable {
             private boolean oneMinuteAnnounced = false;
             @Override
             public void run() {
-                if (!announcerPreDrawBossBarEnabled && !announcerDrawBossBarEnabled) {
-                    bossBarUpdater.accept(BossBarInfo.CLEAR, null);
-                }
-                long now = System.currentTimeMillis();
-                if (!backendBungeecordMode) {
-                    if (currentGame == null) {
-                        if ((announcerPreDrawBossBarEnabled || announcerDrawBossBarEnabled) && !gameLocked) {
-                            bossBarUpdater.accept(BossBarInfo.CLEAR, null);
-                        }
-                        if (runInterval != null && CronUtils.satisfyByCurrentMinute(runInterval, timezone)) {
-                            startNewGame();
-                            counter = 0;
-                        }
-                    } else {
-                        long timeLeft = currentGame.getScheduledDateTime() - now;
-                        if (announcerPreDrawBossBarEnabled) {
-                            if (timeLeft > 0 && timeLeft < announcerPreDrawBossBarTimeBeforeDraw) {
-                                double progress = Math.max(0.0, Math.min(1.0, (double) timeLeft / (double) announcerPreDrawBossBarTimeBeforeDraw));
-                                BossBarInfo info = new BossBarInfo(announcerPreDrawBossBarMessage, announcerPreDrawBossBarColor, announcerPreDrawBossBarStyle, progress);
-                                bossBarUpdater.accept(info, currentGame);
-                            } else {
+                try {
+                    if (!announcerPreDrawBossBarEnabled && !announcerDrawBossBarEnabled) {
+                        bossBarUpdater.accept(BossBarInfo.CLEAR, null);
+                    }
+                    long now = System.currentTimeMillis();
+                    if (!backendBungeecordMode) {
+                        if (currentGame == null) {
+                            if ((announcerPreDrawBossBarEnabled || announcerDrawBossBarEnabled) && !gameLocked) {
                                 bossBarUpdater.accept(BossBarInfo.CLEAR, null);
                             }
-                        }
-                        boolean announce = false;
-                        if (timeLeft <= 0) {
-                            runCurrentGame();
-                        } else if (counter % announcerPeriodicMessageFrequency == 0) {
-                            announce = true;
+                            if (runInterval != null && CronUtils.satisfyByCurrentMinute(runInterval, timezone)) {
+                                startNewGame();
+                                counter = 0;
+                            }
                         } else {
-                            if ((currentGame.getScheduledDateTime() / 1000) - (now / 1000) <= 60) {
-                                if (!oneMinuteAnnounced) {
-                                    oneMinuteAnnounced = true;
-                                    announce = true;
-                                }
-                            } else {
-                                if (oneMinuteAnnounced) {
-                                    oneMinuteAnnounced = false;
+                            long timeLeft = currentGame.getScheduledDateTime() - now;
+                            if (announcerPreDrawBossBarEnabled) {
+                                if (timeLeft > 0 && timeLeft < announcerPreDrawBossBarTimeBeforeDraw) {
+                                    double progress = Math.max(0.0, Math.min(1.0, (double) timeLeft / (double) announcerPreDrawBossBarTimeBeforeDraw));
+                                    BossBarInfo info = new BossBarInfo(announcerPreDrawBossBarMessage, announcerPreDrawBossBarColor, announcerPreDrawBossBarStyle, progress);
+                                    bossBarUpdater.accept(info, currentGame);
+                                } else {
+                                    bossBarUpdater.accept(BossBarInfo.CLEAR, null);
                                 }
                             }
-                        }
-                        if (announce) {
-                            for (UUID uuid : onlinePlayersSupplier.get()) {
-                                if (!playerPreferenceManager.getLotteryPlayer(uuid).getPreference(PlayerPreferenceKey.HIDE_PERIODIC_ANNOUNCEMENTS, boolean.class)) {
-                                    messageSendingConsumer.accept(uuid, announcerPeriodicMessageMessage, announcerPeriodicMessageHover, currentGame);
+                            boolean announce = false;
+                            if (timeLeft <= 0) {
+                                runCurrentGame();
+                            } else if (counter % announcerPeriodicMessageFrequency == 0) {
+                                announce = true;
+                            } else {
+                                if ((currentGame.getScheduledDateTime() / 1000) - (now / 1000) <= 60) {
+                                    if (!oneMinuteAnnounced) {
+                                        oneMinuteAnnounced = true;
+                                        announce = true;
+                                    }
+                                } else {
+                                    if (oneMinuteAnnounced) {
+                                        oneMinuteAnnounced = false;
+                                    }
+                                }
+                            }
+                            if (announce) {
+                                for (UUID uuid : onlinePlayersSupplier.get()) {
+                                    if (!playerPreferenceManager.getLotteryPlayer(uuid).getPreference(PlayerPreferenceKey.HIDE_PERIODIC_ANNOUNCEMENTS, boolean.class)) {
+                                        messageSendingConsumer.accept(uuid, announcerPeriodicMessageMessage, announcerPeriodicMessageHover, currentGame);
+                                    }
                                 }
                             }
                         }
                     }
+                    if (saveInterval % 30 == 0) {
+                        saveData(true);
+                    }
+                    saveInterval++;
+                    counter++;
+                } catch (Throwable e) {
+                    e.printStackTrace();
                 }
-                if (saveInterval % 30 == 0) {
-                    saveData(true);
-                }
-                saveInterval++;
-                counter++;
             }
         }, 5000, 1000);
     }
@@ -444,47 +450,51 @@ public class LotterySix implements AutoCloseable {
                 private int index = 0;
                 @Override
                 public void run() {
-                    if (index >= liveDrawAnnouncerMessages.size()) {
-                        for (UUID uuid : onlinePlayersSupplier.get()) {
-                            for (int i = 0; i < liveDrawAnnouncerPostMessages.size(); i++) {
-                                String hover = i < liveDrawAnnouncerPostMessagesHover.size() ? liveDrawAnnouncerPostMessagesHover.get(i) : "";
-                                messageSendingConsumer.accept(uuid, liveDrawAnnouncerPostMessages.get(i), hover, completed);
-                            }
-                        }
-                        if (announcerDrawBossBarEnabled) {
-                            bossBarUpdater.accept(BossBarInfo.CLEAR, completed);
-                        }
-                        completed.givePrizesAndUpdateStats(LotterySix.this);
-                        setGameLocked(false);
-                        announcementTask = null;
-                        this.cancel();
-                        actionListener.accept(LotterySixAction.RUN_LOTTERY_FINISH);
-                        return;
-                    }
-                    if (counter >= 0 && counter % liveDrawAnnouncerTimeBetween == 0) {
-                        String message = liveDrawAnnouncerMessages.get(index);
-                        for (UUID uuid : onlinePlayersSupplier.get()) {
-                            messageSendingConsumer.accept(uuid, message, completed);
-                            if (liveDrawAnnouncerSendMessagesTitle) {
-                                if (!playerPreferenceManager.getLotteryPlayer(uuid).getPreference(PlayerPreferenceKey.HIDE_TITLES, boolean.class)) {
-                                    titleSendingConsumer.accept(uuid, message, completed);
+                    try {
+                        if (index >= liveDrawAnnouncerMessages.size()) {
+                            for (UUID uuid : onlinePlayersSupplier.get()) {
+                                for (int i = 0; i < liveDrawAnnouncerPostMessages.size(); i++) {
+                                    String hover = i < liveDrawAnnouncerPostMessagesHover.size() ? liveDrawAnnouncerPostMessagesHover.get(i) : "";
+                                    messageSendingConsumer.accept(uuid, liveDrawAnnouncerPostMessages.get(i), hover, completed);
                                 }
                             }
-                        }
-                        if (announcerDrawBossBarEnabled) {
-                            String title;
-                            if (announcerDrawBossBarMessages.isEmpty()) {
-                                title = "";
-                            } else if (index >= announcerDrawBossBarMessages.size()) {
-                                title = announcerDrawBossBarMessages.get(announcerDrawBossBarMessages.size() - 1);
-                            } else {
-                                title = announcerDrawBossBarMessages.get(index);
+                            if (announcerDrawBossBarEnabled) {
+                                bossBarUpdater.accept(BossBarInfo.CLEAR, completed);
                             }
-                            bossBarUpdater.accept(new BossBarInfo(title, announcerDrawBossBarColor, announcerDrawBossBarStyle, 1.0), completed);
+                            completed.givePrizesAndUpdateStats(LotterySix.this);
+                            setGameLocked(false);
+                            announcementTask = null;
+                            this.cancel();
+                            actionListener.accept(LotterySixAction.RUN_LOTTERY_FINISH);
+                            return;
                         }
-                        index++;
+                        if (counter >= 0 && counter % liveDrawAnnouncerTimeBetween == 0) {
+                            String message = liveDrawAnnouncerMessages.get(index);
+                            for (UUID uuid : onlinePlayersSupplier.get()) {
+                                messageSendingConsumer.accept(uuid, message, completed);
+                                if (liveDrawAnnouncerSendMessagesTitle) {
+                                    if (!playerPreferenceManager.getLotteryPlayer(uuid).getPreference(PlayerPreferenceKey.HIDE_TITLES, boolean.class)) {
+                                        titleSendingConsumer.accept(uuid, message, completed);
+                                    }
+                                }
+                            }
+                            if (announcerDrawBossBarEnabled) {
+                                String title;
+                                if (announcerDrawBossBarMessages.isEmpty()) {
+                                    title = "";
+                                } else if (index >= announcerDrawBossBarMessages.size()) {
+                                    title = announcerDrawBossBarMessages.get(announcerDrawBossBarMessages.size() - 1);
+                                } else {
+                                    title = announcerDrawBossBarMessages.get(index);
+                                }
+                                bossBarUpdater.accept(new BossBarInfo(title, announcerDrawBossBarColor, announcerDrawBossBarStyle, 1.0), completed);
+                            }
+                            index++;
+                        }
+                        counter++;
+                    } catch (Throwable e) {
+                        e.printStackTrace();
                     }
-                    counter++;
                 }
             }, 0, 1000);
         } else {
@@ -764,11 +774,10 @@ public class LotterySix implements AutoCloseable {
         completedGames.clear();
         File lotteryDataFolder = new File(getDataFolder(), "data");
         lotteryDataFolder.mkdirs();
-        Gson gson = new GsonBuilder().setPrettyPrinting().create();
         File currentGameFile = new File(lotteryDataFolder, "current.json");
         if (currentGameFile.exists()) {
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(Files.newInputStream(currentGameFile.toPath()), StandardCharsets.UTF_8))) {
-                currentGame = gson.fromJson(reader, PlayableLotterySixGame.class);
+                currentGame = GSON.fromJson(reader, PlayableLotterySixGame.class);
                 currentGame.setInstance(this);
             } catch (IOException e) {
                 e.printStackTrace();
@@ -777,9 +786,9 @@ public class LotterySix implements AutoCloseable {
         File completedGameFile = new File(lotteryDataFolder, "completed.json");
         if (completedGameFile.exists()) {
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(Files.newInputStream(completedGameFile.toPath()), StandardCharsets.UTF_8))) {
-                JsonArray array = gson.fromJson(reader, JsonArray.class);
+                JsonArray array = GSON.fromJson(reader, JsonArray.class);
                 for (JsonElement element : array) {
-                    CompletedLotterySixGameIndex gameIndex = gson.fromJson(element.getAsJsonObject(), CompletedLotterySixGameIndex.class);
+                    CompletedLotterySixGameIndex gameIndex = GSON.fromJson(element.getAsJsonObject(), CompletedLotterySixGameIndex.class);
                     if (new File(lotteryDataFolder, gameIndex.getDataFileName()).exists()) {
                         completedGames.add(gameIndex);
                     }
@@ -796,7 +805,7 @@ public class LotterySix implements AutoCloseable {
                 if (file.getName().endsWith(".json") && !file.equals(currentGameFile) && !file.equals(completedGameFile)) {
                     CompletedLotterySixGame game = null;
                     try (BufferedReader reader = new BufferedReader(new InputStreamReader(Files.newInputStream(file.toPath()), StandardCharsets.UTF_8))) {
-                        game = gson.fromJson(reader, CompletedLotterySixGame.class);
+                        game = GSON.fromJson(reader, CompletedLotterySixGame.class);
                         completedGames.add(game);
                     } catch (IOException e) {
                         e.printStackTrace();
@@ -814,11 +823,10 @@ public class LotterySix implements AutoCloseable {
     public synchronized void saveData(boolean onlyCurrent) {
         File lotteryDataFolder = new File(getDataFolder(), "data");
         lotteryDataFolder.mkdirs();
-        Gson gson = new GsonBuilder().setPrettyPrinting().create();
         File currentGameFile = new File(lotteryDataFolder, "current.json");
         if (currentGame != null) {
             try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(Files.newOutputStream(currentGameFile.toPath()), StandardCharsets.UTF_8))) {
-                pw.println(gson.toJson(currentGame));
+                pw.println(currentGame.toJson(GSON));
                 pw.flush();
             } catch (IOException e) {
                 e.printStackTrace();
@@ -831,11 +839,11 @@ public class LotterySix implements AutoCloseable {
             JsonArray array = new JsonArray();
             synchronized (completedGames.getIterateLock()) {
                 for (CompletedLotterySixGameIndex gameIndex : completedGames.indexIterable()) {
-                    array.add(gson.toJsonTree(gameIndex));
+                    array.add(GSON.toJsonTree(gameIndex));
                 }
             }
             try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(Files.newOutputStream(completedGameFile.toPath()), StandardCharsets.UTF_8))) {
-                pw.println(gson.toJson(array));
+                pw.println(GSON.toJson(array));
                 pw.flush();
             } catch (IOException e) {
                 e.printStackTrace();
@@ -845,7 +853,7 @@ public class LotterySix implements AutoCloseable {
                     File file = new File(lotteryDataFolder, gameIndex.getDataFileName());
                     if (!file.exists()) {
                         try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(Files.newOutputStream(file.toPath()), StandardCharsets.UTF_8))) {
-                            pw.println(gson.toJson(completedGames.get(gameIndex)));
+                            pw.println(GSON.toJson(completedGames.get(gameIndex)));
                             pw.flush();
                         } catch (IOException e) {
                             e.printStackTrace();

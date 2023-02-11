@@ -20,6 +20,7 @@
 
 package com.loohp.lotterysix.game.lottery;
 
+import com.google.gson.Gson;
 import com.loohp.lotterysix.game.LotterySix;
 import com.loohp.lotterysix.game.objects.AddBetResult;
 import com.loohp.lotterysix.game.objects.BetUnitType;
@@ -92,6 +93,12 @@ public class PlayableLotterySixGame implements IDedGame {
             return betsLock = new Object();
         }
         return betsLock;
+    }
+
+    public String toJson(Gson gson) {
+        synchronized (getBetsLock()) {
+            return gson.toJson(this);
+        }
     }
 
     public LotterySix getInstance() {

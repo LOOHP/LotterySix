@@ -46,6 +46,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class LotteryPlayerManager {
 
+    public static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+
     private final LotterySix instance;
     private final Map<UUID, WeakReference<LotteryPlayer>> loadedPlayers;
     private final Set<LotteryPlayer> persistentReferences;
@@ -94,11 +96,10 @@ public class LotteryPlayerManager {
         }
         File playerFolder = new File(instance.getDataFolder(), "player");
         playerFolder.mkdirs();
-        Gson gson = new GsonBuilder().setPrettyPrinting().create();
         File file = new File(playerFolder, player + ".json");
         if (file.exists()) {
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(Files.newInputStream(file.toPath()), StandardCharsets.UTF_8))) {
-                JsonObject json = gson.fromJson(reader, JsonObject.class);
+                JsonObject json = GSON.fromJson(reader, JsonObject.class);
 
                 Map<PlayerPreferenceKey, Object> preferences = new EnumMap<>(PlayerPreferenceKey.class);
                 JsonObject preferencesJson = json.getAsJsonObject("preferences");
@@ -106,7 +107,7 @@ public class LotteryPlayerManager {
                 for (PlayerPreferenceKey key : PlayerPreferenceKey.values()) {
                     JsonElement element = preferencesJson.get(key.name());
                     if (element != null) {
-                        preferences.put(key, gson.fromJson(element, key.getValueTypeClass()));
+                        preferences.put(key, GSON.fromJson(element, key.getValueTypeClass()));
                     }
                 }
 
@@ -116,7 +117,7 @@ public class LotteryPlayerManager {
                 for (PlayerStatsKey key : PlayerStatsKey.values()) {
                     JsonElement element = statsJson.get(key.name());
                     if (element != null) {
-                        stats.put(key, gson.fromJson(element, key.getValueTypeClass()));
+                        stats.put(key, GSON.fromJson(element, key.getValueTypeClass()));
                     }
                 }
 
@@ -148,10 +149,9 @@ public class LotteryPlayerManager {
         if (lotteryPlayer != null) {
             File playerFolder = new File(instance.getDataFolder(), "player");
             playerFolder.mkdirs();
-            Gson gson = new GsonBuilder().setPrettyPrinting().create();
             File file = new File(playerFolder, player + ".json");
             try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(Files.newOutputStream(file.toPath()), StandardCharsets.UTF_8))) {
-                pw.println(gson.toJson(lotteryPlayer));
+                pw.println(GSON.toJson(lotteryPlayer));
                 pw.flush();
             } catch (IOException e) {
                 e.printStackTrace();
