@@ -281,14 +281,23 @@ public class Commands implements CommandExecutor, TabCompleter {
                 sender.sendMessage(LotterySixPlugin.getInstance().messageNoPermission);
             }
             return true;
-        } else if (args[0].equalsIgnoreCase("resetcarryoverfund")) {
-            if (sender.hasPermission("lotterysix.resetcarryoverfund")) {
-                PlayableLotterySixGame game = LotterySixPlugin.getInstance().getCurrentGame();
-                if (game == null) {
-                    sender.sendMessage(LotterySixPlugin.getInstance().messageNoGameRunning);
+        } else if (args[0].equalsIgnoreCase("setcarryoverfund")) {
+            if (sender.hasPermission("lotterysix.setcarryoverfund")) {
+                if (args.length > 1) {
+                    try {
+                        long amount = Long.parseLong(args[1]);
+                        PlayableLotterySixGame game = LotterySixPlugin.getInstance().getCurrentGame();
+                        if (game == null) {
+                            sender.sendMessage(LotterySixPlugin.getInstance().messageNoGameRunning);
+                        } else {
+                            game.setCarryOverFund(amount);
+                            sender.sendMessage(LotterySixPlugin.getInstance().messageGameSettingsUpdated);
+                        }
+                    } catch (NumberFormatException e) {
+                        sender.sendMessage(LotterySixPlugin.getInstance().messageInvalidUsage);
+                    }
                 } else {
-                    game.setCarryOverFund(0);
-                    sender.sendMessage(LotterySixPlugin.getInstance().messageGameSettingsUpdated);
+                    sender.sendMessage(LotterySixPlugin.getInstance().messageInvalidUsage);
                 }
             } else {
                 sender.sendMessage(LotterySixPlugin.getInstance().messageNoPermission);
@@ -373,8 +382,8 @@ public class Commands implements CommandExecutor, TabCompleter {
                 if (sender.hasPermission("lotterysix.setspecialname")) {
                     tab.add("setspecialname");
                 }
-                if (sender.hasPermission("lotterysix.resetcarryoverfund")) {
-                    tab.add("resetcarryoverfund");
+                if (sender.hasPermission("lotterysix.setcarryoverfund")) {
+                    tab.add("setcarryoverfund");
                 }
                 return tab;
             case 1:
@@ -428,9 +437,9 @@ public class Commands implements CommandExecutor, TabCompleter {
                         tab.add("setspecialname");
                     }
                 }
-                if (sender.hasPermission("lotterysix.resetcarryoverfund")) {
-                    if ("resetcarryoverfund".startsWith(args[0].toLowerCase())) {
-                        tab.add("resetcarryoverfund");
+                if (sender.hasPermission("lotterysix.setcarryoverfund")) {
+                    if ("setcarryoverfund".startsWith(args[0].toLowerCase())) {
+                        tab.add("setcarryoverfund");
                     }
                 }
                 return tab;
@@ -484,6 +493,17 @@ public class Commands implements CommandExecutor, TabCompleter {
                     if ("setspecialname".equalsIgnoreCase(args[0])) {
                         if ("clear".startsWith(args[1].toLowerCase())) {
                             tab.add("clear");
+                        }
+                    }
+                }
+                if (sender.hasPermission("lotterysix.setcarryoverfund")) {
+                    if ("setcarryoverfund".equalsIgnoreCase(args[0])) {
+                        String str = (LotterySixPlugin.getInstance().lowestTopPlacesPrize * 10) + "";
+                        if (str.startsWith(args[1].toLowerCase())) {
+                            tab.add(str);
+                        }
+                        if ("0".startsWith(args[1].toLowerCase())) {
+                            tab.add("0");
                         }
                     }
                 }

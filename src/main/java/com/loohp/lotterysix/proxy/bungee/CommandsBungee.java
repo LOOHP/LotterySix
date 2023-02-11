@@ -271,14 +271,23 @@ public class CommandsBungee extends Command implements TabExecutor {
                     sender.sendMessage(LotterySixBungee.getInstance().messageNoPermission);
                 }
                 return;
-            } else if (args[0].equalsIgnoreCase("resetcarryoverfund")) {
-                if (sender.hasPermission("lotterysix.resetcarryoverfund")) {
-                    PlayableLotterySixGame game = LotterySixBungee.getInstance().getCurrentGame();
-                    if (game == null) {
-                        sender.sendMessage(LotterySixBungee.getInstance().messageNoGameRunning);
+            } else if (args[0].equalsIgnoreCase("setcarryoverfund")) {
+                if (sender.hasPermission("lotterysix.setcarryoverfund")) {
+                    if (args.length > 1) {
+                        try {
+                            long amount = Long.parseLong(args[1]);
+                            PlayableLotterySixGame game = LotterySixBungee.getInstance().getCurrentGame();
+                            if (game == null) {
+                                sender.sendMessage(LotterySixBungee.getInstance().messageNoGameRunning);
+                            } else {
+                                game.setCarryOverFund(amount);
+                                sender.sendMessage(LotterySixBungee.getInstance().messageGameSettingsUpdated);
+                            }
+                        } catch (NumberFormatException e) {
+                            sender.sendMessage(LotterySixBungee.getInstance().messageInvalidUsage);
+                        }
                     } else {
-                        game.setCarryOverFund(0);
-                        sender.sendMessage(LotterySixBungee.getInstance().messageGameSettingsUpdated);
+                        sender.sendMessage(LotterySixBungee.getInstance().messageInvalidUsage);
                     }
                 } else {
                     sender.sendMessage(LotterySixBungee.getInstance().messageNoPermission);
@@ -367,8 +376,8 @@ public class CommandsBungee extends Command implements TabExecutor {
                 if (sender.hasPermission("lotterysix.setspecialname")) {
                     tab.add("setspecialname");
                 }
-                if (sender.hasPermission("lotterysix.resetcarryoverfund")) {
-                    tab.add("resetcarryoverfund");
+                if (sender.hasPermission("lotterysix.setcarryoverfund")) {
+                    tab.add("setcarryoverfund");
                 }
                 return tab;
             case 1:
@@ -422,9 +431,9 @@ public class CommandsBungee extends Command implements TabExecutor {
                         tab.add("setspecialname");
                     }
                 }
-                if (sender.hasPermission("lotterysix.resetcarryoverfund")) {
-                    if ("resetcarryoverfund".startsWith(args[0].toLowerCase())) {
-                        tab.add("resetcarryoverfund");
+                if (sender.hasPermission("lotterysix.setcarryoverfund")) {
+                    if ("setcarryoverfund".startsWith(args[0].toLowerCase())) {
+                        tab.add("setcarryoverfund");
                     }
                 }
                 return tab;
@@ -478,6 +487,17 @@ public class CommandsBungee extends Command implements TabExecutor {
                     if ("setspecialname".equalsIgnoreCase(args[0])) {
                         if ("clear".startsWith(args[1].toLowerCase())) {
                             tab.add("clear");
+                        }
+                    }
+                }
+                if (sender.hasPermission("lotterysix.setcarryoverfund")) {
+                    if ("setcarryoverfund".equalsIgnoreCase(args[0])) {
+                        String str = (LotterySixBungee.getInstance().lowestTopPlacesPrize * 10) + "";
+                        if (str.startsWith(args[1].toLowerCase())) {
+                            tab.add(str);
+                        }
+                        if ("0".startsWith(args[1].toLowerCase())) {
+                            tab.add("0");
                         }
                     }
                 }
