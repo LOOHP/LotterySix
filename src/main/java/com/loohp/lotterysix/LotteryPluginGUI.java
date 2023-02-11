@@ -65,6 +65,7 @@ import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -74,6 +75,8 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class LotteryPluginGUI implements Listener {
@@ -280,6 +283,21 @@ public class LotteryPluginGUI implements Listener {
             return true;
         }, LotteryUtils.formatPlaceholders(player, instance.explanationGUIItem, instance)));
         gui.setCloseAction(close -> false);
+        Set<GuiElement> elements = Collections.singleton(gui.getElement('c'));
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                Deque<InventoryGui> history = InventoryGui.getHistory(player);
+                if (!history.contains(gui)) {
+                    cancel();
+                    return;
+                }
+                if (Objects.equals(history.peekLast(), gui)) {
+                    InventoryGui.updateElements(player, elements);
+                    gui.draw(player, false);
+                }
+            }
+        }.runTaskTimer(plugin, 10, 10);
         return gui;
     }
 
@@ -520,7 +538,7 @@ public class LotteryPluginGUI implements Listener {
         InventoryGui gui = new InventoryGui(plugin, LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetTitle, instance, game), guiSetup);
         gui.addElement(new StaticGuiElement('a', XMaterial.PAPER.parseItem(), StringUtils.wrapAtSpace(betNumbers.toColoredString(), 6)
                 .replace("{Price}", StringUtils.formatComma(price)).replace("{PricePartial}", StringUtils.formatComma(partial))));
-        gui.addElement(new StaticGuiElement('g', XMaterial.BEACON.parseItem(), Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetLotteryInfo, instance, game))
+        gui.addElement(new StaticGuiElement('g', XMaterial.DIAMOND.parseItem(), Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetLotteryInfo, instance, game))
                 .map(each -> each.replace("{Price}", StringUtils.formatComma(price)).replace("{PricePartial}", StringUtils.formatComma(partial))).toArray(String[]::new)));
         gui.addElement(new StaticGuiElement('h', XMaterial.GOLD_NUGGET.parseItem(), click -> {
             if (game != null && game.isValid()) {
@@ -618,7 +636,7 @@ public class LotteryPluginGUI implements Listener {
         for (int i : betNumbers.getNumbers()) {
             gui.addElement(new StaticGuiElement(c++, getNumberItem(i), getNumberColor(i) + "" + i));
         }
-        gui.addElement(new StaticGuiElement('g', XMaterial.BEACON.parseItem(), Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetLotteryInfo, instance, game))
+        gui.addElement(new StaticGuiElement('g', XMaterial.DIAMOND.parseItem(), Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetLotteryInfo, instance, game))
                 .map(each -> each.replace("{Price}", StringUtils.formatComma(price))).toArray(String[]::new)));
         gui.addElement(new StaticGuiElement('h', XMaterial.GOLD_INGOT.parseItem(), click -> {
             if (game != null && game.isValid()) {
@@ -678,7 +696,7 @@ public class LotteryPluginGUI implements Listener {
         String[] numbersStr = betNumbers.stream().map(each -> StringUtils.wrapAtSpace(each.toColoredString(), 6)
                 .replace("{Price}", StringUtils.formatComma(price))).toArray(String[]::new);
         gui.addElement(new StaticGuiElement('a', XMaterial.PAPER.parseItem(), numbersStr));
-        gui.addElement(new StaticGuiElement('g', XMaterial.BEACON.parseItem(), Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetLotteryInfo, instance, game))
+        gui.addElement(new StaticGuiElement('g', XMaterial.DIAMOND.parseItem(), Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetLotteryInfo, instance, game))
                 .map(each -> each.replace("{Price}", StringUtils.formatComma(price))).toArray(String[]::new)));
         gui.addElement(new StaticGuiElement('h', XMaterial.GOLD_INGOT.parseItem(), click -> {
             if (game != null && game.isValid()) {
