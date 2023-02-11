@@ -74,6 +74,7 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class LotteryPluginGUI implements Listener {
 
@@ -132,11 +133,15 @@ public class LotteryPluginGUI implements Listener {
     private final LotterySixPlugin plugin;
     private final LotterySix instance;
     private final Map<Player, Long> lastGuiClick;
+    private final AtomicInteger tickCounter = new AtomicInteger();
 
     public LotteryPluginGUI(LotterySixPlugin plugin) {
         this.plugin = plugin;
         this.instance = LotterySixPlugin.getInstance();
         this.lastGuiClick = new HashMap<>();
+        Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+            tickCounter.incrementAndGet();
+        }, 0, 1);
     }
 
     public void forceClose(Player player) {
@@ -148,8 +153,9 @@ public class LotteryPluginGUI implements Listener {
 
     private void handleClick(InventoryInteractEvent event) {
         Player player = (Player) event.getWhoClicked();
-        long gameTick = player.getWorld().getFullTime();
+        long gameTick = tickCounter.get();
         Long lastClick = lastGuiClick.get(player);
+        System.out.println(gameTick + " " + lastClick);
         if (lastClick == null || gameTick != lastClick) {
             lastGuiClick.put(player, gameTick);
         } else {
