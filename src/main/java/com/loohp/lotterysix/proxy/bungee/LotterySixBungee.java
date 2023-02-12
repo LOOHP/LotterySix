@@ -183,12 +183,10 @@ public class LotterySixBungee extends Plugin implements Listener {
             transactions.merge(winning.getPlayer(), winning.getWinnings(), (a, b) -> a + b);
         }
         for (Map.Entry<UUID, Long> entry : transactions.entrySet()) {
-            ProxiedPlayer player = ProxyServer.getInstance().getPlayer(entry.getKey());
-            if (player == null) {
-                instance.getPlayerPreferenceManager().getLotteryPlayer(entry.getKey()).updateStats(PlayerStatsKey.PENDING_TRANSACTION, long.class, i -> i + entry.getValue());
-            } else {
-                pluginMessageBungee.giveMoney(player, entry.getValue());
-            }
+            LotteryPlayer lotteryPlayer = instance.getPlayerPreferenceManager().getLotteryPlayer(entry.getKey());
+            lotteryPlayer.updateStats(PlayerStatsKey.PENDING_TRANSACTION, long.class, i -> i + entry.getValue());
+            pluginMessageBungee.syncPlayerData(lotteryPlayer);
+            notifyPendingTransactions(lotteryPlayer);
         }
     }
 
@@ -198,12 +196,10 @@ public class LotterySixBungee extends Plugin implements Listener {
             transactions.merge(bet.getPlayer(), bet.getBet(), (a, b) -> a + b);
         }
         for (Map.Entry<UUID, Long> entry : transactions.entrySet()) {
-            ProxiedPlayer player = ProxyServer.getInstance().getPlayer(entry.getKey());
-            if (player == null) {
-                instance.getPlayerPreferenceManager().getLotteryPlayer(entry.getKey()).updateStats(PlayerStatsKey.PENDING_TRANSACTION, long.class, i -> i + entry.getValue());
-            } else {
-                pluginMessageBungee.giveMoney(player, entry.getValue());
-            }
+            LotteryPlayer lotteryPlayer = instance.getPlayerPreferenceManager().getLotteryPlayer(entry.getKey());
+            lotteryPlayer.updateStats(PlayerStatsKey.PENDING_TRANSACTION, long.class, i -> i + entry.getValue());
+            pluginMessageBungee.syncPlayerData(lotteryPlayer);
+            notifyPendingTransactions(lotteryPlayer);
         }
     }
 
@@ -225,6 +221,18 @@ public class LotterySixBungee extends Plugin implements Listener {
         pluginMessageBungee.forceCloseAllGui();
     }
 
+    public static void notifyPendingTransactions(LotteryPlayer lotteryPlayer) {
+        ProxiedPlayer player = ProxyServer.getInstance().getPlayer(lotteryPlayer.getPlayer());
+        if (player != null) {
+            Long money = lotteryPlayer.getStats(PlayerStatsKey.PENDING_TRANSACTION, long.class);
+            if (money != null && money > 0) {
+                TextComponent textComponent = new TextComponent(instance.messagePendingUnclaimed);
+                textComponent.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/lotterysix pendingtransaction"));
+                player.sendMessage(textComponent);
+            }
+        }
+    }
+
     @EventHandler
     public void onJoin(PostLoginEvent event) {
         ProxiedPlayer player = event.getPlayer();
@@ -239,12 +247,7 @@ public class LotterySixBungee extends Plugin implements Listener {
             public void run() {
                 if (player.getServer() != null) {
                     LotteryPlayer lotteryPlayer = instance.getPlayerPreferenceManager().getLotteryPlayer(player.getUniqueId());
-                    Long money = lotteryPlayer.getStats(PlayerStatsKey.PENDING_TRANSACTION, long.class);
-                    if (money != null && money > 0) {
-                        TextComponent textComponent = new TextComponent(instance.messagePendingUnclaimed);
-                        textComponent.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/lotterysix pendingtransaction"));
-                        player.sendMessage(textComponent);
-                    }
+                    notifyPendingTransactions(lotteryPlayer);
                     pluginMessageBungee.updateCurrentGameData(event.getServer().getInfo());
                     pluginMessageBungee.requestPastGameSyncCheck(event.getServer().getInfo());
                     pluginMessageBungee.syncPlayerData(lotteryPlayer);

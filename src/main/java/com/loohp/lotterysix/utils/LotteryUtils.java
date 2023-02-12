@@ -134,7 +134,7 @@ public class LotteryUtils {
                 .replace("{NumberOfChoices}", () -> lotterySix.numberOfChoices + "")
                 .replace("{PricePerBet}", () -> StringUtils.formatComma(lotterySix.pricePerBet))
                 .replace("{TotalBets}", () -> StringUtils.formatComma(game.getTotalBets()))
-                .replace("{CarryOverFund}", () -> StringUtils.formatComma(game.getCarryOverFund()))
+                .replace("{CarryOverFund}", () -> StringUtils.formatComma(game.getCarryOverFund(lotterySix.estimationRoundToNearest)))
                 .replace("{PrizePool}", () -> StringUtils.formatComma(game.estimatedPrizePool(lotterySix.maxTopPlacesPrize, lotterySix.taxPercentage, lotterySix.estimationRoundToNearest)))
                 .replace("{BetPlayerNames}", () -> chainPlayerBetNames(game.getBets()));
         for (PrizeTier prizeTier : PrizeTier.values()) {

@@ -27,9 +27,11 @@ import com.loohp.lotterysix.game.lottery.GameNumber;
 import com.loohp.lotterysix.game.lottery.PlayableLotterySixGame;
 import com.loohp.lotterysix.game.objects.AddBetResult;
 import com.loohp.lotterysix.game.objects.BetUnitType;
+import com.loohp.lotterysix.game.objects.LotteryPlayer;
 import com.loohp.lotterysix.game.objects.NumberStatistics;
 import com.loohp.lotterysix.game.objects.PlayerBets;
 import com.loohp.lotterysix.game.objects.PlayerPreferenceKey;
+import com.loohp.lotterysix.game.objects.PlayerStatsKey;
 import com.loohp.lotterysix.game.objects.PlayerWinnings;
 import com.loohp.lotterysix.game.objects.betnumbers.BetNumbers;
 import com.loohp.lotterysix.game.objects.betnumbers.BetNumbersBuilder;
@@ -261,14 +263,26 @@ public class LotteryPluginGUI implements Listener {
             }
         }));
         gui.addElement(new DynamicGuiElement('d', viewer -> {
-            PlayableLotterySixGame currentGame = instance.getCurrentGame();
-            if (currentGame == null) {
-                return new StaticGuiElement('d', XMaterial.RED_WOOL.parseItem(), LotteryUtils.formatPlaceholders(player, instance.guiMainMenuNoLotteryGamesScheduled, instance));
-            } else {
-                return new StaticGuiElement('d', XMaterial.GOLD_INGOT.parseItem(), click -> {
-                    Bukkit.getScheduler().runTaskLater(plugin, () -> getBetTypeChooser((Player) click.getWhoClicked(), instance.getCurrentGame()).show(click.getWhoClicked()), 1);
+            LotteryPlayer lotteryPlayer = instance.getPlayerPreferenceManager().getLotteryPlayer(player.getUniqueId());
+            Long money = lotteryPlayer.getStats(PlayerStatsKey.PENDING_TRANSACTION, long.class);
+            if (money != null && money > 0) {
+                return new StaticGuiElement('d', XMaterial.EMERALD.parseItem(), click -> {
+                    Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                        close(click.getWhoClicked(), click.getGui(), false);
+                        LotterySixPlugin.notifyPendingTransactions(lotteryPlayer);
+                    }, 1);
                     return true;
-                }, LotteryUtils.formatPlaceholders(player, instance.guiMainMenuPlaceNewBets, instance, currentGame));
+                }, LotteryUtils.formatPlaceholders(player, instance.guiMainMenuPendingTransactions, instance));
+            } else {
+                PlayableLotterySixGame currentGame = instance.getCurrentGame();
+                if (currentGame == null) {
+                    return new StaticGuiElement('d', XMaterial.RED_WOOL.parseItem(), LotteryUtils.formatPlaceholders(player, instance.guiMainMenuNoLotteryGamesScheduled, instance));
+                } else {
+                    return new StaticGuiElement('d', XMaterial.GOLD_INGOT.parseItem(), click -> {
+                        Bukkit.getScheduler().runTaskLater(plugin, () -> getBetTypeChooser((Player) click.getWhoClicked(), instance.getCurrentGame()).show(click.getWhoClicked()), 1);
+                        return true;
+                    }, LotteryUtils.formatPlaceholders(player, instance.guiMainMenuPlaceNewBets, instance, currentGame));
+                }
             }
         }));
         gui.addElement(new StaticGuiElement('e', XMaterial.OAK_SIGN.parseItem(), click -> {

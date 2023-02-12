@@ -125,6 +125,9 @@ GUI:
     Statistics:
       - "&aView Number Statistics"
       - "&7Want some inspiration of what numbers to pick?"
+    PendingTransactions:
+      - '&aYou have unclaimed balance!'
+      - '&aClick to receive!'
   LastResults:
     Title: "&2Last Results"
     LotteryInfo:

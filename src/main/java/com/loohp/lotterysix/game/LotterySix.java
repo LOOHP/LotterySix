@@ -132,6 +132,7 @@ public class LotterySix implements AutoCloseable {
     public String[] guiMainMenuCheckOwnBets;
     public String[] guiMainMenuPlaceNewBets;
     public String[] guiMainMenuStatistics;
+    public String[] guiMainMenuPendingTransactions;
     public String guiLastResultsTitle;
     public String[] guiLastResultsLotteryInfo;
     public String[] guiLastResultsYourBets;
@@ -677,6 +678,7 @@ public class LotterySix implements AutoCloseable {
         guiMainMenuCheckOwnBets = config.getConfiguration().getStringList("GUI.MainMenu.CheckOwnBets").toArray(new String[0]);
         guiMainMenuPlaceNewBets = config.getConfiguration().getStringList("GUI.MainMenu.PlaceNewBets").toArray(new String[0]);
         guiMainMenuStatistics = config.getConfiguration().getStringList("GUI.MainMenu.Statistics").toArray(new String[0]);
+        guiMainMenuPendingTransactions = config.getConfiguration().getStringList("GUI.MainMenu.PendingTransactions").toArray(new String[0]);
         guiLastResultsTitle = config.getConfiguration().getString("GUI.LastResults.Title");
         guiLastResultsLotteryInfo = config.getConfiguration().getStringList("GUI.LastResults.LotteryInfo").toArray(new String[0]);
         guiLastResultsYourBets = config.getConfiguration().getStringList("GUI.LastResults.YourBets").toArray(new String[0]);

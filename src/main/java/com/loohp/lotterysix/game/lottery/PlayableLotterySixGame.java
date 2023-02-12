@@ -153,6 +153,10 @@ public class PlayableLotterySixGame implements IDedGame {
         return numberStatistics == null ? Collections.emptyMap() : Collections.unmodifiableMap(numberStatistics);
     }
 
+    public long getCarryOverFund(long rounding) {
+        return MathUtils.followRound(rounding, carryOverFund);
+    }
+
     public long getCarryOverFund() {
         return carryOverFund;
     }

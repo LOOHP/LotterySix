@@ -261,12 +261,9 @@ public class LotterySixPlugin extends JavaPlugin implements Listener {
             transactions.merge(winning.getPlayer(), winning.getWinnings(), (a, b) -> a + b);
         }
         for (Map.Entry<UUID, Long> entry : transactions.entrySet()) {
-            Player player = Bukkit.getPlayer(entry.getKey());
-            if (player == null) {
-                instance.getPlayerPreferenceManager().getLotteryPlayer(entry.getKey()).updateStats(PlayerStatsKey.PENDING_TRANSACTION, long.class, i -> i + entry.getValue());
-            } else {
-                econ.depositPlayer(player, entry.getValue());
-            }
+            LotteryPlayer lotteryPlayer = instance.getPlayerPreferenceManager().getLotteryPlayer(entry.getKey());
+            lotteryPlayer.updateStats(PlayerStatsKey.PENDING_TRANSACTION, long.class, i -> i + entry.getValue());
+            notifyPendingTransactions(lotteryPlayer);
         }
     }
 
@@ -276,12 +273,9 @@ public class LotterySixPlugin extends JavaPlugin implements Listener {
             transactions.merge(bet.getPlayer(), bet.getBet(), (a, b) -> a + b);
         }
         for (Map.Entry<UUID, Long> entry : transactions.entrySet()) {
-            Player player = Bukkit.getPlayer(entry.getKey());
-            if (player == null) {
-                instance.getPlayerPreferenceManager().getLotteryPlayer(entry.getKey()).updateStats(PlayerStatsKey.PENDING_TRANSACTION, long.class, i -> i + entry.getValue());
-            } else {
-                econ.depositPlayer(player, entry.getValue());
-            }
+            LotteryPlayer lotteryPlayer = instance.getPlayerPreferenceManager().getLotteryPlayer(entry.getKey());
+            lotteryPlayer.updateStats(PlayerStatsKey.PENDING_TRANSACTION, long.class, i -> i + entry.getValue());
+            notifyPendingTransactions(lotteryPlayer);
         }
     }
 
@@ -313,20 +307,25 @@ public class LotterySixPlugin extends JavaPlugin implements Listener {
         }
     }
 
+    public static void notifyPendingTransactions(LotteryPlayer lotteryPlayer) {
+        Player player = Bukkit.getPlayer(lotteryPlayer.getPlayer());
+        if (player != null) {
+            Long money = lotteryPlayer.getStats(PlayerStatsKey.PENDING_TRANSACTION, long.class);
+            if (money != null && money > 0) {
+                TextComponent textComponent = new TextComponent(instance.messagePendingUnclaimed);
+                textComponent.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/lotterysix pendingtransaction"));
+                player.spigot().sendMessage(textComponent);
+            }
+        }
+    }
+
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
         activeBossBar.addPlayer(event.getPlayer());
         Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
             LotteryPlayer lotteryPlayer = instance.getPlayerPreferenceManager().loadLotteryPlayer(event.getPlayer().getUniqueId(), true);
             if (!instance.backendBungeecordMode) {
-                Bukkit.getScheduler().runTaskLaterAsynchronously(this, () -> {
-                    Long money = lotteryPlayer.getStats(PlayerStatsKey.PENDING_TRANSACTION, long.class);
-                    if (money != null && money > 0) {
-                        TextComponent textComponent = new TextComponent(instance.messagePendingUnclaimed);
-                        textComponent.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/lotterysix pendingtransaction"));
-                        event.getPlayer().spigot().sendMessage(textComponent);
-                    }
-                }, 20);
+                Bukkit.getScheduler().runTaskLaterAsynchronously(this, () -> notifyPendingTransactions(lotteryPlayer), 20);
             }
         });
     }
