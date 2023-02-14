@@ -403,9 +403,29 @@ public class PlayableLotterySixGame implements IDedGame {
         boolean secondPlaceEmpty = tiers.get(PrizeTier.SECOND).isEmpty();
         boolean firstPlaceEmpty = tiers.get(PrizeTier.FIRST).isEmpty();
 
-        long carryOverNext = 0;
+        double thirdTierWeightedWinners = Math.max(1, tiers.get(PrizeTier.THIRD).stream().mapToDouble(each -> each.getFirst().getType().getUnit()).sum());
+        double secondTierWeightedWinners = Math.max(1, tiers.get(PrizeTier.SECOND).stream().mapToDouble(each -> each.getFirst().getType().getUnit()).sum()) * 2.6;
+        double totalWeightedWinners = thirdTierWeightedWinners + secondTierWeightedWinners;
 
-        long thirdTierPrizeTotal = (long) Math.floor(totalRemaining * 0.4);
+        double carryOverPortion = 0;
+        double thirdPortion = (thirdTierWeightedWinners / totalWeightedWinners) * 0.55;
+        if (thirdPortion > 0.4) {
+            carryOverPortion += (thirdPortion - 0.4);
+            thirdPortion = 0.4;
+        }
+
+        double secondPortion = (secondTierWeightedWinners / totalWeightedWinners) * 0.55;
+        if (secondPortion > 0.4) {
+            carryOverPortion += (secondPortion - 0.4);
+            secondPortion = 0.4;
+        } else if (secondPortion < 0.15) {
+            carryOverPortion -= (0.15 - secondPortion);
+            secondPortion = 0.15;
+        }
+
+        long carryOverNext = (long) Math.floor(totalRemaining * carryOverPortion);
+
+        long thirdTierPrizeTotal = (long) Math.floor(totalRemaining * thirdPortion);
         if (!thirdPlaceEmpty) {
             long thirdTierPrize = (long) Math.floor(thirdTierPrizeTotal / Math.max(1.0, tiers.get(PrizeTier.THIRD).stream().mapToDouble(each -> each.getFirst().getType().getUnit()).sum()));
             prizeForTier.put(PrizeTier.THIRD, thirdTierPrize);
@@ -424,7 +444,7 @@ public class PlayableLotterySixGame implements IDedGame {
             carryOverNext += thirdTierPrizeTotal;
         }
 
-        long secondTierPrizeTotal = (long) Math.floor(totalRemaining * 0.15);
+        long secondTierPrizeTotal = (long) Math.floor(totalRemaining * secondPortion);
         if (!secondPlaceEmpty) {
             if (thirdPlaceEmpty) {
                 if (firstPlaceEmpty) {
