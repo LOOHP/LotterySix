@@ -28,12 +28,44 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class WinningNumbers {
+
+    public static final Pattern STRING_PATTERN = Pattern.compile("^([0-9]+) ([0-9]+) ([0-9]+) ([0-9]+) ([0-9]+) ([0-9]+) \\+ ([0-9]+)$");
+
+    public static WinningNumbers fromString(String input) {
+        Matcher matcher = STRING_PATTERN.matcher(input);
+        if (!matcher.find()) {
+            return null;
+        }
+        Set<Integer> numbers = new LinkedHashSet<>();
+        for (int i = 1; i <= 6; i++) {
+            try {
+                if (!numbers.add(Integer.parseInt(matcher.group(i)))) {
+                    return null;
+                }
+            } catch (NumberFormatException e) {
+                return null;
+            }
+        }
+        try {
+            int specialNumber = Integer.parseInt(matcher.group(7));
+            if (numbers.contains(specialNumber)) {
+                return null;
+            }
+            return new WinningNumbers(numbers, specialNumber);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
 
     private final List<Integer> numbers;
     private final int specialNumber;

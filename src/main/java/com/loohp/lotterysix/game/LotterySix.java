@@ -42,6 +42,7 @@ import com.loohp.lotterysix.game.objects.PlayerBets;
 import com.loohp.lotterysix.game.objects.PlayerPreferenceKey;
 import com.loohp.lotterysix.game.objects.PlayerWinnings;
 import com.loohp.lotterysix.game.objects.PrizeCalculationMode;
+import com.loohp.lotterysix.game.objects.WinningNumbers;
 import com.loohp.lotterysix.game.player.LotteryPlayerManager;
 import com.loohp.lotterysix.utils.ChatColorUtils;
 import com.loohp.lotterysix.utils.CronUtils;
@@ -226,6 +227,7 @@ public class LotterySix implements AutoCloseable {
 
     private volatile PlayableLotterySixGame currentGame;
     private volatile boolean gameLocked;
+    private volatile WinningNumbers nextWinningNumbers;
     private final LazyCompletedLotterySixGameList completedGames;
 
     private final Consumer<Collection<PlayerWinnings>> givePrizesConsumer;
@@ -411,6 +413,7 @@ public class LotterySix implements AutoCloseable {
         if (backendBungeecordMode) {
             throw new IllegalStateException("method cannot be ran on backend server while on bungeecord mode");
         }
+        nextWinningNumbers = null;
         CompletedLotterySixGame lastGame = completedGames.isEmpty() ? null : completedGames.get(0);
         currentGame = PlayableLotterySixGame.createNewGame(this, Math.max(dateTime, System.currentTimeMillis()), "", lastGame == null ? Collections.emptyMap() : lastGame.getNumberStatistics(), lastGame == null ? 0 : lastGame.getRemainingFunds(), lowestTopPlacesPrize);
         saveData(true);
@@ -438,7 +441,13 @@ public class LotterySix implements AutoCloseable {
         }
         consoleMessageConsumer.accept("Calculating Lottery Wins, this might take a while...");
         long start = System.currentTimeMillis();
-        CompletedLotterySixGame completed = currentGame.runLottery(numberOfChoices, pricePerBet, maxTopPlacesPrize, taxPercentage);
+        CompletedLotterySixGame completed;
+        if (nextWinningNumbers == null) {
+            completed = currentGame.runLottery(numberOfChoices, pricePerBet, maxTopPlacesPrize, taxPercentage);
+        } else {
+            completed = currentGame.runLottery(numberOfChoices, pricePerBet, maxTopPlacesPrize, taxPercentage, nextWinningNumbers);
+            nextWinningNumbers = null;
+        }
         long end = System.currentTimeMillis();
         consoleMessageConsumer.accept("Lottery Wins Calculation Completed! (" + (end - start) + "ms)");
         completedGames.add(0, completed);
@@ -538,6 +547,10 @@ public class LotterySix implements AutoCloseable {
             }
         }
         completedGames.add(0, game);
+    }
+
+    public void setNextWinningNumbers(WinningNumbers nextWinningNumbers) {
+        this.nextWinningNumbers = nextWinningNumbers;
     }
 
     public LazyCompletedLotterySixGameList getCompletedGames() {

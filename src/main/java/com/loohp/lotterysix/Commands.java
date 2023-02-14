@@ -26,6 +26,7 @@ import com.loohp.lotterysix.game.lottery.PlayableLotterySixGame;
 import com.loohp.lotterysix.game.objects.LotteryPlayer;
 import com.loohp.lotterysix.game.objects.PlayerPreferenceKey;
 import com.loohp.lotterysix.game.objects.PlayerStatsKey;
+import com.loohp.lotterysix.game.objects.WinningNumbers;
 import com.loohp.lotterysix.game.objects.betnumbers.BetNumbersType;
 import com.loohp.lotterysix.updater.Updater;
 import com.loohp.lotterysix.utils.ArrayUtils;
@@ -152,6 +153,19 @@ public class Commands implements CommandExecutor, TabCompleter {
                 if (LotterySixPlugin.getInstance().getCurrentGame() == null) {
                     sender.sendMessage(LotterySixPlugin.getInstance().messageNoGameRunning);
                 } else {
+                    if (args.length > 1) {
+                        if (sender.hasPermission("lotterysix.run.setnumbers")) {
+                            WinningNumbers winningNumbers = WinningNumbers.fromString(String.join(" ", Arrays.copyOfRange(args, 1, args.length)));
+                            if (winningNumbers == null) {
+                                sender.sendMessage(LotterySixPlugin.getInstance().messageInvalidUsage);
+                                return true;
+                            }
+                            LotterySixPlugin.getInstance().setNextWinningNumbers(winningNumbers);
+                        } else {
+                            sender.sendMessage(LotterySixPlugin.getInstance().messageNoPermission);
+                            return true;
+                        }
+                    }
                     LotterySixPlugin.getInstance().getCurrentGame().setScheduledDateTime(System.currentTimeMillis());
                 }
             } else {
@@ -327,6 +341,27 @@ public class Commands implements CommandExecutor, TabCompleter {
                 sender.sendMessage(LotterySixPlugin.getInstance().messageNoPermission);
             }
             return true;
+        } else if (args[0].equalsIgnoreCase("invalidatebets")) {
+            if (sender.hasPermission("lotterysix.invalidatebets")) {
+                if (args.length > 1) {
+                    if (LotterySixPlugin.getInstance().getCurrentGame() == null) {
+                        sender.sendMessage(LotterySixPlugin.getInstance().messageNoGameRunning);
+                    } else {
+                        UUID uuid;
+                        try {
+                            uuid = UUID.fromString(args[1]);
+                        } catch (IllegalArgumentException e) {
+                            uuid = Bukkit.getOfflinePlayer(args[1]).getUniqueId();
+                        }
+                        UUID finalUuid = uuid;
+                        LotterySixPlugin.getInstance().getCurrentGame().invalidateBetsIf(bet -> bet.getPlayer().equals(finalUuid));
+                        sender.sendMessage(LotterySixPlugin.getInstance().messageGameSettingsUpdated);
+                    }
+                } else {
+                    sender.sendMessage(LotterySixPlugin.getInstance().messageInvalidUsage);
+                }
+            }
+            return true;
         } else if (args[0].equalsIgnoreCase("pendingtransaction")) {
             if (sender instanceof Player) {
                 Player player = (Player) sender;
@@ -385,6 +420,9 @@ public class Commands implements CommandExecutor, TabCompleter {
                 if (sender.hasPermission("lotterysix.setcarryoverfund")) {
                     tab.add("setcarryoverfund");
                 }
+                if (sender.hasPermission("lotterysix.invalidatebets")) {
+                    tab.add("invalidatebets");
+                }
                 return tab;
             case 1:
                 if (sender.hasPermission("lotterysix.reload")) {
@@ -440,6 +478,11 @@ public class Commands implements CommandExecutor, TabCompleter {
                 if (sender.hasPermission("lotterysix.setcarryoverfund")) {
                     if ("setcarryoverfund".startsWith(args[0].toLowerCase())) {
                         tab.add("setcarryoverfund");
+                    }
+                }
+                if (sender.hasPermission("lotterysix.invalidatebets")) {
+                    if ("invalidatebets".startsWith(args[0].toLowerCase())) {
+                        tab.add("invalidatebets");
                     }
                 }
                 return tab;
@@ -504,6 +547,15 @@ public class Commands implements CommandExecutor, TabCompleter {
                         }
                         if ("0".startsWith(args[1].toLowerCase())) {
                             tab.add("0");
+                        }
+                    }
+                }
+                if (sender.hasPermission("lotterysix.invalidatebets")) {
+                    if ("invalidatebets".equalsIgnoreCase(args[0])) {
+                        for (Player player : Bukkit.getOnlinePlayers()) {
+                            if (player.getName().toLowerCase().startsWith(args[1].toLowerCase())) {
+                                tab.add(player.getName());
+                            }
                         }
                     }
                 }

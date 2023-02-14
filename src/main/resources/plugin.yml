@@ -46,6 +46,9 @@ permissions:
   lotterysix.setcarryoverfund:
     default: op
     description: Allow players to set the carryover fund for the current round
+  lotterysix.invalidatebets:
+    default: op
+    description: Allow players to remove bets placed by a particular player
   lotterysix.admininfo:
     default: op
     description: Split out every bit of internal information about a player

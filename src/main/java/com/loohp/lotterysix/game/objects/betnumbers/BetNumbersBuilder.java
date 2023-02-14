@@ -22,31 +22,93 @@ package com.loohp.lotterysix.game.objects.betnumbers;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 public abstract class BetNumbersBuilder {
 
-    public static BetNumbersBuilder.SingleBuilder single(int minNumber, int maxNumber) {
+    public static BetNumbersBuilder fromString(int minNumber, int maxNumber, String input) {
+        String[] sections = input.split(" ");
+        Set<Integer> bankers = null;
+        Set<Integer> numbers = new LinkedHashSet<>();
+        for (String section : sections) {
+            if (!section.isEmpty()) {
+                if (section.equals(">")) {
+                    if (numbers.isEmpty() || numbers.size() > 5) {
+                        return null;
+                    } else {
+                        bankers = numbers;
+                        numbers = new LinkedHashSet<>();
+                    }
+                } else {
+                    try {
+                        int number = Integer.parseInt(section);
+                        if (number < minNumber || number > maxNumber) {
+                            return null;
+                        }
+                        if (!numbers.add(number)) {
+                            return null;
+                        }
+                    } catch (NumberFormatException e) {
+                        return null;
+                    }
+                }
+            }
+        }
+        if (bankers == null) {
+            BetNumbersBuilder builder;
+            if (numbers.size() < 6) {
+                builder = new RandomBuilder(minNumber, maxNumber);
+            } else if (numbers.size() == 6) {
+                builder = new SingleBuilder(minNumber, maxNumber);
+            } else {
+                builder = new MultipleBuilder(minNumber, maxNumber);
+            }
+            for (int number : numbers) {
+                builder.addNumber(number);
+            }
+            return builder;
+        } else {
+            if (numbers.isEmpty() || bankers.size() + numbers.size() < 7) {
+                return null;
+            }
+            BankerBuilder builder = new BankerBuilder(minNumber, maxNumber);
+            for (int number : bankers) {
+                builder.addNumber(number);
+            }
+            builder.finishBankers();
+            for (int number : numbers) {
+                if (builder.contains(number)) {
+                    return null;
+                }
+                builder.addNumber(number);
+            }
+            return builder;
+        }
+    }
+
+    public static SingleBuilder single(int minNumber, int maxNumber) {
         return new BetNumbersBuilder.SingleBuilder(minNumber, maxNumber);
     }
 
-    public static BetNumbersBuilder.MultipleBuilder multiple(int minNumber, int maxNumber) {
+    public static MultipleBuilder multiple(int minNumber, int maxNumber) {
         return new BetNumbersBuilder.MultipleBuilder(minNumber, maxNumber);
     }
 
-    public static BetNumbersBuilder.BankerBuilder banker(int minNumber, int maxNumber) {
+    public static BankerBuilder banker(int minNumber, int maxNumber) {
         return new BetNumbersBuilder.BankerBuilder(minNumber, maxNumber);
     }
 
-    public static BetNumbersBuilder.RandomBuilder random(int minNumber, int maxNumber) {
+    public static RandomBuilder random(int minNumber, int maxNumber) {
         return new BetNumbersBuilder.RandomBuilder(minNumber, maxNumber);
     }
 
-    public static List<BetNumbers> buildBulkRandom(int minNumber, int maxNumber, int count) {
-        return IntStream.range(0, count).mapToObj(i -> new BetNumbersBuilder.RandomBuilder(minNumber, maxNumber).build()).collect(Collectors.toList());
+    public static Stream<RandomBuilder> bulkRandom(int minNumber, int maxNumber, int count) {
+        return IntStream.range(0, count).mapToObj(i -> new BetNumbersBuilder.RandomBuilder(minNumber, maxNumber));
     }
 
     protected final int minNumber;
@@ -278,20 +340,28 @@ public abstract class BetNumbersBuilder {
 
     public static class RandomBuilder extends BetNumbersBuilder {
 
+        private final int max;
         private final List<Integer> numbers;
 
         private RandomBuilder(int minNumber, int maxNumber) {
             super(minNumber, maxNumber, BetNumbersType.RANDOM);
-            this.numbers = ThreadLocalRandom.current().ints(minNumber, maxNumber + 1).distinct().limit(6).boxed().collect(Collectors.toList());
+            this.max = 6;
+            this.numbers = new ArrayList<>(max);
         }
 
         @Override
         public synchronized RandomBuilder addNumber(int number) {
-            throw new IllegalStateException("Lottery Number builder already completed!");
+            checkBound(number);
+            if (numbers.size() >= max) {
+                throw new IllegalStateException("Max numbers reached!");
+            }
+            numbers.add(number);
+            return this;
         }
 
         @Override
         public synchronized RandomBuilder removeNumber(int number) {
+            numbers.remove((Object) number);
             return this;
         }
 
@@ -312,9 +382,7 @@ public abstract class BetNumbersBuilder {
 
         @Override
         public BetNumbers build() {
-            if (!completed()) {
-                throw new IllegalStateException("Lottery Number builder not yet completed!");
-            }
+            ThreadLocalRandom.current().ints(minNumber, maxNumber + 1).filter(i -> !numbers.contains(i)).distinct().limit(max - numbers.size()).forEach(i -> numbers.add(i));
             return new BetNumbers(numbers, BetNumbersType.RANDOM);
         }
 

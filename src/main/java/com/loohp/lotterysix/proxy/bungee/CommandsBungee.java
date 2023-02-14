@@ -25,6 +25,7 @@ import com.loohp.lotterysix.game.lottery.PlayableLotterySixGame;
 import com.loohp.lotterysix.game.objects.LotteryPlayer;
 import com.loohp.lotterysix.game.objects.PlayerPreferenceKey;
 import com.loohp.lotterysix.game.objects.PlayerStatsKey;
+import com.loohp.lotterysix.game.objects.WinningNumbers;
 import com.loohp.lotterysix.game.objects.betnumbers.BetNumbersType;
 import com.loohp.lotterysix.utils.ChatColorUtils;
 import com.loohp.lotterysix.utils.CronUtils;
@@ -128,6 +129,19 @@ public class CommandsBungee extends Command implements TabExecutor {
                     if (LotterySixBungee.getInstance().getCurrentGame() == null) {
                         sender.sendMessage(LotterySixBungee.getInstance().messageNoGameRunning);
                     } else {
+                        if (args.length > 1) {
+                            if (sender.hasPermission("lotterysix.run.setnumbers")) {
+                                WinningNumbers winningNumbers = WinningNumbers.fromString(String.join(" ", Arrays.copyOfRange(args, 1, args.length)));
+                                if (winningNumbers == null) {
+                                    sender.sendMessage(LotterySixBungee.getInstance().messageInvalidUsage);
+                                    return;
+                                }
+                                LotterySixBungee.getInstance().setNextWinningNumbers(winningNumbers);
+                            } else {
+                                sender.sendMessage(LotterySixBungee.getInstance().messageNoPermission);
+                                return;
+                            }
+                        }
                         LotterySixBungee.getInstance().getCurrentGame().setScheduledDateTime(System.currentTimeMillis());
                     }
                 } else {
@@ -321,6 +335,27 @@ public class CommandsBungee extends Command implements TabExecutor {
                     sender.sendMessage(LotterySixBungee.getInstance().messageNoPermission);
                 }
                 return;
+            } else if (args[0].equalsIgnoreCase("invalidatebets")) {
+                if (sender.hasPermission("lotterysix.invalidatebets")) {
+                    if (args.length > 1) {
+                        if (LotterySixBungee.getInstance().getCurrentGame() == null) {
+                            sender.sendMessage(LotterySixBungee.getInstance().messageNoGameRunning);
+                        } else {
+                            UUID uuid;
+                            try {
+                                uuid = UUID.fromString(args[1]);
+                            } catch (IllegalArgumentException e) {
+                                uuid = ProxyServer.getInstance().getPlayer(args[1]).getUniqueId();
+                            }
+                            UUID finalUuid = uuid;
+                            LotterySixBungee.getInstance().getCurrentGame().invalidateBetsIf(bet -> bet.getPlayer().equals(finalUuid));
+                            sender.sendMessage(LotterySixBungee.getInstance().messageGameSettingsUpdated);
+                        }
+                    } else {
+                        sender.sendMessage(LotterySixBungee.getInstance().messageInvalidUsage);
+                    }
+                }
+                return;
             } else if (args[0].equalsIgnoreCase("pendingtransaction")) {
                 if (sender instanceof ProxiedPlayer) {
                     ProxiedPlayer player = (ProxiedPlayer) sender;
@@ -379,6 +414,9 @@ public class CommandsBungee extends Command implements TabExecutor {
                 if (sender.hasPermission("lotterysix.setcarryoverfund")) {
                     tab.add("setcarryoverfund");
                 }
+                if (sender.hasPermission("lotterysix.invalidatebets")) {
+                    tab.add("invalidatebets");
+                }
                 return tab;
             case 1:
                 if (sender.hasPermission("lotterysix.reload")) {
@@ -434,6 +472,11 @@ public class CommandsBungee extends Command implements TabExecutor {
                 if (sender.hasPermission("lotterysix.setcarryoverfund")) {
                     if ("setcarryoverfund".startsWith(args[0].toLowerCase())) {
                         tab.add("setcarryoverfund");
+                    }
+                }
+                if (sender.hasPermission("lotterysix.invalidatebets")) {
+                    if ("invalidatebets".startsWith(args[0].toLowerCase())) {
+                        tab.add("invalidatebets");
                     }
                 }
                 return tab;
@@ -498,6 +541,15 @@ public class CommandsBungee extends Command implements TabExecutor {
                         }
                         if ("0".startsWith(args[1].toLowerCase())) {
                             tab.add("0");
+                        }
+                    }
+                }
+                if (sender.hasPermission("lotterysix.invalidatebets")) {
+                    if ("invalidatebets".equalsIgnoreCase(args[0])) {
+                        for (ProxiedPlayer player : ProxyServer.getInstance().getPlayers()) {
+                            if (player.getName().toLowerCase().startsWith(args[1].toLowerCase())) {
+                                tab.add(player.getName());
+                            }
                         }
                     }
                 }

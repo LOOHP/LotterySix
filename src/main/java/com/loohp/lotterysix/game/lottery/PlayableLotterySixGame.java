@@ -48,12 +48,14 @@ import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class PlayableLotterySixGame implements IDedGame {
@@ -191,6 +193,26 @@ public class PlayableLotterySixGame implements IDedGame {
         }
     }
 
+    public synchronized void invalidateBetsIf(Predicate<PlayerBets> predicate) {
+        List<PlayerBets> removedBets = new ArrayList<>();
+        synchronized (getBetsLock()) {
+            Iterator<PlayerBets> itr = bets.values().iterator();
+            while (itr.hasNext()) {
+                PlayerBets playerBet = itr.next();
+                if (predicate.test(playerBet)) {
+                    itr.remove();
+                    removedBets.add(playerBet);
+                }
+            }
+        }
+        if (instance != null && !instance.backendBungeecordMode) {
+            instance.refundBets(removedBets);
+            for (PlayerBets bet : removedBets) {
+                instance.getPlayerPreferenceManager().getLotteryPlayer(bet.getPlayer()).updateStats(PlayerStatsKey.TOTAL_BETS_PLACED, long.class, i -> i - bet.getBet());
+            }
+        }
+    }
+
     public List<PlayerBets> getBets() {
         synchronized (getBetsLock()) {
             return new ArrayList<>(bets.values());
@@ -294,13 +316,17 @@ public class PlayableLotterySixGame implements IDedGame {
         }
     }
 
-    public synchronized CompletedLotterySixGame runLottery(int maxNumber, long pricePerBet, long maxTopPlacesPrize, double taxPercentage) {
-        if (instance != null && instance.backendBungeecordMode) {
-            throw new IllegalStateException("lottery cannot be run on backend server while on bungeecord mode");
-        }
+    public CompletedLotterySixGame runLottery(int maxNumber, long pricePerBet, long maxTopPlacesPrize, double taxPercentage) {
         SecureRandom random = new SecureRandom();
         int[] num = random.ints(1, maxNumber + 1).distinct().limit(7).toArray();
         WinningNumbers winningNumbers = new WinningNumbers(num[0], num[1], num[2], num[3], num[4], num[5], num[6]);
+        return runLottery(maxNumber, pricePerBet, maxTopPlacesPrize, taxPercentage, winningNumbers);
+    }
+
+    public synchronized CompletedLotterySixGame runLottery(int maxNumber, long pricePerBet, long maxTopPlacesPrize, double taxPercentage, WinningNumbers winningNumbers) {
+        if (instance != null && instance.backendBungeecordMode) {
+            throw new IllegalStateException("lottery cannot be run on backend server while on bungeecord mode");
+        }
 
         Map<Integer, NumberStatistics> newNumberStats = new HashMap<>();
         for (int i = 1; i <= maxNumber; i++) {

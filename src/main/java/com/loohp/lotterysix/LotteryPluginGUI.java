@@ -80,6 +80,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 public class LotteryPluginGUI implements Listener {
 
@@ -388,17 +389,17 @@ public class LotteryPluginGUI implements Listener {
         }, LotteryUtils.formatPlaceholders(null, instance.guiRandomEntryCountValue.replace("{Count}", "1"), instance)));
         gui.addElement(new StaticGuiElement('c', setItemSize(XMaterial.PAPER.parseItem(), 2), click -> {
             Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
-            Bukkit.getScheduler().runTaskLater(plugin, () -> getBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.buildBulkRandom(1, instance.numberOfChoices, 2)).show(click.getWhoClicked()), 2);
+            Bukkit.getScheduler().runTaskLater(plugin, () -> getBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.bulkRandom(1, instance.numberOfChoices, 2).map(r -> r.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2);
             return true;
         }, LotteryUtils.formatPlaceholders(null, instance.guiRandomEntryCountValue.replace("{Count}", "2"), instance)));
         gui.addElement(new StaticGuiElement('d', setItemSize(XMaterial.PAPER.parseItem(), 5), click -> {
             Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
-            Bukkit.getScheduler().runTaskLater(plugin, () -> getBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.buildBulkRandom(1, instance.numberOfChoices, 5)).show(click.getWhoClicked()), 2);
+            Bukkit.getScheduler().runTaskLater(plugin, () -> getBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.bulkRandom(1, instance.numberOfChoices, 5).map(r -> r.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2);
             return true;
         }, LotteryUtils.formatPlaceholders(null, instance.guiRandomEntryCountValue.replace("{Count}", "5"), instance)));
         gui.addElement(new StaticGuiElement('e', setItemSize(XMaterial.PAPER.parseItem(), 10), click -> {
             Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
-            Bukkit.getScheduler().runTaskLater(plugin, () -> getBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.buildBulkRandom(1, instance.numberOfChoices, 10)).show(click.getWhoClicked()), 2);
+            Bukkit.getScheduler().runTaskLater(plugin, () -> getBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.bulkRandom(1, instance.numberOfChoices, 10).map(r -> r.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2);
             return true;
         }, LotteryUtils.formatPlaceholders(null, instance.guiRandomEntryCountValue.replace("{Count}", "10"), instance)));
         gui.setSilent(true);
