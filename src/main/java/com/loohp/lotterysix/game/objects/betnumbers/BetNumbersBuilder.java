@@ -133,11 +133,17 @@ public abstract class BetNumbersBuilder {
 
     public abstract BetNumbersBuilder addNumber(int number);
 
+    public abstract IntObjectPair<BetNumbersBuilder> addRandomNumber();
+
     public abstract BetNumbersBuilder removeNumber(int number);
 
     public abstract int size();
 
     public abstract boolean contains(int i);
+
+    public boolean canAdd() {
+        return size() < maxNumber - minNumber + 1;
+    }
 
     public abstract boolean completed();
 
@@ -162,6 +168,19 @@ public abstract class BetNumbersBuilder {
             }
             numbers.add(number);
             return this;
+        }
+
+        @Override
+        public IntObjectPair<BetNumbersBuilder> addRandomNumber() {
+            if (completed()) {
+                throw new IllegalStateException("Lottery Number builder already completed!");
+            }
+            if (numbers.size() > maxNumber - minNumber) {
+                throw new IllegalStateException("Cannot add more random numbers!");
+            }
+            int number = ThreadLocalRandom.current().ints(minNumber, maxNumber + 1).filter(i -> !numbers.contains(i)).findFirst().orElseThrow(() -> new RuntimeException());
+            numbers.add(number);
+            return IntObjectPair.of(number, this);
         }
 
         @Override
@@ -211,6 +230,16 @@ public abstract class BetNumbersBuilder {
             checkBound(number);
             numbers.add(number);
             return this;
+        }
+
+        @Override
+        public IntObjectPair<BetNumbersBuilder> addRandomNumber() {
+            if (numbers.size() > maxNumber - minNumber) {
+                throw new IllegalStateException("Cannot add more random numbers!");
+            }
+            int number = ThreadLocalRandom.current().ints(minNumber, maxNumber + 1).filter(i -> !numbers.contains(i)).findFirst().orElseThrow(() -> new RuntimeException());
+            numbers.add(number);
+            return IntObjectPair.of(number, this);
         }
 
         @Override
@@ -276,6 +305,25 @@ public abstract class BetNumbersBuilder {
         }
 
         @Override
+        public IntObjectPair<BetNumbersBuilder> addRandomNumber() {
+            if (bankers.size() + selections.size() > maxNumber - minNumber) {
+                throw new IllegalStateException("Cannot add more random numbers!");
+            }
+            int number = ThreadLocalRandom.current().ints(minNumber, maxNumber + 1).filter(i -> !contains(i)).findFirst().orElseThrow(() -> new RuntimeException());
+            if (bankersComplete) {
+                if (!bankers.contains(number)) {
+                    selections.add(number);
+                }
+            } else {
+                if (bankerCompleted()) {
+                    throw new IllegalStateException("Max numbers of bankers reached!");
+                }
+                bankers.add(number);
+            }
+            return IntObjectPair.of(number, this);
+        }
+
+        @Override
         public synchronized BankerBuilder removeNumber(int number) {
             if (bankersComplete) {
                 selections.remove((Object) number);
@@ -292,6 +340,11 @@ public abstract class BetNumbersBuilder {
 
         public int bankerSize() {
             return bankers.size();
+        }
+
+        @Override
+        public boolean canAdd() {
+            return bankerSize() + size() < maxNumber - minNumber + 1;
         }
 
         public synchronized BankerBuilder finishBankers() {
@@ -357,6 +410,19 @@ public abstract class BetNumbersBuilder {
             }
             numbers.add(number);
             return this;
+        }
+
+        @Override
+        public IntObjectPair<BetNumbersBuilder> addRandomNumber() {
+            if (completed()) {
+                throw new IllegalStateException("Lottery Number builder already completed!");
+            }
+            if (numbers.size() > maxNumber - minNumber) {
+                throw new IllegalStateException("Cannot add more random numbers!");
+            }
+            int number = ThreadLocalRandom.current().ints(minNumber, maxNumber + 1).filter(i -> !numbers.contains(i)).findFirst().orElseThrow(() -> new RuntimeException());
+            numbers.add(number);
+            return IntObjectPair.of(number, this);
         }
 
         @Override

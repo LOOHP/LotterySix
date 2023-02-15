@@ -127,7 +127,7 @@ GUI:
       - "&7Want some inspiration of what numbers to pick?"
     PendingTransactions:
       - '&aYou have unclaimed balance!'
-      - '&aClick to receive!'
+      - '&aClick me and chat message to receive!'
   LastResults:
     Title: "&2Last Results"
     LotteryInfo:
@@ -199,10 +199,15 @@ GUI:
     SingleTitle: "&2Pick 6 Numbers"
     MultipleTitle: "&2Pick More Than 7 Numbers"
     BankerTitle: "&2Pick Bankers & Numbers"
+    AddRandom:
+      - "&cAdd Random Number"
+      - "&7Let the computer pick a random number for you!"
+    NotYetFinish:
+      - "&7Please choose your numbers!"
     Finish:
       - "&eClick to finish selection (${Price})"
     FinishBankers:
-      - "&eClick to finish BANKER selection (${Price})"
+      - "&eClick to finish banker selection"
   ConfirmNewBet:
     Title: "&2Confirm Bet"
     LotteryInfo:
@@ -237,6 +242,7 @@ Announcer:
   PreDrawBossBar:
     Enabled: true
     #How long before the draw should the bossbar appear
+    #This is in seconds
     TimeBeforeDraw: 600
     Message: "&eLotterySix &a{GameNumber} {Date}  &6Estimated: &b${PrizePool}"
     #https://hub.spigotmc.org/javadocs/spigot/org/bukkit/boss/BarColor.html

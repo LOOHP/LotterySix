@@ -151,6 +151,8 @@ public class LotterySix implements AutoCloseable {
     public String guiNewBetSingleTitle;
     public String guiNewBetMultipleTitle;
     public String guiNewBetBankerTitle;
+    public String[] guiNewBetAddRandom;
+    public String[] guiNewBetNotYetFinish;
     public String[] guiNewBetFinish;
     public String[] guiNewBetFinishBankers;
     public String guiRandomEntryCountTitle;
@@ -709,6 +711,8 @@ public class LotterySix implements AutoCloseable {
         guiNewBetSingleTitle = config.getConfiguration().getString("GUI.NewBet.SingleTitle");
         guiNewBetMultipleTitle = config.getConfiguration().getString("GUI.NewBet.MultipleTitle");
         guiNewBetBankerTitle = config.getConfiguration().getString("GUI.NewBet.BankerTitle");
+        guiNewBetAddRandom = config.getConfiguration().getStringList("GUI.NewBet.AddRandom").toArray(new String[0]);
+        guiNewBetNotYetFinish = config.getConfiguration().getStringList("GUI.NewBet.NotYetFinish").toArray(new String[0]);
         guiNewBetFinish = config.getConfiguration().getStringList("GUI.NewBet.Finish").toArray(new String[0]);
         guiNewBetFinishBankers = config.getConfiguration().getStringList("GUI.NewBet.FinishBankers").toArray(new String[0]);
         guiRandomEntryCountTitle = config.getConfiguration().getString("GUI.RandomEntryCount.Title");

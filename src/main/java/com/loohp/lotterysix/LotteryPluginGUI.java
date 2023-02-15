@@ -27,6 +27,7 @@ import com.loohp.lotterysix.game.lottery.GameNumber;
 import com.loohp.lotterysix.game.lottery.PlayableLotterySixGame;
 import com.loohp.lotterysix.game.objects.AddBetResult;
 import com.loohp.lotterysix.game.objects.BetUnitType;
+import com.loohp.lotterysix.game.objects.IntObjectConsumer;
 import com.loohp.lotterysix.game.objects.LotteryPlayer;
 import com.loohp.lotterysix.game.objects.NumberStatistics;
 import com.loohp.lotterysix.game.objects.PlayerBets;
@@ -410,7 +411,7 @@ public class LotteryPluginGUI implements Listener {
         int num = instance.numberOfChoices;
         String[] guiSetup = fillChars((num + 1) / 9 + 1);
         String last = guiSetup[guiSetup.length - 1];
-        guiSetup[guiSetup.length - 1] = last.substring(0, last.length() - 1) + "\0";
+        guiSetup[guiSetup.length - 1] = last.substring(0, last.length() - 2) + "\1\0";
         String title;
         boolean isBanker = builder.getType().equals(BetNumbersType.BANKER);
         boolean isFixed = builder.getType().equals(BetNumbersType.SINGLE);
@@ -433,65 +434,69 @@ public class LotteryPluginGUI implements Listener {
         }
         InventoryGui gui = new InventoryGui(plugin, LotteryUtils.formatPlaceholders(player, title.replace("{Price}", StringUtils.formatComma(LotteryUtils.calculatePrice(builder, instance))).replace("{MinSelection}", ((isBanker ? ((BetNumbersBuilder.BankerBuilder) builder).getMinSelectionsNeeded() : 6) - builder.size()) + ""), instance, game), guiSetup);
         char c = 'a';
+        IntObjectConsumer<Player> handleClick = (number, clicker) -> {
+            if (builder.completed() || (isBanker && !((BetNumbersBuilder.BankerBuilder) builder).getBankers().isEmpty())) {
+                if (isFixed) {
+                    Bukkit.getScheduler().runTaskLater(plugin, () -> close(clicker, gui, false), 1);
+                    Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                        BetNumbers betNumbers = builder.build();
+                        if (betNumbers.getType().equals(BetNumbersType.SINGLE)) {
+                            getSingleNumberConfirm(clicker, game, betNumbers).show(clicker);
+                        } else {
+                            getComplexNumberConfirm(clicker, game, betNumbers).show(clicker);
+                        }
+                    }, 2);
+                } else if (isBanker && !((BetNumbersBuilder.BankerBuilder) builder).inSelectionPhase() && ((BetNumbersBuilder.BankerBuilder) builder).bankerCompleted()) {
+                    ((BetNumbersBuilder.BankerBuilder) builder).finishBankers();
+                    gui.removeElement('\0');
+                    gui.addElement(new StaticGuiElement('\0', XMaterial.GRAY_DYE.parseItem(), LotteryUtils.formatPlaceholders(player, instance.guiNewBetNotYetFinish, instance, game)));
+                    for (int banker : ((BetNumbersBuilder.BankerBuilder) builder).getBankers()) {
+                        char bankerC = (char) ('a' + banker - 1);
+                        gui.removeElement(bankerC);
+                        gui.addElement(new StaticGuiElement(bankerC, XMaterial.YELLOW_WOOL.parseItem(), ChatColor.YELLOW + "" + number));
+                    }
+                } else if (builder.completed() || (isBanker && !((BetNumbersBuilder.BankerBuilder) builder).inSelectionPhase() && !((BetNumbersBuilder.BankerBuilder) builder).getBankers().isEmpty())) {
+                    gui.removeElement('\0');
+                    gui.addElement(new StaticGuiElement('\0', isBanker && !((BetNumbersBuilder.BankerBuilder) builder).inSelectionPhase() ? XMaterial.EMERALD.parseItem() : XMaterial.GOLD_INGOT.parseItem(), click -> {
+                        if (builder.completed()) {
+                            Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
+                            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                                BetNumbers betNumbers = builder.build();
+                                if (betNumbers.getType().equals(BetNumbersType.SINGLE)) {
+                                    getSingleNumberConfirm((Player) click.getWhoClicked(), game, betNumbers).show(click.getWhoClicked());
+                                } else {
+                                    getComplexNumberConfirm((Player) click.getWhoClicked(), game, betNumbers).show(click.getWhoClicked());
+                                }
+                            }, 2);
+                        } else if (isBanker && !((BetNumbersBuilder.BankerBuilder) builder).inSelectionPhase() && !((BetNumbersBuilder.BankerBuilder) builder).getBankers().isEmpty()) {
+                            ((BetNumbersBuilder.BankerBuilder) builder).finishBankers();
+                            gui.removeElement('\0');
+                            gui.addElement(new StaticGuiElement('\0', XMaterial.GRAY_DYE.parseItem(), LotteryUtils.formatPlaceholders(player, instance.guiNewBetNotYetFinish, instance, game)));
+                            for (int banker : ((BetNumbersBuilder.BankerBuilder) builder).getBankers()) {
+                                char bankerC = (char) ('a' + banker - 1);
+                                gui.removeElement(bankerC);
+                                gui.addElement(new StaticGuiElement(bankerC, XMaterial.YELLOW_WOOL.parseItem(), ChatColor.YELLOW + "" + number));
+                            }
+                            Bukkit.getScheduler().runTaskLater(plugin, () -> gui.close(click.getWhoClicked()), 1);
+                            Bukkit.getScheduler().runTaskLater(plugin, () -> gui.show(click.getWhoClicked()), 2);
+                        }
+                        return true;
+                    }, LotteryUtils.formatPlaceholders(player, Arrays.stream(isBanker && !((BetNumbersBuilder.BankerBuilder) builder).inSelectionPhase() ? instance.guiNewBetFinishBankers : instance.guiNewBetFinish)
+                            .map(each -> each.replace("{Price}", StringUtils.formatComma(LotteryUtils.calculatePrice(builder, instance)))).toArray(String[]::new), instance, game)));
+                }
+            } else {
+                gui.removeElement('\0');
+                gui.addElement(new StaticGuiElement('\0', XMaterial.GRAY_DYE.parseItem(), LotteryUtils.formatPlaceholders(player, instance.guiNewBetNotYetFinish, instance, game)));
+            }
+        };
         for (int i = 0; i < num; i++) {
             int number = i + 1;
             GuiStateElement element = new GuiStateElement(c++,
                     new GuiStateElement.State(
                             change -> {
                                 builder.addNumber(number);
-                                if (builder.completed() || (isBanker && !((BetNumbersBuilder.BankerBuilder) builder).getBankers().isEmpty())) {
-                                    if (isFixed) {
-                                        Bukkit.getScheduler().runTaskLater(plugin, () -> close(change.getWhoClicked(), change.getGui(), false), 1);
-                                        Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                                            BetNumbers betNumbers = builder.build();
-                                            if (betNumbers.getType().equals(BetNumbersType.SINGLE)) {
-                                                getSingleNumberConfirm((Player) change.getWhoClicked(), game, betNumbers).show(change.getWhoClicked());
-                                            } else {
-                                                getComplexNumberConfirm((Player) change.getWhoClicked(), game, betNumbers).show(change.getWhoClicked());
-                                            }
-                                        }, 2);
-                                    } else if (isBanker && !((BetNumbersBuilder.BankerBuilder) builder).inSelectionPhase() && ((BetNumbersBuilder.BankerBuilder) builder).bankerCompleted()) {
-                                        ((BetNumbersBuilder.BankerBuilder) builder).finishBankers();
-                                        gui.removeElement('\0');
-                                        gui.addElement(new StaticGuiElement('\0', new ItemStack(Material.AIR), ChatColor.LIGHT_PURPLE.toString()));
-                                        for (int banker : ((BetNumbersBuilder.BankerBuilder) builder).getBankers()) {
-                                            char bankerC = (char) ('a' + banker - 1);
-                                            gui.removeElement(bankerC);
-                                            gui.addElement(new StaticGuiElement(bankerC, XMaterial.YELLOW_WOOL.parseItem(), ChatColor.YELLOW + "" + number));
-                                        }
-                                    } else if (builder.completed() || (isBanker && !((BetNumbersBuilder.BankerBuilder) builder).inSelectionPhase() && !((BetNumbersBuilder.BankerBuilder) builder).getBankers().isEmpty())) {
-                                        gui.removeElement('\0');
-                                        gui.addElement(new StaticGuiElement('\0', isBanker && !((BetNumbersBuilder.BankerBuilder) builder).inSelectionPhase() ? XMaterial.EMERALD_BLOCK.parseItem() : XMaterial.GOLD_BLOCK.parseItem(), click -> {
-                                            if (builder.completed()) {
-                                                Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
-                                                Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                                                    BetNumbers betNumbers = builder.build();
-                                                    if (betNumbers.getType().equals(BetNumbersType.SINGLE)) {
-                                                        getSingleNumberConfirm((Player) click.getWhoClicked(), game, betNumbers).show(click.getWhoClicked());
-                                                    } else {
-                                                        getComplexNumberConfirm((Player) click.getWhoClicked(), game, betNumbers).show(click.getWhoClicked());
-                                                    }
-                                                }, 2);
-                                            } else if (isBanker && !((BetNumbersBuilder.BankerBuilder) builder).inSelectionPhase() && !((BetNumbersBuilder.BankerBuilder) builder).getBankers().isEmpty()) {
-                                                ((BetNumbersBuilder.BankerBuilder) builder).finishBankers();
-                                                gui.removeElement('\0');
-                                                gui.addElement(new StaticGuiElement('\0', new ItemStack(Material.AIR), ChatColor.LIGHT_PURPLE.toString()));
-                                                for (int banker : ((BetNumbersBuilder.BankerBuilder) builder).getBankers()) {
-                                                    char bankerC = (char) ('a' + banker - 1);
-                                                    gui.removeElement(bankerC);
-                                                    gui.addElement(new StaticGuiElement(bankerC, XMaterial.YELLOW_WOOL.parseItem(), ChatColor.YELLOW + "" + number));
-                                                }
-                                                Bukkit.getScheduler().runTaskLater(plugin, () -> gui.close(click.getWhoClicked()), 1);
-                                                Bukkit.getScheduler().runTaskLater(plugin, () -> gui.show(click.getWhoClicked()), 2);
-                                            }
-                                            return true;
-                                        }, LotteryUtils.formatPlaceholders(player, Arrays.stream(isBanker && !((BetNumbersBuilder.BankerBuilder) builder).inSelectionPhase() ? instance.guiNewBetFinishBankers : instance.guiNewBetFinish)
-                                                .map(each -> each.replace("{Price}", StringUtils.formatComma(LotteryUtils.calculatePrice(builder, instance)))).toArray(String[]::new), instance, game)));
-                                    }
-                                } else {
-                                    gui.removeElement('\0');
-                                    gui.addElement(new StaticGuiElement('\0', new ItemStack(Material.AIR), ChatColor.LIGHT_PURPLE.toString()));
-                                }
+                                handleClick.accept(number, (Player) change.getWhoClicked());
+                                gui.draw(change.getWhoClicked());
                             },
                             "true",
                             XMaterial.LIGHT_GRAY_WOOL.parseItem(),
@@ -500,6 +505,7 @@ public class LotteryPluginGUI implements Listener {
                     new GuiStateElement.State(
                             change -> {
                                 builder.removeNumber(number);
+                                gui.draw(player);
                                 GuiElement guiElement =  gui.getElement('\0');
                                 if (guiElement != null) {
                                     if (isBanker) {
@@ -507,19 +513,19 @@ public class LotteryPluginGUI implements Listener {
                                         if (bankerBuilder.inSelectionPhase()) {
                                             if (!bankerBuilder.completed()) {
                                                 gui.removeElement('\0');
-                                                gui.addElement(new StaticGuiElement('\0', new ItemStack(Material.AIR), ChatColor.LIGHT_PURPLE.toString()));
+                                                gui.addElement(new StaticGuiElement('\0', XMaterial.GRAY_DYE.parseItem(), LotteryUtils.formatPlaceholders(player, instance.guiNewBetNotYetFinish, instance, game)));
                                                 return;
                                             }
                                         } else {
                                             if (bankerBuilder.getBankers().isEmpty()) {
                                                 gui.removeElement('\0');
-                                                gui.addElement(new StaticGuiElement('\0', new ItemStack(Material.AIR), ChatColor.LIGHT_PURPLE.toString()));
+                                                gui.addElement(new StaticGuiElement('\0', XMaterial.GRAY_DYE.parseItem(), LotteryUtils.formatPlaceholders(player, instance.guiNewBetNotYetFinish, instance, game)));
                                                 return;
                                             }
                                         }
                                     } else if (!builder.completed()) {
                                         gui.removeElement('\0');
-                                        gui.addElement(new StaticGuiElement('\0', new ItemStack(Material.AIR), ChatColor.LIGHT_PURPLE.toString()));
+                                        gui.addElement(new StaticGuiElement('\0', XMaterial.GRAY_DYE.parseItem(), LotteryUtils.formatPlaceholders(player, instance.guiNewBetNotYetFinish, instance, game)));
                                         return;
                                     }
                                     ((StaticGuiElement) gui.getElement('\0')).setText(LotteryUtils.formatPlaceholders(player, Arrays.stream(isBanker ? instance.guiNewBetFinishBankers : instance.guiNewBetFinish)
@@ -535,7 +541,21 @@ public class LotteryPluginGUI implements Listener {
             element.setSilent(true);
             gui.addElement(element);
         }
-        gui.addElement(new StaticGuiElement('\0', new ItemStack(Material.AIR), ChatColor.LIGHT_PURPLE.toString()));
+        gui.addElement(new StaticGuiElement('\0', XMaterial.GRAY_DYE.parseItem(), LotteryUtils.formatPlaceholders(player, instance.guiNewBetNotYetFinish, instance, game)));
+        gui.addElement(new DynamicGuiElement('\1', viewer -> {
+            if (builder.canAdd()) {
+                return new StaticGuiElement('\1', XMaterial.REDSTONE.parseItem(), click -> {
+                    int number = builder.addRandomNumber().getFirstInt();
+                    GuiStateElement element = (GuiStateElement) gui.getElement((char) ('a' + number - 1));
+                    element.nextState();
+                    handleClick.accept(number, (Player) click.getWhoClicked());
+                    gui.draw(click.getWhoClicked());
+                    return true;
+                }, LotteryUtils.formatPlaceholders(player, instance.guiNewBetAddRandom, instance, game));
+            } else {
+                return new StaticGuiElement('\1', new ItemStack(Material.AIR), ChatColor.LIGHT_PURPLE.toString());
+            }
+        }));
 
         return gui;
     }
@@ -631,6 +651,7 @@ public class LotteryPluginGUI implements Listener {
                 .map(each -> each.replace("{Price}", StringUtils.formatComma(price)).replace("{PricePartial}", StringUtils.formatComma(partial))).toArray(String[]::new)));
         gui.addElement(new StaticGuiElement('j', XMaterial.BARRIER.parseItem(), click -> {
             Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
+            Bukkit.getScheduler().runTaskLater(plugin, () -> checkReopen(click.getWhoClicked()), 5);
             return true;
         }, LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetCancel, instance, game)));
 
@@ -692,6 +713,7 @@ public class LotteryPluginGUI implements Listener {
                 .map(each -> each.replace("{Price}", StringUtils.formatComma(price))).toArray(String[]::new)));
         gui.addElement(new StaticGuiElement('i', XMaterial.BARRIER.parseItem(), click -> {
             Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
+            Bukkit.getScheduler().runTaskLater(plugin, () -> checkReopen(click.getWhoClicked()), 5);
             return true;
         }, LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetCancel, instance, game)));
 
@@ -752,6 +774,7 @@ public class LotteryPluginGUI implements Listener {
                 .map(each -> each.replace("{Price}", StringUtils.formatComma(price))).toArray(String[]::new)));
         gui.addElement(new StaticGuiElement('i', XMaterial.BARRIER.parseItem(), click -> {
             Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
+            Bukkit.getScheduler().runTaskLater(plugin, () -> checkReopen(click.getWhoClicked()), 5);
             return true;
         }, LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetCancel, instance, game)));
 
