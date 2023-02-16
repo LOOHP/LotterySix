@@ -243,7 +243,8 @@ public class LotteryPluginGUI implements Listener {
         gui.setFiller(XMaterial.YELLOW_STAINED_GLASS_PANE.parseItem());
         gui.addElement(new StaticGuiElement('a', new ItemStack(Material.AIR), ChatColor.LIGHT_PURPLE.toString()));
         gui.addElement(new StaticGuiElement('b', XMaterial.CLOCK.parseItem(), click -> {
-            Bukkit.getScheduler().runTaskLater(plugin, () -> getPastResults((Player) click.getWhoClicked(), instance.getCompletedGames().isEmpty() ? null : instance.getCompletedGames().get(0)).show(click.getWhoClicked()), 1);
+            Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), gui, false), 1);
+            Bukkit.getScheduler().runTaskLater(plugin, () -> getPastResults((Player) click.getWhoClicked(), instance.getCompletedGames().isEmpty() ? null : instance.getCompletedGames().get(0)).show(click.getWhoClicked()), 2);
             return true;
         }, LotteryUtils.formatPlaceholders(player, instance.guiMainMenuCheckPastResults, instance)));
         gui.addElement(new DynamicGuiElement('c', viewer -> {
@@ -409,7 +410,7 @@ public class LotteryPluginGUI implements Listener {
 
     public InventoryGui getNumberChooser(Player player, PlayableLotterySixGame game, BetNumbersBuilder builder) {
         int num = instance.numberOfChoices;
-        String[] guiSetup = fillChars((num + 1) / 9 + 1);
+        String[] guiSetup = fillChars((num + (builder.getType().isMultipleCombination() ? 2 : 1)) / 9 + 1);
         String last = guiSetup[guiSetup.length - 1];
         guiSetup[guiSetup.length - 1] = last.substring(0, last.length() - 2) + "\1\0";
         String title;
@@ -477,8 +478,7 @@ public class LotteryPluginGUI implements Listener {
                                 gui.removeElement(bankerC);
                                 gui.addElement(new StaticGuiElement(bankerC, XMaterial.YELLOW_WOOL.parseItem(), ChatColor.YELLOW + "" + banker));
                             }
-                            Bukkit.getScheduler().runTaskLater(plugin, () -> gui.close(click.getWhoClicked()), 1);
-                            Bukkit.getScheduler().runTaskLater(plugin, () -> gui.show(click.getWhoClicked()), 2);
+                            gui.draw(clicker);
                         }
                         return true;
                     }, LotteryUtils.formatPlaceholders(player, Arrays.stream(isBanker && !((BetNumbersBuilder.BankerBuilder) builder).inSelectionPhase() ? instance.guiNewBetFinishBankers : instance.guiNewBetFinish)
@@ -540,6 +540,31 @@ public class LotteryPluginGUI implements Listener {
             element.setState("false");
             element.setSilent(true);
             gui.addElement(element);
+        }
+        if (builder.getType().isMultipleCombination()) {
+            char allChar = c;
+            gui.addElement(new DynamicGuiElement(allChar, viewer -> {
+                if (builder.canAdd()) {
+                    if (!isBanker || ((BetNumbersBuilder.BankerBuilder) builder).inSelectionPhase()) {
+                        return new StaticGuiElement(allChar, NBTEditor.set(XMaterial.ORANGE_WOOL.parseItem(), -1, "LotterySixNumber"), click -> {
+                            for (int number = 1; number <= num; number++) {
+                                if (!builder.contains(number)) {
+                                    builder.addNumber(number);
+                                    GuiStateElement element = (GuiStateElement) gui.getElement((char) ('a' + number - 1));
+                                    element.nextState();
+                                    handleClick.accept(number, (Player) click.getWhoClicked());
+                                }
+                            }
+                            gui.draw(click.getWhoClicked());
+                            return true;
+                        }, ChatColor.GOLD + instance.guiNewBetSelectAll);
+                    } else {
+                        return new StaticGuiElement(allChar, new ItemStack(Material.AIR), ChatColor.LIGHT_PURPLE.toString());
+                    }
+                } else {
+                    return new StaticGuiElement(allChar, XMaterial.GRAY_WOOL.parseItem(), ChatColor.DARK_GRAY + instance.guiNewBetSelectAll);
+                }
+            }));
         }
         gui.addElement(new StaticGuiElement('\0', XMaterial.GRAY_DYE.parseItem(), LotteryUtils.formatPlaceholders(player, instance.guiNewBetNotYetFinish, instance, game)));
         gui.addElement(new DynamicGuiElement('\1', viewer -> {
@@ -884,6 +909,10 @@ public class LotteryPluginGUI implements Listener {
                 return true;
             }, LotteryUtils.formatPlaceholders(player, instance.guiLastResultsLookupHistoricGames, instance, game)));
         }
+        gui.setCloseAction(action -> {
+            Bukkit.getScheduler().runTaskLater(plugin, () -> checkReopen(action.getPlayer()), 5);
+            return false;
+        });
 
         return gui;
     }

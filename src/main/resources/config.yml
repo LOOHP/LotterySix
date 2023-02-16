@@ -199,6 +199,8 @@ GUI:
     SingleTitle: "&2Pick 6 Numbers"
     MultipleTitle: "&2Pick More Than 7 Numbers"
     BankerTitle: "&2Pick Bankers & Numbers"
+    #You don't need to apply a color code for this text option
+    SelectAll: "Select All"
     AddRandom:
       - "&cAdd Random Number"
       - "&7Let the computer pick a random number for you!"

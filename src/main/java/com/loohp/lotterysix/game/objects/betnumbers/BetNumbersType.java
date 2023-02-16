@@ -22,9 +22,18 @@ package com.loohp.lotterysix.game.objects.betnumbers;
 
 public enum BetNumbersType {
 
-    SINGLE,
-    MULTIPLE,
-    BANKER,
-    RANDOM;
+    SINGLE(false),
+    MULTIPLE(true),
+    BANKER(true),
+    RANDOM(false);
 
+    private final boolean isMultipleCombination;
+
+    BetNumbersType(boolean isMultipleCombination) {
+        this.isMultipleCombination = isMultipleCombination;
+    }
+
+    public boolean isMultipleCombination() {
+        return isMultipleCombination;
+    }
 }
