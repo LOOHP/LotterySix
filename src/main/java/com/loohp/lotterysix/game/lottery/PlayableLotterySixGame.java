@@ -45,6 +45,7 @@ import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -616,6 +617,7 @@ public class PlayableLotterySixGame implements IDedGame {
             }
         }
 
+        winnings.sort(Comparator.comparing((PlayerWinnings playerWinnings) -> playerWinnings.getTier()).thenComparing((PlayerWinnings playerWinnings) -> playerWinnings.getWinningBet(bets).getTimePlaced()));
         this.valid = false;
 
         if (instance != null) {
@@ -874,6 +876,7 @@ public class PlayableLotterySixGame implements IDedGame {
             }
         }
 
+        winnings.sort(Comparator.comparing((PlayerWinnings playerWinnings) -> playerWinnings.getTier()).thenComparing((PlayerWinnings playerWinnings) -> playerWinnings.getWinningBet(bets).getTimePlaced()));
         this.valid = false;
 
         return new CompletedLotterySixGame(gameId, scheduledDateTime, gameNumber, specialName, winningNumbers, newNumberStats, pricePerBet, prizeForTier, winnings, bets, totalPrizes, carryOverNext);

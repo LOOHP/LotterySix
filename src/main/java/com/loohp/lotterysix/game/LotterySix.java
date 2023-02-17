@@ -460,7 +460,7 @@ public class LotterySix implements AutoCloseable {
         }
         nextWinningNumbers = null;
         CompletedLotterySixGame lastGame = completedGames.isEmpty() ? null : completedGames.get(0);
-        currentGame = PlayableLotterySixGame.createNewGame(this, Math.max(dateTime, System.currentTimeMillis()), "", lastGame == null ? Collections.emptyMap() : lastGame.getNumberStatistics(), lastGame == null ? 0 : lastGame.getRemainingFunds(), lowestTopPlacesPrize);
+        currentGame = PlayableLotterySixGame.createNewGame(this, Math.max(dateTime, System.currentTimeMillis()), null, lastGame == null ? Collections.emptyMap() : lastGame.getNumberStatistics(), lastGame == null ? 0 : lastGame.getRemainingFunds(), lowestTopPlacesPrize);
         saveData(true);
         actionListener.accept(LotterySixAction.START);
         return currentGame;
