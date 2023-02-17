@@ -55,6 +55,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -65,7 +67,8 @@ public class PlayableLotterySixGame implements IDedGame {
     }
 
     private transient LotterySix instance;
-    private transient Object betsLock;
+    private transient ReentrantReadWriteLock betsLock;
+    private transient AtomicBoolean dirty;
 
     private final UUID gameId;
     private volatile long scheduledDateTime;
@@ -76,6 +79,7 @@ public class PlayableLotterySixGame implements IDedGame {
     private volatile long carryOverFund;
     private volatile long lowestTopPlacesPrize;
     private volatile boolean valid;
+    private volatile long lastSaved;
 
     private PlayableLotterySixGame(LotterySix instance, UUID gameId, long scheduledDateTime, String specialName, Map<Integer, NumberStatistics> numberStatistics, long lowestTopPlacesPrize, long carryOverFund, boolean valid) {
         this.instance = instance;
@@ -88,18 +92,30 @@ public class PlayableLotterySixGame implements IDedGame {
         this.carryOverFund = carryOverFund;
         this.lowestTopPlacesPrize = lowestTopPlacesPrize;
         this.valid = valid;
+        this.lastSaved = -1;
     }
     
-    private synchronized Object getBetsLock() {
+    private synchronized ReentrantReadWriteLock getBetsReadWriteLock() {
         if (betsLock == null) {
-            return betsLock = new Object();
+            return betsLock = new ReentrantReadWriteLock(true);
         }
         return betsLock;
     }
 
-    public String toJson(Gson gson) {
-        synchronized (getBetsLock()) {
+    public synchronized AtomicBoolean getDirtyFlag() {
+        if (dirty == null) {
+            return dirty = new AtomicBoolean(true);
+        }
+        return dirty;
+    }
+
+    public String toJson(Gson gson, boolean updateSaveTime) {
+        getBetsReadWriteLock().readLock().lock();
+        try {
+            lastSaved = System.currentTimeMillis();
             return gson.toJson(this);
+        } finally {
+            getBetsReadWriteLock().readLock().unlock();
         }
     }
 
@@ -131,12 +147,14 @@ public class PlayableLotterySixGame implements IDedGame {
 
     public void setSpecialName(String specialName) {
         this.specialName = specialName;
+        getDirtyFlag().set(true);
     }
 
     public void setScheduledDateTime(long scheduledDateTime) {
         if (instance == null || !instance.backendBungeecordMode) {
             this.scheduledDateTime = scheduledDateTime;
             this.gameNumber = instance.dateToGameNumber(scheduledDateTime);
+            getDirtyFlag().set(true);
         }
     }
 
@@ -164,7 +182,10 @@ public class PlayableLotterySixGame implements IDedGame {
     }
 
     public void setCarryOverFund(long carryOverFund) {
-        this.carryOverFund = carryOverFund;
+        if (instance == null || !instance.backendBungeecordMode) {
+            this.carryOverFund = carryOverFund;
+            getDirtyFlag().set(true);
+        }
     }
 
     public long getLowestTopPlacesPrize() {
@@ -174,6 +195,7 @@ public class PlayableLotterySixGame implements IDedGame {
     public void setLowestTopPlacesPrize(long lowestTopPlacesPrize) {
         if (instance == null || !instance.backendBungeecordMode) {
             this.lowestTopPlacesPrize = lowestTopPlacesPrize;
+            getDirtyFlag().set(true);
         }
     }
 
@@ -184,18 +206,22 @@ public class PlayableLotterySixGame implements IDedGame {
     public void cancelGame() {
         this.valid = false;
         if (instance != null && !instance.backendBungeecordMode) {
-            synchronized (getBetsLock()) {
+            getBetsReadWriteLock().readLock().lock();
+            try {
                 instance.refundBets(bets.values());
                 for (PlayerBets bet : bets.values()) {
                     instance.getPlayerPreferenceManager().getLotteryPlayer(bet.getPlayer()).updateStats(PlayerStatsKey.TOTAL_BETS_PLACED, long.class, i -> i - bet.getBet());
                 }
+            } finally {
+                getBetsReadWriteLock().readLock().unlock();
             }
         }
     }
 
     public synchronized void invalidateBetsIf(Predicate<PlayerBets> predicate) {
         List<PlayerBets> removedBets = new ArrayList<>();
-        synchronized (getBetsLock()) {
+        getBetsReadWriteLock().writeLock().lock();
+        try {
             Iterator<PlayerBets> itr = bets.values().iterator();
             while (itr.hasNext()) {
                 PlayerBets playerBet = itr.next();
@@ -204,24 +230,35 @@ public class PlayableLotterySixGame implements IDedGame {
                     removedBets.add(playerBet);
                 }
             }
+            getDirtyFlag().set(true);
+        } finally {
+            getBetsReadWriteLock().writeLock().unlock();
         }
         if (instance != null && !instance.backendBungeecordMode) {
+            instance.requestSave(true);
             instance.refundBets(removedBets);
             for (PlayerBets bet : removedBets) {
                 instance.getPlayerPreferenceManager().getLotteryPlayer(bet.getPlayer()).updateStats(PlayerStatsKey.TOTAL_BETS_PLACED, long.class, i -> i - bet.getBet());
             }
+            instance.getPlayerBetsInvalidateListener().accept(removedBets);
         }
     }
 
     public List<PlayerBets> getBets() {
-        synchronized (getBetsLock()) {
+        getBetsReadWriteLock().readLock().lock();
+        try {
             return new ArrayList<>(bets.values());
+        } finally {
+            getBetsReadWriteLock().readLock().unlock();
         }
     }
 
     public long getTotalBets() {
-        synchronized (getBetsLock()) {
+        getBetsReadWriteLock().readLock().lock();
+        try {
             return bets.values().stream().mapToLong(each -> each.getBet()).sum();
+        } finally {
+            getBetsReadWriteLock().readLock().unlock();
         }
     }
 
@@ -262,13 +299,17 @@ public class PlayableLotterySixGame implements IDedGame {
             }
             lotteryPlayer.updateStats(PlayerStatsKey.TOTAL_BETS_PLACED, long.class, i -> i + price);
         }
-        synchronized (getBetsLock()) {
+        getBetsReadWriteLock().writeLock().lock();
+        try {
             for (PlayerBets bet : bets) {
                 this.bets.put(bet.getBetId(), bet);
             }
+        } finally {
+            getBetsReadWriteLock().writeLock().unlock();
         }
+        getDirtyFlag().set(true);
         if (instance != null) {
-            instance.saveData(true);
+            instance.requestSave(true);
             if (!instance.backendBungeecordMode && instance.announcerBetPlacedAnnouncementEnabled) {
                 for (UUID uuid : instance.getOnlinePlayersSupplier().get()) {
                     instance.getMessageSendingConsumer().accept(uuid, instance.announcerBetPlacedAnnouncementMessage
@@ -282,6 +323,11 @@ public class PlayableLotterySixGame implements IDedGame {
     private AddBetResult betResult0(UUID player, long price, Collection<PlayerBets> bets, AddBetResult result) {
         if (instance != null && !instance.backendBungeecordMode) {
             instance.getPlayerBetListener().accept(player, result, price, bets);
+            for (PlayerBets playerBet : bets) {
+                instance.getConsoleMessageConsumer().accept(
+                        playerBet.getName() + " (" + playerBet.getPlayer() + ") placed a bet worth $" + playerBet.getBet() + " (" + playerBet.getType() + ") with type " +
+                        playerBet.getChosenNumbers().getType() + " [" + playerBet.getChosenNumbers().toString() + "] to game " + gameNumber + " (" + gameId + ")");
+            }
         }
         return result;
     }
@@ -291,8 +337,11 @@ public class PlayableLotterySixGame implements IDedGame {
     }
 
     public List<PlayerBets> getPlayerBets(UUID player) {
-        synchronized (getBetsLock()) {
+        getBetsReadWriteLock().readLock().lock();
+        try {
             return bets.values().stream().filter(each -> each.getPlayer().equals(player)).collect(Collectors.toList());
+        } finally {
+            getBetsReadWriteLock().readLock().unlock();
         }
     }
 
@@ -339,7 +388,8 @@ public class PlayableLotterySixGame implements IDedGame {
         }
 
         Set<UUID> participants = new HashSet<>();
-        synchronized (getBetsLock()) {
+        getBetsReadWriteLock().readLock().lock();
+        try {
             for (PlayerBets playerBets : bets.values()) {
                 participants.add(playerBets.getPlayer());
                 List<Pair<PrizeTier, WinningCombination>> prizeTiersPairs = winningNumbers.checkWinning(playerBets.getChosenNumbers());
@@ -347,6 +397,8 @@ public class PlayableLotterySixGame implements IDedGame {
                     tiers.get(prizeTiersPair.getFirst()).add(Pair.of(playerBets, prizeTiersPair.getSecond()));
                 }
             }
+        } finally {
+            getBetsReadWriteLock().readLock().unlock();
         }
         if (instance != null) {
             new Thread(() -> {

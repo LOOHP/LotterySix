@@ -116,6 +116,8 @@ public class LotterySixBungee extends Plugin implements Listener {
             for (PlayerBets bet : bets) {
                 callPlayerBetEvent(player, bet.getChosenNumbers());
             }
+        }, playerBets -> {
+            pluginMessageBungee.updateCurrentGameData();
         }, action -> {
             callLotterySixEvent(action);
             forceCloseAllGui();

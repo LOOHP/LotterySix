@@ -165,6 +165,8 @@ public class LotterySixPlugin extends JavaPlugin implements Listener {
             for (PlayerBets bet : bets) {
                 Bukkit.getPluginManager().callEvent(new PlayerBetEvent(Bukkit.getPlayer(uuid), bet.getChosenNumbers()));
             }
+        }, playerBets -> {
+
         }, action -> {
             Bukkit.getPluginManager().callEvent(new LotterySixEvent(instance, action));
             forceCloseAllGui();

@@ -146,7 +146,7 @@ public class PluginMessageHandler implements PluginMessageListener {
                             } else {
                                 instance.setCurrentGame(null);
                             }
-                            instance.saveData(true);
+                            instance.requestSave(true);
                             break;
                         }
                         case 0x01: { // Update Last Game Data
@@ -161,7 +161,7 @@ public class PluginMessageHandler implements PluginMessageListener {
                                 CompletedLotterySixGame game = GSON.fromJson(DataTypeIO.readString(in, StandardCharsets.UTF_8), CompletedLotterySixGame.class);
                                 instance.setLastGame(game);
                             }
-                            instance.saveData(false);
+                            instance.requestSave(false);
                             break;
                         }
                         case 0x02: { // Send Formatted Title

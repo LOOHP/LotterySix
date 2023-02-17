@@ -55,6 +55,7 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.time.Year;
@@ -67,10 +68,18 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Queue;
 import java.util.TimeZone;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
@@ -226,12 +235,16 @@ public class LotterySix implements AutoCloseable {
 
     public Map<String, Long> playerBetLimit;
 
+    private final ExecutorService saveDataService;
+    private final AtomicLong lastSaveBegin;
+    private final Queue<Future<?>> saveTasks;
     private final LotteryPlayerManager playerPreferenceManager;
 
     private volatile PlayableLotterySixGame currentGame;
     private volatile boolean gameLocked;
     private volatile WinningNumbers nextWinningNumbers;
     private final LazyCompletedLotterySixGameList completedGames;
+    private final AtomicInteger requestSave;
 
     private final Consumer<Collection<PlayerWinnings>> givePrizesConsumer;
     private final Consumer<Collection<PlayerBets>> refundBetsConsumer;
@@ -242,12 +255,13 @@ public class LotterySix implements AutoCloseable {
     private final MessageConsumer messageSendingConsumer;
     private final MessageConsumer titleSendingConsumer;
     private final BetResultConsumer playerBetListener;
+    private final Consumer<Collection<PlayerBets>> playerBetsInvalidateListener;
     private final Consumer<LotterySixAction> actionListener;
     private final Consumer<LotteryPlayer> lotteryPlayerUpdateListener;
     private final Consumer<String> consoleMessageConsumer;
     private final BiConsumer<BossBarInfo, IDedGame> bossBarUpdater;
 
-    public LotterySix(boolean isBackend, File dataFolder, String configId, Consumer<Collection<PlayerWinnings>> givePrizesConsumer, Consumer<Collection<PlayerBets>> refundBetsConsumer, BiPredicate<UUID, Long> takeMoneyConsumer, BiPredicate<UUID, String> hasPermissionPredicate, Consumer<Boolean> lockRunnable, Supplier<Collection<UUID>> onlinePlayersSupplier, MessageConsumer messageSendingConsumer, MessageConsumer titleSendingConsumer, BetResultConsumer playerBetListener, Consumer<LotterySixAction> actionListener, Consumer<LotteryPlayer> lotteryPlayerUpdateListener, Consumer<String> consoleMessageConsumer, BiConsumer<BossBarInfo, IDedGame> bossBarUpdater) {
+    public LotterySix(boolean isBackend, File dataFolder, String configId, Consumer<Collection<PlayerWinnings>> givePrizesConsumer, Consumer<Collection<PlayerBets>> refundBetsConsumer, BiPredicate<UUID, Long> takeMoneyConsumer, BiPredicate<UUID, String> hasPermissionPredicate, Consumer<Boolean> lockRunnable, Supplier<Collection<UUID>> onlinePlayersSupplier, MessageConsumer messageSendingConsumer, MessageConsumer titleSendingConsumer, BetResultConsumer playerBetListener, Consumer<Collection<PlayerBets>> playerBetsInvalidateListener, Consumer<LotterySixAction> actionListener, Consumer<LotteryPlayer> lotteryPlayerUpdateListener, Consumer<String> consoleMessageConsumer, BiConsumer<BossBarInfo, IDedGame> bossBarUpdater) {
         this.dataFolder = dataFolder;
         this.configId = configId;
         this.givePrizesConsumer = givePrizesConsumer;
@@ -259,10 +273,15 @@ public class LotterySix implements AutoCloseable {
         this.messageSendingConsumer = messageSendingConsumer;
         this.titleSendingConsumer = titleSendingConsumer;
         this.playerBetListener = playerBetListener;
+        this.playerBetsInvalidateListener = playerBetsInvalidateListener;
         this.actionListener = actionListener;
         this.lotteryPlayerUpdateListener = lotteryPlayerUpdateListener;
         this.consoleMessageConsumer = consoleMessageConsumer;
         this.bossBarUpdater = bossBarUpdater;
+        this.requestSave = new AtomicInteger(0);
+        this.saveDataService = Executors.newSingleThreadExecutor();
+        this.lastSaveBegin = new AtomicLong(Long.MIN_VALUE);
+        this.saveTasks = new ConcurrentLinkedQueue<>();
 
         File lotteryDataFolder = new File(getDataFolder(), "data");
         lotteryDataFolder.mkdirs();
@@ -336,8 +355,23 @@ public class LotterySix implements AutoCloseable {
                             }
                         }
                     }
-                    if (saveInterval % 30 == 0) {
-                        saveData(true);
+                    int requestState;
+                    if ((requestState = requestSave.getAndSet(0)) > 0 || saveInterval % 30 == 0) {
+                        saveData(requestState < 2);
+                    }
+                    saveTasks.removeIf(t -> t.isDone());
+                    long lastSaveBeginTime = lastSaveBegin.get();
+                    if (lastSaveBeginTime > Long.MIN_VALUE) {
+                        long elapsed = now - lastSaveBeginTime;
+                        if (elapsed > 5000) {
+                            consoleMessageConsumer.accept("Save task is taking more that " + elapsed + " ms!");
+                            if (elapsed > 10000) {
+                                Future<?> task = saveTasks.poll();
+                                if (task != null && !task.isDone()) {
+                                    task.cancel(true);
+                                }
+                            }
+                        }
                     }
                     saveInterval++;
                     counter++;
@@ -354,7 +388,15 @@ public class LotterySix implements AutoCloseable {
         if (announcementTask != null) {
             announcementTask.cancel();
         }
-        saveData(false);
+        saveDataService.shutdown();
+        try {
+            if (!saveDataService.awaitTermination(5000, TimeUnit.MILLISECONDS)) {
+                saveDataService.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        saveDataNow(false);
     }
 
     public File getDataFolder() {
@@ -593,8 +635,16 @@ public class LotterySix implements AutoCloseable {
         return titleSendingConsumer;
     }
 
+    public Consumer<String> getConsoleMessageConsumer() {
+        return consoleMessageConsumer;
+    }
+
     public BetResultConsumer getPlayerBetListener() {
         return playerBetListener;
+    }
+
+    public Consumer<Collection<PlayerBets>> getPlayerBetsInvalidateListener() {
+        return playerBetsInvalidateListener;
     }
 
     public Consumer<LotterySixAction> getActionListener() {
@@ -841,16 +891,52 @@ public class LotterySix implements AutoCloseable {
         }
     }
 
-    public synchronized void saveData(boolean onlyCurrent) {
+    public void requestSave(boolean onlyCurrent) {
+        requestSave.updateAndGet(i -> Math.max(i, onlyCurrent ? 1 : 2));
+    }
+
+    private void saveData(boolean onlyCurrent) {
+        saveTasks.add(saveDataService.submit(() -> {
+            lastSaveBegin.set(System.currentTimeMillis());
+            try {
+                saveDataNow(onlyCurrent);
+            } catch (Throwable e) {
+                e.printStackTrace();
+            }
+            lastSaveBegin.set(Long.MIN_VALUE);
+        }));
+    }
+
+    private void saveDataNow(boolean onlyCurrent) {
         File lotteryDataFolder = new File(getDataFolder(), "data");
         lotteryDataFolder.mkdirs();
         File currentGameFile = new File(lotteryDataFolder, "current.json");
         if (currentGame != null) {
-            try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(Files.newOutputStream(currentGameFile.toPath()), StandardCharsets.UTF_8))) {
-                pw.println(currentGame.toJson(GSON));
-                pw.flush();
-            } catch (IOException e) {
-                e.printStackTrace();
+            if (currentGame.getDirtyFlag().get()) {
+                File backupCurrentGameFile = new File(lotteryDataFolder, "current.json.bak");
+                if (currentGameFile.exists()) {
+                    boolean shouldBackup = false;
+                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(Files.newInputStream(currentGameFile.toPath()), StandardCharsets.UTF_8))) {
+                        GSON.fromJson(reader, PlayableLotterySixGame.class);
+                        shouldBackup = true;
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    if (shouldBackup) {
+                        try {
+                            Files.copy(currentGameFile.toPath(), backupCurrentGameFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+                try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(Files.newOutputStream(currentGameFile.toPath()), StandardCharsets.UTF_8))) {
+                    currentGame.getDirtyFlag().set(false);
+                    pw.println(currentGame.toJson(GSON, true));
+                    pw.flush();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
         } else if (currentGameFile.exists()) {
             currentGameFile.delete();
