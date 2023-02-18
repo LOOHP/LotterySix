@@ -104,7 +104,10 @@ public class LotteryUtils {
                 .replace("{GameNumber}", () -> "-")
                 .replace("{NumberOfChoices}", () -> lotterySix.numberOfChoices + "");
         for (PrizeTier prizeTier : PrizeTier.values()) {
-            str = str.replace("{" + prizeTier.name() + "Odds}", () -> ODDS_FORMAT.format(calculateOddsOneOver(lotterySix.numberOfChoices, prizeTier)));
+            str = str.replace("{" + prizeTier.name() + "Odds}", () -> {
+                double odds = calculateOddsOneOver(lotterySix.numberOfChoices, prizeTier);
+                return Double.isFinite(odds) ? ODDS_FORMAT.format(odds) : "-";
+            });
         }
         NumberStatistics stats = NumberStatistics.NOT_EVER_DRAWN;
         for (int i = 1; i <= lotterySix.numberOfChoices; i++) {
@@ -138,7 +141,10 @@ public class LotteryUtils {
                 .replace("{PrizePool}", () -> StringUtils.formatComma(game.estimatedPrizePool(lotterySix.maxTopPlacesPrize, lotterySix.taxPercentage, lotterySix.estimationRoundToNearest)))
                 .replace("{BetPlayerNames}", () -> chainPlayerBetNames(game.getBets()));
         for (PrizeTier prizeTier : PrizeTier.values()) {
-            str = str.replace("{" + prizeTier.name() + "Odds}", () -> ODDS_FORMAT.format(calculateOddsOneOver(lotterySix.numberOfChoices, prizeTier)));
+            str = str.replace("{" + prizeTier.name() + "Odds}", () -> {
+                double odds = calculateOddsOneOver(lotterySix.numberOfChoices, prizeTier);
+                return Double.isFinite(odds) ? ODDS_FORMAT.format(odds) : "-";
+            });
         }
         for (int i = 1; i <= lotterySix.numberOfChoices; i++) {
             NumberStatistics stats = game.getNumberStatistics(i);
@@ -186,7 +192,10 @@ public class LotteryUtils {
         for (PrizeTier prizeTier : PrizeTier.values()) {
             String prizeTierName = prizeTier.name();
             str = str
-                    .replace("{" + prizeTierName + "Odds}", () -> calculateOddsOneOver(lotterySix.numberOfChoices, prizeTier) + "")
+                    .replace("{" + prizeTier.name() + "Odds}", () -> {
+                        double odds = calculateOddsOneOver(lotterySix.numberOfChoices, prizeTier);
+                        return Double.isFinite(odds) ? ODDS_FORMAT.format(odds) : "-";
+                    })
                     .replace("{" + prizeTierName + "Prize}", () -> StringUtils.formatComma(game.getPrizeForTier(prizeTier)))
                     .replace("{" + prizeTierName + "PrizeCount}", () -> BET_COUNT_FORMAT.format(game.getWinnerCountForTier(prizeTier)) + "")
                     .replace("{" + prizeTierName + "PlayerNames}", () -> chainPlayerWinningsNames(game.getWinnings(prizeTier)));
@@ -216,19 +225,19 @@ public class LotteryUtils {
                 return probabilityFormula(6, 5) / probabilityFormula(numberOfChoices, 6);
             }
             case THIRD: {
-                return probabilityFormula(6, 5) * probabilityFormula(42, 1) / probabilityFormula(numberOfChoices, 6);
+                return probabilityFormula(6, 5) * probabilityFormula(numberOfChoices - 7, 1) / probabilityFormula(numberOfChoices, 6);
             }
             case FOURTH: {
-                return probabilityFormula(6, 4) * probabilityFormula(42, 1) / probabilityFormula(numberOfChoices, 6);
+                return probabilityFormula(6, 4) * probabilityFormula(numberOfChoices - 7, 1) / probabilityFormula(numberOfChoices, 6);
             }
             case FIFTH: {
-                return probabilityFormula(6, 4) * probabilityFormula(42, 2) / probabilityFormula(numberOfChoices, 6);
+                return probabilityFormula(6, 4) * probabilityFormula(numberOfChoices - 7, 2) / probabilityFormula(numberOfChoices, 6);
             }
             case SIXTH: {
-                return probabilityFormula(6, 3) * probabilityFormula(42, 2) / probabilityFormula(numberOfChoices, 6);
+                return probabilityFormula(6, 3) * probabilityFormula(numberOfChoices - 7, 2) / probabilityFormula(numberOfChoices, 6);
             }
             case SEVENTH: {
-                return probabilityFormula(6, 3) * probabilityFormula(42, 3) / probabilityFormula(numberOfChoices, 6);
+                return probabilityFormula(6, 3) * probabilityFormula(numberOfChoices - 7, 3) / probabilityFormula(numberOfChoices, 6);
             }
             default: {
                 throw new IllegalArgumentException("Unknown prize tier " + prizeTier);
