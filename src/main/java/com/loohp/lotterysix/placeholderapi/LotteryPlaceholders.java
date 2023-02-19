@@ -26,6 +26,7 @@ import com.loohp.lotterysix.game.objects.PlayerPreferenceKey;
 import com.loohp.lotterysix.game.objects.PlayerStatsKey;
 import com.loohp.lotterysix.utils.CronUtils;
 import com.loohp.lotterysix.utils.LotteryUtils;
+import com.loohp.lotterysix.utils.StringUtils;
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;
 import org.bukkit.OfflinePlayer;
 
@@ -34,8 +35,8 @@ import java.util.Date;
 
 public class LotteryPlaceholders extends PlaceholderExpansion {
 
-    private static String asString(Object input) {
-        return input == null ? "N/A" : input.toString();
+    private static String asString(Object input, boolean isMonetaryValue) {
+        return input == null ? "N/A" : (isMonetaryValue ? StringUtils.formatComma((long) input) : input.toString());
     }
 
     @Override
@@ -84,19 +85,19 @@ public class LotteryPlaceholders extends PlaceholderExpansion {
             if (key == null) {
                 return "";
             } else {
-                return asString(LotterySixPlugin.getInstance().getPlayerPreferenceManager().getLotteryPlayer(offlineplayer.getUniqueId()).getPreference(key));
+                return asString(LotterySixPlugin.getInstance().getPlayerPreferenceManager().getLotteryPlayer(offlineplayer.getUniqueId()).getPreference(key), key.isMonetaryValue());
             }
         } else if (identifier.startsWith("stats_")) {
             PlayerStatsKey key = PlayerStatsKey.fromKey(identifier.substring("stats_".length()));
             if (key == null) {
                 return "";
             } else {
-                return asString(LotterySixPlugin.getInstance().getPlayerPreferenceManager().getLotteryPlayer(offlineplayer.getUniqueId()).getStats(key));
+                return asString(LotterySixPlugin.getInstance().getPlayerPreferenceManager().getLotteryPlayer(offlineplayer.getUniqueId()).getStats(key), key.isMonetaryValue());
             }
         } else if (identifier.startsWith("scheduler_")) {
             Cron cron = LotterySixPlugin.getInstance().runInterval;
             if (cron == null) {
-                return asString(null);
+                return asString(null, false);
             } else {
                 String type = identifier.substring("scheduler_".length());
                 if (type.equalsIgnoreCase("interval")) {
@@ -104,7 +105,7 @@ public class LotteryPlaceholders extends PlaceholderExpansion {
                 } else if (type.equalsIgnoreCase("next")) {
                     ZonedDateTime dateTime = CronUtils.getNextExecution(cron, CronUtils.getNow(LotterySixPlugin.getInstance().timezone));
                     if (dateTime == null) {
-                        return asString(null);
+                        return asString(null, false);
                     } else {
                         return LotterySixPlugin.getInstance().dateFormat.format(new Date(dateTime.toInstant().toEpochMilli()));
                     }

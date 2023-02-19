@@ -30,6 +30,7 @@ import com.loohp.lotterysix.game.objects.BetUnitType;
 import com.loohp.lotterysix.game.objects.BossBarInfo;
 import com.loohp.lotterysix.game.objects.LotteryPlayer;
 import com.loohp.lotterysix.game.objects.LotterySixAction;
+import com.loohp.lotterysix.game.objects.PlayerPreferenceKey;
 import com.loohp.lotterysix.game.objects.betnumbers.BetNumbers;
 import com.loohp.lotterysix.utils.ArrayUtils;
 import com.loohp.lotterysix.utils.DataTypeIO;
@@ -159,6 +160,23 @@ public class PluginMessageBungee implements Listener {
                                 gameIds.add(DataTypeIO.readUUID(in));
                             }
                             respondPastGameSyncCheckResult(senderServer.getInfo(), gameIds);
+                            break;
+                        }
+                        case 0x03: { //Update Player Preference
+                            UUID player = DataTypeIO.readUUID(in);
+                            PlayerPreferenceKey key = PlayerPreferenceKey.values()[in.readInt()];
+                            Object value = key.getReader(DataTypeIO.readString(in, StandardCharsets.UTF_8));
+                            LotteryPlayer lotteryPlayer = instance.getPlayerPreferenceManager().getLotteryPlayer(player);
+                            lotteryPlayer.setPreference(key, value);
+                            syncPlayerData(lotteryPlayer);
+                            break;
+                        }
+                        case 0x04: { //Reset Player Preference
+                            UUID player = DataTypeIO.readUUID(in);
+                            PlayerPreferenceKey key = PlayerPreferenceKey.values()[in.readInt()];
+                            LotteryPlayer lotteryPlayer = instance.getPlayerPreferenceManager().getLotteryPlayer(player);
+                            lotteryPlayer.resetPreference(key);
+                            syncPlayerData(lotteryPlayer);
                             break;
                         }
                     }

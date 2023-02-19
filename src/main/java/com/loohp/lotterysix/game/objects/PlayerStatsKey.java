@@ -22,18 +22,20 @@ package com.loohp.lotterysix.game.objects;
 
 public enum PlayerStatsKey {
 
-    TOTAL_BETS_PLACED(long.class, 0L),
-    TOTAL_ROUNDS_PARTICIPATED(long.class, 0L),
-    TOTAL_WINNINGS(long.class, 0L),
-    HIGHEST_WON_TIER(PrizeTier.class, null),
-    PENDING_TRANSACTION(long.class, 0L);
+    TOTAL_BETS_PLACED(long.class, 0L, true),
+    TOTAL_ROUNDS_PARTICIPATED(long.class, 0L, false),
+    TOTAL_WINNINGS(long.class, 0L, true),
+    HIGHEST_WON_TIER(PrizeTier.class, null, false),
+    PENDING_TRANSACTION(long.class, 0L, true);
 
     private final Class<?> valueTypeClass;
     private final Object defaultValue;
+    private final boolean isMonetaryValue;
 
-    <T> PlayerStatsKey(Class<T> valueTypeClass, T defaultValue) {
+    <T> PlayerStatsKey(Class<T> valueTypeClass, T defaultValue, boolean isMonetaryValue) {
         this.valueTypeClass = valueTypeClass;
         this.defaultValue = defaultValue;
+        this.isMonetaryValue = isMonetaryValue;
     }
 
     public static PlayerStatsKey fromKey(String key) {
@@ -51,5 +53,9 @@ public enum PlayerStatsKey {
 
     public Object getDefaultValue() {
         return defaultValue;
+    }
+
+    public boolean isMonetaryValue() {
+        return isMonetaryValue;
     }
 }

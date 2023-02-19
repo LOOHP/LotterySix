@@ -26,7 +26,8 @@ public enum AddBetResult {
     GAME_LOCKED,
     NOT_ENOUGH_MONEY,
     LIMIT_SELF,
-    LIMIT_PERMISSION;
+    LIMIT_PERMISSION,
+    ACCOUNT_SUSPENDED;
 
     private final boolean success;
 

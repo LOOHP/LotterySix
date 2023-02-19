@@ -40,6 +40,7 @@ import com.loohp.lotterysix.pluginmessaging.PluginMessageHandler;
 import com.loohp.lotterysix.updater.Updater;
 import com.loohp.lotterysix.utils.ChatColorUtils;
 import com.loohp.lotterysix.utils.LotteryUtils;
+import com.loohp.lotterysix.utils.MCVersion;
 import com.loohp.lotterysix.utils.TitleUtils;
 import me.clip.placeholderapi.PlaceholderAPI;
 import net.md_5.bungee.api.ChatColor;
@@ -75,6 +76,9 @@ public class LotterySixPlugin extends JavaPlugin implements Listener {
 
     public static LotterySixPlugin plugin;
 
+    public static String exactMinecraftVersion;
+    public static MCVersion version;
+
     public static DiscordSRVHook discordSRVHook = null;
     public static boolean hasFloodgate = false;
 
@@ -104,6 +108,14 @@ public class LotterySixPlugin extends JavaPlugin implements Listener {
         }
 
         Metrics metrics = new Metrics(this, BSTATS_PLUGIN_ID);
+
+        exactMinecraftVersion = Bukkit.getVersion().substring(Bukkit.getVersion().indexOf("(") + 5, Bukkit.getVersion().indexOf(")"));
+        version = MCVersion.fromPackageName(getServer().getClass().getPackage().getName());
+
+        if (!version.isSupported()) {
+            getServer().getConsoleSender().sendMessage(org.bukkit.ChatColor.RED + "[LotterySix] This version of minecraft is unsupported! (" + version.toString() + ")");
+        }
+
         getServer().getPluginManager().registerEvents(new Debug(), this);
         getServer().getPluginManager().registerEvents(this, this);
 

@@ -40,6 +40,7 @@ import com.loohp.lotterysix.game.objects.betnumbers.BetNumbersType;
 import com.loohp.lotterysix.utils.BookUtils;
 import com.loohp.lotterysix.utils.ChatColorUtils;
 import com.loohp.lotterysix.utils.LotteryUtils;
+import com.loohp.lotterysix.utils.SkinUtils;
 import com.loohp.lotterysix.utils.StringUtils;
 import de.themoep.inventorygui.DynamicGuiElement;
 import de.themoep.inventorygui.GuiElement;
@@ -74,6 +75,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
@@ -117,10 +119,7 @@ public class LotteryPluginGUI implements Listener {
         ItemStack itemStack = material.parseItem();
         itemStack.setAmount(number);
         if (enchanted) {
-            itemStack.addUnsafeEnchantment(Enchantment.LUCK, 10);
-            ItemMeta itemMeta = itemStack.getItemMeta();
-            itemMeta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
-            itemStack.setItemMeta(itemMeta);
+            itemStack = setEnchanted(itemStack);
         }
         return NBTEditor.set(itemStack, number, "LotterySixNumber");
     }
@@ -130,6 +129,17 @@ public class LotteryPluginGUI implements Listener {
             return null;
         }
         item.setAmount(amount);
+        return item;
+    }
+
+    private static ItemStack setEnchanted(ItemStack item) {
+        if (item == null) {
+            return null;
+        }
+        item.addUnsafeEnchantment(Enchantment.LUCK, 10);
+        ItemMeta itemMeta = item.getItemMeta();
+        itemMeta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
+        item.setItemMeta(itemMeta);
         return item;
     }
 
@@ -234,14 +244,15 @@ public class LotteryPluginGUI implements Listener {
     public InventoryGui getMainMenu(Player player) {
         String[] guiSetup = {
                 "         ",
-                " aaaaaaa ",
-                " bacadae ",
-                " aaaaaaa ",
-                "        z"
+                "fyaaaaaaa",
+                "aybacadae",
+                "zyaaaaaaa",
+                "         "
         };
         InventoryGui gui = new InventoryGui(plugin, LotteryUtils.formatPlaceholders(player, instance.guiMainMenuTitle, instance), guiSetup);
         gui.setFiller(XMaterial.YELLOW_STAINED_GLASS_PANE.parseItem());
         gui.addElement(new StaticGuiElement('a', new ItemStack(Material.AIR), ChatColor.LIGHT_PURPLE.toString()));
+        gui.addElement(new StaticGuiElement('y', XMaterial.ORANGE_STAINED_GLASS_PANE.parseItem(), ChatColor.LIGHT_PURPLE.toString()));
         gui.addElement(new StaticGuiElement('b', XMaterial.CLOCK.parseItem(), click -> {
             Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), gui, false), 1);
             Bukkit.getScheduler().runTaskLater(plugin, () -> getPastResults((Player) click.getWhoClicked(), instance.getCompletedGames().isEmpty() ? null : instance.getCompletedGames().get(0)).show(click.getWhoClicked()), 2);
@@ -291,14 +302,18 @@ public class LotteryPluginGUI implements Listener {
         gui.addElement(new StaticGuiElement('e', XMaterial.OAK_SIGN.parseItem(), click -> {
             Bukkit.getScheduler().runTaskLater(plugin, () -> getNumberStatistics((Player) click.getWhoClicked(), instance.getCompletedGames().isEmpty() ? null : instance.getCompletedGames().get(0)).show(click.getWhoClicked()), 1);
             return true;
-        }, LotteryUtils.formatPlaceholders(null, instance.guiMainMenuStatistics, instance)));
-        gui.addElement(new StaticGuiElement('z', XMaterial.LIME_STAINED_GLASS_PANE.parseItem(), click -> {
+        }, LotteryUtils.formatPlaceholders(player, instance.guiMainMenuStatistics, instance)));
+        gui.addElement(new StaticGuiElement('z', XMaterial.COMPASS.parseItem(), click -> {
             TextComponent message = new TextComponent(LotteryUtils.formatPlaceholders(player, instance.explanationMessage, instance));
             message.setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, instance.explanationURL));
             click.getWhoClicked().spigot().sendMessage(message);
             Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), true), 1);
             return true;
         }, LotteryUtils.formatPlaceholders(player, instance.explanationGUIItem, instance)));
+        gui.addElement(new StaticGuiElement('f', SkinUtils.getSkull(player.getUniqueId()), click -> {
+            Bukkit.getScheduler().runTaskLater(plugin, () -> getBettingAccount((Player) click.getWhoClicked()).show(click.getWhoClicked()), 1);
+            return true;
+        }, LotteryUtils.formatPlaceholders(player, instance.guiMainMenuBettingAccount, instance)));
         gui.setCloseAction(close -> false);
         Set<GuiElement> elements = Collections.singleton(gui.getElement('c'));
         new BukkitRunnable() {
@@ -318,6 +333,172 @@ public class LotteryPluginGUI implements Listener {
         return gui;
     }
 
+    public InventoryGui getBettingAccount(Player player) {
+        String[] guiSetup = {
+                "         ",
+                "bzacadaea",
+                "azaaaaaaa",
+                "azaafagaa",
+                "         "
+        };
+        InventoryGui gui = new InventoryGui(plugin, LotteryUtils.formatPlaceholders(player, instance.guiBettingAccountTitle, instance), guiSetup);
+        gui.setFiller(XMaterial.BLUE_STAINED_GLASS_PANE.parseItem());
+        gui.addElement(new StaticGuiElement('a', new ItemStack(Material.AIR), ChatColor.LIGHT_PURPLE.toString()));
+        gui.addElement(new StaticGuiElement('z', XMaterial.LIGHT_BLUE_STAINED_GLASS_PANE.parseItem(), ChatColor.LIGHT_PURPLE.toString()));
+        gui.addElement(new StaticGuiElement('b', SkinUtils.getSkull(player.getUniqueId()), LotteryUtils.formatPlaceholders(player, instance.guiBettingAccountProfile, instance)));
+
+        LotteryPlayer lotteryPlayer = instance.getPlayerPreferenceManager().getLotteryPlayer(player.getUniqueId());
+        gui.addElement(new DynamicGuiElement('c', () -> {
+            boolean value = lotteryPlayer.getPreference(PlayerPreferenceKey.HIDE_TITLES, boolean.class);
+            String display = value ? instance.trueFormat : instance.falseFormat;
+            if (value) {
+                return new StaticGuiElement('c', XMaterial.LIME_DYE.parseItem(), click -> {
+                    if (instance.backendBungeecordMode) {
+                        LotterySixPlugin.getPluginMessageHandler().updatePlayerPreference(lotteryPlayer, PlayerPreferenceKey.HIDE_TITLES, false);
+                    } else {
+                        lotteryPlayer.setPreference(PlayerPreferenceKey.HIDE_TITLES, false);
+                    }
+                    return true;
+                }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiBettingAccountToggleHideTitles, instance)).map(e -> e.replace("{Status}", display)).toArray(String[]::new));
+            } else {
+                return new StaticGuiElement('c', XMaterial.GRAY_DYE.parseItem(), click -> {
+                    if (instance.backendBungeecordMode) {
+                        LotterySixPlugin.getPluginMessageHandler().updatePlayerPreference(lotteryPlayer, PlayerPreferenceKey.HIDE_TITLES, true);
+                    } else {
+                        lotteryPlayer.setPreference(PlayerPreferenceKey.HIDE_TITLES, true);
+                    }
+                    return true;
+                }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiBettingAccountToggleHideTitles, instance)).map(e -> e.replace("{Status}", display)).toArray(String[]::new));
+            }
+        }));
+        gui.addElement(new DynamicGuiElement('d', () -> {
+            boolean value = lotteryPlayer.getPreference(PlayerPreferenceKey.HIDE_PERIODIC_ANNOUNCEMENTS, boolean.class);
+            String display = value ? instance.trueFormat : instance.falseFormat;
+            if (value) {
+                return new StaticGuiElement('d', XMaterial.LIME_DYE.parseItem(), click -> {
+                    if (instance.backendBungeecordMode) {
+                        LotterySixPlugin.getPluginMessageHandler().updatePlayerPreference(lotteryPlayer, PlayerPreferenceKey.HIDE_PERIODIC_ANNOUNCEMENTS, false);
+                    } else {
+                        lotteryPlayer.setPreference(PlayerPreferenceKey.HIDE_PERIODIC_ANNOUNCEMENTS, false);
+                    }
+                    return true;
+                }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiBettingAccountToggleHidePeriodicAnnouncements, instance)).map(e -> e.replace("{Status}", display)).toArray(String[]::new));
+            } else {
+                return new StaticGuiElement('d', XMaterial.GRAY_DYE.parseItem(), click -> {
+                    if (instance.backendBungeecordMode) {
+                        LotterySixPlugin.getPluginMessageHandler().updatePlayerPreference(lotteryPlayer, PlayerPreferenceKey.HIDE_PERIODIC_ANNOUNCEMENTS, true);
+                    } else {
+                        lotteryPlayer.setPreference(PlayerPreferenceKey.HIDE_PERIODIC_ANNOUNCEMENTS, true);
+                    }
+                    return true;
+                }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiBettingAccountToggleHidePeriodicAnnouncements, instance)).map(e -> e.replace("{Status}", display)).toArray(String[]::new));
+            }
+        }));
+        gui.addElement(new DynamicGuiElement('e', () -> {
+            boolean value = lotteryPlayer.getPreference(PlayerPreferenceKey.REOPEN_MENU_ON_PURCHASE, boolean.class);
+            String display = value ? instance.trueFormat : instance.falseFormat;
+            if (value) {
+                return new StaticGuiElement('e', XMaterial.LIME_DYE.parseItem(), click -> {
+                    if (instance.backendBungeecordMode) {
+                        LotterySixPlugin.getPluginMessageHandler().updatePlayerPreference(lotteryPlayer, PlayerPreferenceKey.REOPEN_MENU_ON_PURCHASE, false);
+                    } else {
+                        lotteryPlayer.setPreference(PlayerPreferenceKey.REOPEN_MENU_ON_PURCHASE, false);
+                    }
+                    return true;
+                }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiBettingAccountToggleReopenMenu, instance)).map(e -> e.replace("{Status}", display)).toArray(String[]::new));
+            } else {
+                return new StaticGuiElement('e', XMaterial.GRAY_DYE.parseItem(), click -> {
+                    if (instance.backendBungeecordMode) {
+                        LotterySixPlugin.getPluginMessageHandler().updatePlayerPreference(lotteryPlayer, PlayerPreferenceKey.REOPEN_MENU_ON_PURCHASE, true);
+                    } else {
+                        lotteryPlayer.setPreference(PlayerPreferenceKey.REOPEN_MENU_ON_PURCHASE, true);
+                    }
+                    return true;
+                }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiBettingAccountToggleReopenMenu, instance)).map(e -> e.replace("{Status}", display)).toArray(String[]::new));
+            }
+        }));
+        gui.addElement(new DynamicGuiElement('f', () -> {
+            long realValue = lotteryPlayer.getPreference(PlayerPreferenceKey.BET_LIMIT_PER_ROUND, long.class);
+            boolean active = lotteryPlayer.isPreferenceSet(PlayerPreferenceKey.BET_LIMIT_PER_ROUND);
+            String value = active ? StringUtils.formatComma(realValue) : "-";
+            ItemStack left = XMaterial.PAPER.parseItem();
+            ItemMeta leftMeta = left.getItemMeta();
+            leftMeta.setDisplayName(Math.max(0, realValue) + "");
+            left.setItemMeta(leftMeta);
+            return new StaticGuiElement('g', active ? setEnchanted(XMaterial.OAK_FENCE_GATE.parseItem()) : XMaterial.OAK_FENCE_GATE.parseItem(), click -> {
+                if (click.getType().isLeftClick()) {
+                    Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
+                    Bukkit.getScheduler().runTaskLater(plugin, () -> new AnvilGUI.Builder().plugin(plugin)
+                            .title(LotteryUtils.formatPlaceholders(player, instance.guiBettingAccountSetBetLimitPerRoundTitle, instance))
+                            .itemLeft(left)
+                            .onComplete(completion -> {
+                                Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+                                    String input = completion.getText().trim();
+                                    try {
+                                        long newValue = Math.max(0, Long.parseLong(input));
+                                        if (instance.backendBungeecordMode) {
+                                            LotterySixPlugin.getPluginMessageHandler().updatePlayerPreference(lotteryPlayer, PlayerPreferenceKey.BET_LIMIT_PER_ROUND, newValue);
+                                        } else {
+                                            lotteryPlayer.setPreference(PlayerPreferenceKey.BET_LIMIT_PER_ROUND, newValue);
+                                        }
+                                        Bukkit.getScheduler().runTaskLater(plugin, () -> getMainMenu(player).show(player), 2);
+                                        Bukkit.getScheduler().runTaskLater(plugin, () -> getBettingAccount(player).show(player), 3);
+                                    } catch (Exception e) {
+                                        player.sendMessage(instance.messageInvalidUsage);
+                                    }
+                                });
+                                return Collections.singletonList(AnvilGUI.ResponseAction.close());
+                            })
+                            .open(player), 2);
+                } else if (click.getType().isRightClick()) {
+                    if (instance.backendBungeecordMode) {
+                        LotterySixPlugin.getPluginMessageHandler().resetPlayerPreference(lotteryPlayer, PlayerPreferenceKey.BET_LIMIT_PER_ROUND);
+                    } else {
+                        lotteryPlayer.resetPreference(PlayerPreferenceKey.BET_LIMIT_PER_ROUND);
+                    }
+                }
+                return true;
+            }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiBettingAccountSetBetLimitPerRound, instance)).map(s -> s.replace("{Value}", value)).toArray(String[]::new));
+        }));
+        gui.addElement(new DynamicGuiElement('g', () -> {
+            long realValue = lotteryPlayer.getPreference(PlayerPreferenceKey.SUSPEND_ACCOUNT_UNTIL, long.class);
+            boolean active = System.currentTimeMillis() < realValue;
+            String value = active ? instance.dateFormat.format(realValue) : "-";
+            return new StaticGuiElement('f', active ? setEnchanted(XMaterial.ANVIL.parseItem()) : XMaterial.ANVIL.parseItem(), click -> {
+                if (click.getType().isLeftClick()) {
+                    long newValue = Math.max(System.currentTimeMillis(), realValue) + 604800000;
+                    if (instance.backendBungeecordMode) {
+                        LotterySixPlugin.getPluginMessageHandler().updatePlayerPreference(lotteryPlayer, PlayerPreferenceKey.SUSPEND_ACCOUNT_UNTIL, newValue);
+                    } else {
+                        lotteryPlayer.setPreference(PlayerPreferenceKey.SUSPEND_ACCOUNT_UNTIL, newValue);
+                    }
+                } else if (click.getType().isRightClick()) {
+                    if (instance.backendBungeecordMode) {
+                        LotterySixPlugin.getPluginMessageHandler().resetPlayerPreference(lotteryPlayer, PlayerPreferenceKey.SUSPEND_ACCOUNT_UNTIL);
+                    } else {
+                        lotteryPlayer.resetPreference(PlayerPreferenceKey.SUSPEND_ACCOUNT_UNTIL);
+                    }
+                }
+                return true;
+            }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiBettingAccountSuspendAccountForAWeek, instance)).map(s -> s.replace("{Value}", value)).toArray(String[]::new));
+        }));
+        gui.setSilent(true);
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                Deque<InventoryGui> history = InventoryGui.getHistory(player);
+                if (!history.contains(gui)) {
+                    cancel();
+                    return;
+                }
+                if (Objects.equals(history.peekLast(), gui)) {
+                    gui.draw(player);
+                }
+            }
+        }.runTaskTimer(plugin, 10, 10);
+        return gui;
+    }
+
     public ItemStack getPlacedBets(Player player) {
         PlayableLotterySixGame game = instance.getCurrentGame();
         List<PlayerBets> bets = game.getPlayerBets(player.getUniqueId());
@@ -330,7 +511,7 @@ public class LotteryPluginGUI implements Listener {
 
         String title = LotteryUtils.formatPlaceholders(player, instance.guiYourBetsTitle, instance, game);
         if (bets.isEmpty()) {
-            pages.add(title + "\n\n" + String.join("\n", LotteryUtils.formatPlaceholders(null, instance.guiYourBetsNothing, instance, game)));
+            pages.add(title + "\n\n" + String.join("\n", LotteryUtils.formatPlaceholders(player, instance.guiYourBetsNothing, instance, game)));
         } else {
             for (PlayerBets bet : bets) {
                 pages.add(title + "\n\n" + bet.getChosenNumbers().toColoredString() + "\n" + ChatColor.GOLD + "$" + StringUtils.formatComma(bet.getBet()) + " ($" + StringUtils.formatComma(instance.pricePerBet / bet.getType().getDivisor()) + ")");
@@ -350,25 +531,25 @@ public class LotteryPluginGUI implements Listener {
                 " aaaaaaa ",
                 "         "
         };
-        InventoryGui gui = new InventoryGui(plugin, LotteryUtils.formatPlaceholders(null, instance.guiSelectNewBetTypeTitle, instance), guiSetup);
+        InventoryGui gui = new InventoryGui(plugin, LotteryUtils.formatPlaceholders(player, instance.guiSelectNewBetTypeTitle, instance), guiSetup);
         gui.setFiller(XMaterial.ORANGE_STAINED_GLASS_PANE.parseItem());
         gui.addElement(new StaticGuiElement('a', new ItemStack(Material.AIR), ChatColor.LIGHT_PURPLE.toString()));
         gui.addElement(new StaticGuiElement('b', XMaterial.BRICK.parseItem(), click -> {
             Bukkit.getScheduler().runTaskLater(plugin, () -> getNumberChooser((Player) click.getWhoClicked(), game, BetNumbersBuilder.single(1, instance.numberOfChoices)).show(click.getWhoClicked()), 1);
             return true;
-        }, LotteryUtils.formatPlaceholders(null, instance.guiSelectNewBetTypeSingle, instance)));
+        }, LotteryUtils.formatPlaceholders(player, instance.guiSelectNewBetTypeSingle, instance)));
         gui.addElement(new StaticGuiElement('c', XMaterial.IRON_INGOT.parseItem(), click -> {
             Bukkit.getScheduler().runTaskLater(plugin, () -> getNumberChooser((Player) click.getWhoClicked(), game, BetNumbersBuilder.multiple(1, instance.numberOfChoices)).show(click.getWhoClicked()), 1);
             return true;
-        }, LotteryUtils.formatPlaceholders(null, instance.guiSelectNewBetTypeMultiple, instance)));
+        }, LotteryUtils.formatPlaceholders(player, instance.guiSelectNewBetTypeMultiple, instance)));
         gui.addElement(new StaticGuiElement('d', XMaterial.GOLD_INGOT.parseItem(), click -> {
             Bukkit.getScheduler().runTaskLater(plugin, () -> getNumberChooser((Player) click.getWhoClicked(), game, BetNumbersBuilder.banker(1, instance.numberOfChoices)).show(click.getWhoClicked()), 1);
             return true;
-        }, LotteryUtils.formatPlaceholders(null, instance.guiSelectNewBetTypeBanker, instance)));
+        }, LotteryUtils.formatPlaceholders(player, instance.guiSelectNewBetTypeBanker, instance)));
         gui.addElement(new StaticGuiElement('e', XMaterial.REDSTONE.parseItem(), click -> {
             Bukkit.getScheduler().runTaskLater(plugin, () -> getRandomEntryCountChooser((Player) click.getWhoClicked(), game).show(click.getWhoClicked()), 1);
             return true;
-        }, LotteryUtils.formatPlaceholders(null, instance.guiSelectNewBetTypeRandom, instance)));
+        }, LotteryUtils.formatPlaceholders(player, instance.guiSelectNewBetTypeRandom, instance)));
         gui.setSilent(true);
         return gui;
     }
@@ -381,29 +562,29 @@ public class LotteryPluginGUI implements Listener {
                 " aaaaaaa ",
                 "         "
         };
-        InventoryGui gui = new InventoryGui(plugin, LotteryUtils.formatPlaceholders(null, instance.guiRandomEntryCountTitle, instance), guiSetup);
+        InventoryGui gui = new InventoryGui(plugin, LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryCountTitle, instance), guiSetup);
         gui.setFiller(XMaterial.RED_STAINED_GLASS_PANE.parseItem());
         gui.addElement(new StaticGuiElement('a', new ItemStack(Material.AIR), ChatColor.LIGHT_PURPLE.toString()));
         gui.addElement(new StaticGuiElement('b', setItemSize(XMaterial.PAPER.parseItem(), 1), click -> {
             Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
             Bukkit.getScheduler().runTaskLater(plugin, () -> getSingleNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.random(1, instance.numberOfChoices).build()).show(click.getWhoClicked()), 2);
             return true;
-        }, LotteryUtils.formatPlaceholders(null, instance.guiRandomEntryCountValue.replace("{Count}", "1"), instance)));
+        }, LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryCountValue.replace("{Count}", "1"), instance)));
         gui.addElement(new StaticGuiElement('c', setItemSize(XMaterial.PAPER.parseItem(), 2), click -> {
             Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
             Bukkit.getScheduler().runTaskLater(plugin, () -> getBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.bulkRandom(1, instance.numberOfChoices, 2).map(r -> r.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2);
             return true;
-        }, LotteryUtils.formatPlaceholders(null, instance.guiRandomEntryCountValue.replace("{Count}", "2"), instance)));
+        }, LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryCountValue.replace("{Count}", "2"), instance)));
         gui.addElement(new StaticGuiElement('d', setItemSize(XMaterial.PAPER.parseItem(), 5), click -> {
             Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
             Bukkit.getScheduler().runTaskLater(plugin, () -> getBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.bulkRandom(1, instance.numberOfChoices, 5).map(r -> r.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2);
             return true;
-        }, LotteryUtils.formatPlaceholders(null, instance.guiRandomEntryCountValue.replace("{Count}", "5"), instance)));
+        }, LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryCountValue.replace("{Count}", "5"), instance)));
         gui.addElement(new StaticGuiElement('e', setItemSize(XMaterial.PAPER.parseItem(), 10), click -> {
             Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
             Bukkit.getScheduler().runTaskLater(plugin, () -> getBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.bulkRandom(1, instance.numberOfChoices, 10).map(r -> r.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2);
             return true;
-        }, LotteryUtils.formatPlaceholders(null, instance.guiRandomEntryCountValue.replace("{Count}", "10"), instance)));
+        }, LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryCountValue.replace("{Count}", "10"), instance)));
         gui.setSilent(true);
         return gui;
     }
@@ -627,6 +808,11 @@ public class LotteryPluginGUI implements Listener {
                             player.sendMessage(instance.messageBetLimitReachedPermission.replace("{Price}", StringUtils.formatComma(partial)));
                             break;
                         }
+                        case ACCOUNT_SUSPENDED: {
+                            long time = instance.getPlayerPreferenceManager().getLotteryPlayer(player.getUniqueId()).getPreference(PlayerPreferenceKey.SUSPEND_ACCOUNT_UNTIL, long.class);
+                            player.sendMessage(instance.messageBettingAccountSuspended.replace("{Date}", instance.dateFormat.format(new Date(time))).replace("{Price}", StringUtils.formatComma(partial)));
+                            break;
+                        }
                     }
                     if (result.isSuccess()) {
                         Bukkit.getScheduler().runTaskLater(plugin, () -> checkReopen(click.getWhoClicked()), 5);
@@ -662,6 +848,11 @@ public class LotteryPluginGUI implements Listener {
                         }
                         case LIMIT_PERMISSION: {
                             player.sendMessage(instance.messageBetLimitReachedPermission.replace("{Price}", StringUtils.formatComma(price)));
+                            break;
+                        }
+                        case ACCOUNT_SUSPENDED: {
+                            long time = instance.getPlayerPreferenceManager().getLotteryPlayer(player.getUniqueId()).getPreference(PlayerPreferenceKey.SUSPEND_ACCOUNT_UNTIL, long.class);
+                            player.sendMessage(instance.messageBettingAccountSuspended.replace("{Date}", instance.dateFormat.format(new Date(time))).replace("{Price}", StringUtils.formatComma(price)));
                             break;
                         }
                     }
@@ -726,6 +917,11 @@ public class LotteryPluginGUI implements Listener {
                             player.sendMessage(instance.messageBetLimitReachedPermission.replace("{Price}", StringUtils.formatComma(price)));
                             break;
                         }
+                        case ACCOUNT_SUSPENDED: {
+                            long time = instance.getPlayerPreferenceManager().getLotteryPlayer(player.getUniqueId()).getPreference(PlayerPreferenceKey.SUSPEND_ACCOUNT_UNTIL, long.class);
+                            player.sendMessage(instance.messageBettingAccountSuspended.replace("{Date}", instance.dateFormat.format(new Date(time))).replace("{Price}", StringUtils.formatComma(price)));
+                            break;
+                        }
                     }
                     if (result.isSuccess()) {
                         Bukkit.getScheduler().runTaskLater(plugin, () -> checkReopen(click.getWhoClicked()), 5);
@@ -785,6 +981,11 @@ public class LotteryPluginGUI implements Listener {
                         }
                         case LIMIT_PERMISSION: {
                             player.sendMessage(instance.messageBetLimitReachedPermission.replace("{Price}", StringUtils.formatComma(price)));
+                            break;
+                        }
+                        case ACCOUNT_SUSPENDED: {
+                            long time = instance.getPlayerPreferenceManager().getLotteryPlayer(player.getUniqueId()).getPreference(PlayerPreferenceKey.SUSPEND_ACCOUNT_UNTIL, long.class);
+                            player.sendMessage(instance.messageBettingAccountSuspended.replace("{Date}", instance.dateFormat.format(new Date(time))).replace("{Price}", StringUtils.formatComma(price)));
                             break;
                         }
                     }
@@ -864,7 +1065,7 @@ public class LotteryPluginGUI implements Listener {
                             }
                         }
                         if (pages.isEmpty()) {
-                            pages.add(winningNumberStr + "\n\n" + String.join("\n", LotteryUtils.formatPlaceholders(null, instance.guiLastResultsNothing, instance, game)) + "\n");
+                            pages.add(winningNumberStr + "\n\n" + String.join("\n", LotteryUtils.formatPlaceholders(player, instance.guiLastResultsNothing, instance, game)) + "\n");
                         }
                         ItemStack itemStack = XMaterial.WRITTEN_BOOK.parseItem();
                         BookMeta meta = (BookMeta) itemStack.getItemMeta();

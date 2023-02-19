@@ -23,29 +23,32 @@ package com.loohp.lotterysix.game.objects;
 import com.loohp.lotterysix.game.LotterySix;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 public enum PlayerPreferenceKey {
 
-    HIDE_TITLES(boolean.class, (i, p) -> false, Arrays.asList("true", "false"), s -> Boolean.parseBoolean(s)),
-    HIDE_PERIODIC_ANNOUNCEMENTS(boolean.class, (i, p) -> false, Arrays.asList("true", "false"), s -> Boolean.parseBoolean(s)),
-    BET_LIMIT_PER_ROUND(long.class, (i, p) -> i == null || p == null ? Long.MAX_VALUE : i.getPlayerBetLimit(p), Arrays.asList("0", "100", "1000", "100000", "10000000"), s -> Long.parseLong(s)),
-    REOPEN_MENU_ON_PURCHASE(boolean.class, (i, p) -> true, Arrays.asList("true", "false"), s -> Boolean.parseBoolean(s));
+    HIDE_TITLES(boolean.class, (i, p) -> false, () -> Arrays.asList("true", "false"), s -> Boolean.parseBoolean(s), false),
+    HIDE_PERIODIC_ANNOUNCEMENTS(boolean.class, (i, p) -> false, () -> Arrays.asList("true", "false"), s -> Boolean.parseBoolean(s), false),
+    REOPEN_MENU_ON_PURCHASE(boolean.class, (i, p) -> true, () -> Arrays.asList("true", "false"), s -> Boolean.parseBoolean(s), false),
+    BET_LIMIT_PER_ROUND(long.class, (i, p) -> i == null || p == null ? Long.MAX_VALUE : i.getPlayerBetLimit(p), () -> Arrays.asList("0", "100", "1000", "100000", "10000000"), s -> Long.parseLong(s), true),
+    SUSPEND_ACCOUNT_UNTIL(long.class, (i, p) -> 0L, () -> Arrays.asList("0", Long.toString(System.currentTimeMillis() + 604800000)), s -> Long.parseLong(s), false);
 
     private final Class<?> valueTypeClass;
     private final BiFunction<LotterySix, UUID, ?> defaultValue;
-    private final List<String> suggestedValues;
+    private final Supplier<List<String>> suggestedValues;
     private final Function<String, ?> reader;
+    private final boolean isMonetaryValue;
 
-    <T> PlayerPreferenceKey(Class<T> valueTypeClass, BiFunction<LotterySix, UUID, T> defaultValue, List<String> suggestedValues, Function<String, T> reader) {
+    <T> PlayerPreferenceKey(Class<T> valueTypeClass, BiFunction<LotterySix, UUID, T> defaultValue, Supplier<List<String>> suggestedValues, Function<String, T> reader, boolean isMonetaryValue) {
         this.valueTypeClass = valueTypeClass;
         this.defaultValue = defaultValue;
-        this.suggestedValues = Collections.unmodifiableList(suggestedValues);
+        this.suggestedValues = suggestedValues;
         this.reader = reader;
+        this.isMonetaryValue = isMonetaryValue;
     }
 
     public static PlayerPreferenceKey fromKey(String key) {
@@ -66,10 +69,14 @@ public enum PlayerPreferenceKey {
     }
 
     public List<String> getSuggestedValues() {
-        return suggestedValues;
+        return suggestedValues.get();
     }
 
     public Object getReader(String input) {
         return reader.apply(input);
+    }
+
+    public boolean isMonetaryValue() {
+        return isMonetaryValue;
     }
 }

@@ -298,6 +298,9 @@ public class PlayableLotterySixGame implements IDedGame {
             if (!instance.takeMoney(player, price)) {
                 return betResult0(player, price, bets, AddBetResult.NOT_ENOUGH_MONEY);
             }
+            if (System.currentTimeMillis() < lotteryPlayer.getPreference(PlayerPreferenceKey.SUSPEND_ACCOUNT_UNTIL, long.class)) {
+                return betResult0(player, price, bets, AddBetResult.ACCOUNT_SUSPENDED);
+            }
             lotteryPlayer.updateStats(PlayerStatsKey.TOTAL_BETS_PLACED, long.class, i -> i + price);
         }
         getBetsReadWriteLock().writeLock().lock();

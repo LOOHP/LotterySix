@@ -94,6 +94,15 @@ public class LotteryPlayer {
         save();
     }
 
+    public boolean isPreferenceSet(PlayerPreferenceKey key) {
+        return preferences.containsKey(key);
+    }
+
+    public void resetPreference(PlayerPreferenceKey key) {
+        preferences.remove(key);
+        save();
+    }
+
     public Object getStats(PlayerStatsKey key) {
         return stats.getOrDefault(key, key.getDefaultValue());
     }

@@ -17,6 +17,7 @@ Messages:
   PendingUnclaimed: "&b&lYou have unclaimed balance from LotterySix, click to receive!"
   PendingClaimed: "&aPending balance of ${Money} claimed!"
   GameNumberNotFound: "&cNo game with that game number can be found"
+  BettingAccountSuspended: "&cYou have suspended yourself from placing any bets until {Date}"
 
 Explanation:
   Message: "&aFor the explanation on how LotterySix works, please visit: &bhttps://github.com/LOOHP/LotterySix/wiki/LotterySix-Draw-&-Prizes-Explanation"
@@ -32,6 +33,9 @@ Explanation:
 Formatting:
   Date: "dd-MM-yyyy HH:mm:ss zzz"
   Locale: "en_us"
+  Booleans:
+    T: "&aEnabled"
+    F: "&cDisabled"
 
 #This option is only used on backend servers
 Bungeecord: false
@@ -128,6 +132,9 @@ GUI:
     PendingTransactions:
       - '&aYou have unclaimed balance!'
       - '&aClick me and chat message to receive!'
+    BettingAccount:
+      - "&e%player_name%'s Betting Account"
+      - "&7View details of your betting account"
   LastResults:
     Title: "&2Last Results"
     LotteryInfo:
@@ -228,6 +235,36 @@ GUI:
     Note:
       - "&7Statistics last updated {Date}"
       - "&7(Game Number {GameNumber})"
+  BettingAccount:
+    Title: "&9Betting Account"
+    Profile:
+      - "&e%player_name%'s Betting Account"
+      - "&bHighest Won Tier: &a%lotterysix_stats_highest_won_tier%"
+      - "&bTotal Winnings: &a$%lotterysix_stats_total_winnings%"
+      - "&bAccount Balance: &a$%vault_eco_balance_commas%"
+    ToggleHideTitles:
+      - "&bToggle Hide Titles"
+      - "&7Whether to hide title messages during the LotterySix draw"
+      - "&7Current Status: {Status}"
+    ToggleHidePeriodicAnnouncements:
+      - "&bToggle Periodic Announcements"
+      - "&7Whether to hide periodic announcements before the LotterySix draw"
+      - "&7Current Status: {Status}"
+    ToggleReopenMenu:
+      - "&bToggle Reopen Menu"
+      - "&7Whether to reopen the LotterySix menu once you finished placing a bet"
+      - "&7Current Status: {Status}"
+    SetBetLimitPerRound:
+      - "&aSet Bet Limit Per Round"
+      - "&7Limit your spending on a round of LotterySix"
+      - "&7Left Click to Set/Right Click to Clear"
+      - "&7Current Limit: &a${Value}"
+    SetBetLimitPerRoundTitle: "Set Bet Limit"
+    SuspendAccountForAWeek:
+      - "&cSuspend Betting Account"
+      - "&7Stop yourself from placing any bets in the next 7 days"
+      - "&7Left Click to Add 1 Week/Right Click to Lift Suspension"
+      - "&7Current Suspension Until: &c{Value}"
 
 Announcer:
   PeriodicMessage:

@@ -66,6 +66,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Random;
@@ -313,6 +314,11 @@ public class PluginMessageHandler implements PluginMessageListener {
                                             player.sendMessage(instance.messageBetLimitReachedPermission.replace("{Price}", StringUtils.formatComma(price)));
                                             break;
                                         }
+                                        case ACCOUNT_SUSPENDED: {
+                                            long time = instance.getPlayerPreferenceManager().getLotteryPlayer(player.getUniqueId()).getPreference(PlayerPreferenceKey.SUSPEND_ACCOUNT_UNTIL, long.class);
+                                            player.sendMessage(instance.messageBettingAccountSuspended.replace("{Date}", instance.dateFormat.format(new Date(time))).replace("{Price}", StringUtils.formatComma(price)));
+                                            break;
+                                        }
                                     }
                                     if (result.isSuccess()) {
                                         Bukkit.getScheduler().runTaskLater(LotterySixPlugin.plugin, () -> LotterySixPlugin.getGuiProvider().checkReopen(player), 5);
@@ -474,6 +480,31 @@ public class PluginMessageHandler implements PluginMessageListener {
                 }
             }
             sendData(0x02, outputStream.toByteArray());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void updatePlayerPreference(LotteryPlayer player, PlayerPreferenceKey key, Object value) {
+        try {
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            DataOutputStream out = new DataOutputStream(outputStream);
+            DataTypeIO.writeUUID(out, player.getPlayer());
+            out.writeInt(key.ordinal());
+            DataTypeIO.writeString(out, value.toString(), StandardCharsets.UTF_8);
+            sendData(0x03, outputStream.toByteArray());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void resetPlayerPreference(LotteryPlayer player, PlayerPreferenceKey key) {
+        try {
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            DataOutputStream out = new DataOutputStream(outputStream);
+            DataTypeIO.writeUUID(out, player.getPlayer());
+            out.writeInt(key.ordinal());
+            sendData(0x04, outputStream.toByteArray());
         } catch (IOException e) {
             e.printStackTrace();
         }

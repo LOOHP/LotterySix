@@ -112,6 +112,7 @@ public class LotterySix implements AutoCloseable {
     public String messagePendingUnclaimed;
     public String messagePendingClaimed;
     public String messageGameNumberNotFound;
+    public String messageBettingAccountSuspended;
 
     public String explanationMessage;
     public String explanationURL;
@@ -119,6 +120,8 @@ public class LotterySix implements AutoCloseable {
 
     public Locale locale;
     public SimpleDateFormat dateFormat;
+    public String trueFormat;
+    public String falseFormat;
 
     public boolean updaterEnabled;
 
@@ -143,6 +146,7 @@ public class LotterySix implements AutoCloseable {
     public String[] guiMainMenuPlaceNewBets;
     public String[] guiMainMenuStatistics;
     public String[] guiMainMenuPendingTransactions;
+    public String[] guiMainMenuBettingAccount;
     public String guiLastResultsTitle;
     public String[] guiLastResultsLotteryInfo;
     public String[] guiLastResultsYourBets;
@@ -177,6 +181,14 @@ public class LotterySix implements AutoCloseable {
     public String guiNumberStatisticsTimesDrawn;
     public String guiNumberStatisticsNever;
     public String[] guiNumberStatisticsNote;
+    public String guiBettingAccountTitle;
+    public String[] guiBettingAccountProfile;
+    public String[] guiBettingAccountToggleHideTitles;
+    public String[] guiBettingAccountToggleHidePeriodicAnnouncements;
+    public String[] guiBettingAccountToggleReopenMenu;
+    public String[] guiBettingAccountSetBetLimitPerRound;
+    public String guiBettingAccountSetBetLimitPerRoundTitle;
+    public String[] guiBettingAccountSuspendAccountForAWeek;
 
     public String announcerPeriodicMessageMessage;
     public String announcerPeriodicMessageHover;
@@ -702,6 +714,7 @@ public class LotterySix implements AutoCloseable {
         messagePendingUnclaimed = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Messages.PendingUnclaimed"));
         messagePendingClaimed = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Messages.PendingClaimed"));
         messageGameNumberNotFound = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Messages.GameNumberNotFound"));
+        messageBettingAccountSuspended = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Messages.BettingAccountSuspended"));
 
         explanationMessage = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Explanation.Message"));
         explanationURL = config.getConfiguration().getString("Explanation.URL");
@@ -719,6 +732,8 @@ public class LotterySix implements AutoCloseable {
         locale = new Locale(localeStr[0], localeStr[1]);
         dateFormat = new SimpleDateFormat(ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Formatting.Date")), locale);
         dateFormat.setTimeZone(timezone);
+        trueFormat = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Formatting.Booleans.T"));
+        falseFormat = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Formatting.Booleans.F"));
 
         updaterEnabled = config.getConfiguration().getBoolean("Options.Updater");
 
@@ -745,6 +760,7 @@ public class LotterySix implements AutoCloseable {
         guiMainMenuPlaceNewBets = config.getConfiguration().getStringList("GUI.MainMenu.PlaceNewBets").toArray(new String[0]);
         guiMainMenuStatistics = config.getConfiguration().getStringList("GUI.MainMenu.Statistics").toArray(new String[0]);
         guiMainMenuPendingTransactions = config.getConfiguration().getStringList("GUI.MainMenu.PendingTransactions").toArray(new String[0]);
+        guiMainMenuBettingAccount = config.getConfiguration().getStringList("GUI.MainMenu.BettingAccount").toArray(new String[0]);
         guiLastResultsTitle = config.getConfiguration().getString("GUI.LastResults.Title");
         guiLastResultsLotteryInfo = config.getConfiguration().getStringList("GUI.LastResults.LotteryInfo").toArray(new String[0]);
         guiLastResultsYourBets = config.getConfiguration().getStringList("GUI.LastResults.YourBets").toArray(new String[0]);
@@ -779,6 +795,14 @@ public class LotterySix implements AutoCloseable {
         guiNumberStatisticsTimesDrawn = config.getConfiguration().getString("GUI.NumberStatistics.TimesDrawn");
         guiNumberStatisticsNever = config.getConfiguration().getString("GUI.NumberStatistics.Never");
         guiNumberStatisticsNote = config.getConfiguration().getStringList("GUI.NumberStatistics.Note").toArray(new String[0]);
+        guiBettingAccountTitle = config.getConfiguration().getString("GUI.BettingAccount.Title");
+        guiBettingAccountProfile = config.getConfiguration().getStringList("GUI.BettingAccount.Profile").toArray(new String[0]);
+        guiBettingAccountToggleHideTitles = config.getConfiguration().getStringList("GUI.BettingAccount.ToggleHideTitles").toArray(new String[0]);
+        guiBettingAccountToggleHidePeriodicAnnouncements = config.getConfiguration().getStringList("GUI.BettingAccount.ToggleHidePeriodicAnnouncements").toArray(new String[0]);
+        guiBettingAccountToggleReopenMenu = config.getConfiguration().getStringList("GUI.BettingAccount.ToggleReopenMenu").toArray(new String[0]);
+        guiBettingAccountSetBetLimitPerRound = config.getConfiguration().getStringList("GUI.BettingAccount.SetBetLimitPerRound").toArray(new String[0]);
+        guiBettingAccountSetBetLimitPerRoundTitle = config.getConfiguration().getString("GUI.BettingAccount.SetBetLimitPerRoundTitle");
+        guiBettingAccountSuspendAccountForAWeek = config.getConfiguration().getStringList("GUI.BettingAccount.SuspendAccountForAWeek").toArray(new String[0]);
 
         announcerPeriodicMessageMessage = config.getConfiguration().getString("Announcer.PeriodicMessage.Message");
         announcerPeriodicMessageHover = config.getConfiguration().getString("Announcer.PeriodicMessage.Hover");
