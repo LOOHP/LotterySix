@@ -63,7 +63,7 @@ public class LotteryPlayer {
         if (!manager.getInstance().backendBungeecordMode) {
             manager.getInstance().getLotteryPlayerUpdateListener().accept(this);
         }
-        manager.saveLotteryPlayer(player);
+        new Thread(() -> manager.saveLotteryPlayer(player)).start();
     }
 
     public UUID getPlayer() {
