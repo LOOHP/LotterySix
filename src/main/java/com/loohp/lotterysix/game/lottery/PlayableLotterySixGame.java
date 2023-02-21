@@ -55,21 +55,28 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public class PlayableLotterySixGame implements IDedGame {
+
+    private static final Map<Object, Map<String, Object>> LOCKS_AND_FLAGS = Collections.synchronizedMap(new WeakHashMap<>());
+
+    @SuppressWarnings("unchecked")
+    private static <T, V> V getSharedLockOrFlag(T object, String key, Supplier<V> constructor) {
+        return (V) LOCKS_AND_FLAGS.computeIfAbsent(object, k -> new ConcurrentHashMap<>()).computeIfAbsent(key, k -> constructor.get());
+    }
 
     public static PlayableLotterySixGame createNewGame(LotterySix instance, long scheduledDateTime, String specialName, Map<Integer, NumberStatistics> numberStatistics, long carryOverFund, long lowestTopPlacesPrize) {
         return new PlayableLotterySixGame(instance, UUID.randomUUID(), scheduledDateTime, specialName, numberStatistics, lowestTopPlacesPrize, carryOverFund, true);
     }
 
     private transient LotterySix instance;
-    private transient ReentrantReadWriteLock betsLock;
-    private transient AtomicBoolean dirty;
 
     private final UUID gameId;
     private volatile long scheduledDateTime;
@@ -96,18 +103,12 @@ public class PlayableLotterySixGame implements IDedGame {
         this.lastSaved = -1;
     }
     
-    private synchronized ReentrantReadWriteLock getBetsReadWriteLock() {
-        if (betsLock == null) {
-            return betsLock = new ReentrantReadWriteLock(true);
-        }
-        return betsLock;
+    private ReentrantReadWriteLock getBetsReadWriteLock() {
+        return getSharedLockOrFlag(this, "betsLock", () -> new ReentrantReadWriteLock(true));
     }
 
-    public synchronized AtomicBoolean getDirtyFlag() {
-        if (dirty == null) {
-            return dirty = new AtomicBoolean(true);
-        }
-        return dirty;
+    public AtomicBoolean getDirtyFlag() {
+        return getSharedLockOrFlag(this, "dirty", () -> new AtomicBoolean(true));
     }
 
     public String toJson(Gson gson, boolean updateSaveTime) {
