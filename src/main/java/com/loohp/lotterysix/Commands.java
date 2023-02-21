@@ -65,9 +65,11 @@ public class Commands implements CommandExecutor, TabCompleter {
                 if (LotterySixPlugin.discordSRVHook != null) {
                     LotterySixPlugin.discordSRVHook.reload();
                 }
-                for (Player player : Bukkit.getOnlinePlayers()) {
-                    if (!LotterySixPlugin.activeBossBar.getPlayers().contains(player)) {
-                        LotterySixPlugin.activeBossBar.addPlayer(player);
+                if (LotterySixPlugin.activeBossBar != null) {
+                    for (Player player : Bukkit.getOnlinePlayers()) {
+                        if (!LotterySixPlugin.activeBossBar.getPlayers().contains(player)) {
+                            LotterySixPlugin.activeBossBar.addPlayer(player);
+                        }
                     }
                 }
                 sender.sendMessage(LotterySixPlugin.getInstance().messageReloaded);

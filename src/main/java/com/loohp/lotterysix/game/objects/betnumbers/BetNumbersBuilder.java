@@ -21,11 +21,13 @@
 package com.loohp.lotterysix.game.objects.betnumbers;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -62,7 +64,7 @@ public abstract class BetNumbersBuilder {
         if (bankers == null) {
             BetNumbersBuilder builder;
             if (numbers.size() < 6) {
-                builder = new RandomBuilder(minNumber, maxNumber);
+                return null;
             } else if (numbers.size() == 6) {
                 builder = new SingleBuilder(minNumber, maxNumber);
             } else {
@@ -107,8 +109,18 @@ public abstract class BetNumbersBuilder {
         return new BetNumbersBuilder.RandomBuilder(minNumber, maxNumber);
     }
 
-    public static Stream<RandomBuilder> bulkRandom(int minNumber, int maxNumber, int count) {
-        return IntStream.range(0, count).mapToObj(i -> new BetNumbersBuilder.RandomBuilder(minNumber, maxNumber));
+    public static Stream<RandomBuilder> random(int minNumber, int maxNumber, int count) {
+        if (count <= 0) {
+            throw new IllegalArgumentException("count cannot be 0 or negative");
+        } else if (count % 10 == 0) {
+            return IntStream.range(0, count / 10).mapToObj(i -> new BetNumbersBuilder.RandomBuilder(minNumber, maxNumber, 10));
+        } else if (count % 5 == 0) {
+            return IntStream.range(0, count / 5).mapToObj(i -> new BetNumbersBuilder.RandomBuilder(minNumber, maxNumber, 5));
+        } else if (count % 2 == 0) {
+            return IntStream.range(0, count / 2).mapToObj(i -> new BetNumbersBuilder.RandomBuilder(minNumber, maxNumber, 2));
+        } else {
+            return IntStream.range(0, count).mapToObj(i -> new BetNumbersBuilder.RandomBuilder(minNumber, maxNumber, 1));
+        }
     }
 
     protected final int minNumber;
@@ -143,6 +155,10 @@ public abstract class BetNumbersBuilder {
 
     public boolean canAdd() {
         return size() < maxNumber - minNumber + 1;
+    }
+
+    public int setsSize() {
+        return 1;
     }
 
     public abstract boolean completed();
@@ -393,52 +409,45 @@ public abstract class BetNumbersBuilder {
 
     public static class RandomBuilder extends BetNumbersBuilder {
 
-        private final int max;
-        private final List<Integer> numbers;
+        private final int count;
 
         private RandomBuilder(int minNumber, int maxNumber) {
+            this(minNumber, maxNumber, 1);
+        }
+
+        private RandomBuilder(int minNumber, int maxNumber, int count) {
             super(minNumber, maxNumber, BetNumbersType.RANDOM);
-            this.max = 6;
-            this.numbers = new ArrayList<>(max);
+            this.count = count;
         }
 
         @Override
         public synchronized RandomBuilder addNumber(int number) {
-            checkBound(number);
-            if (numbers.size() >= max) {
-                throw new IllegalStateException("Max numbers reached!");
-            }
-            numbers.add(number);
-            return this;
+            throw new UnsupportedOperationException("Cannot add number in random builder");
         }
 
         @Override
         public IntObjectPair<BetNumbersBuilder> addRandomNumber() {
-            if (completed()) {
-                throw new IllegalStateException("Lottery Number builder already completed!");
-            }
-            if (numbers.size() > maxNumber - minNumber) {
-                throw new IllegalStateException("Cannot add more random numbers!");
-            }
-            int number = ThreadLocalRandom.current().ints(minNumber, maxNumber + 1).filter(i -> !numbers.contains(i)).findFirst().orElseThrow(() -> new RuntimeException());
-            numbers.add(number);
-            return IntObjectPair.of(number, this);
+            throw new UnsupportedOperationException("Cannot add number in random builder");
         }
 
         @Override
         public synchronized RandomBuilder removeNumber(int number) {
-            numbers.remove((Object) number);
-            return this;
+            throw new UnsupportedOperationException("Cannot remove number in random builder");
         }
 
         @Override
         public int size() {
-            return numbers.size();
+            return 6;
         }
 
         @Override
         public boolean contains(int i) {
-            return numbers.contains(i);
+            throw new UnsupportedOperationException("Cannot check contained numbers in random builder");
+        }
+
+        @Override
+        public int setsSize() {
+            return count;
         }
 
         @Override
@@ -448,7 +457,7 @@ public abstract class BetNumbersBuilder {
 
         @Override
         public BetNumbers build() {
-            ThreadLocalRandom.current().ints(minNumber, maxNumber + 1).filter(i -> !numbers.contains(i)).distinct().limit(max - numbers.size()).forEach(i -> numbers.add(i));
+            List<Collection<Integer>> numbers = IntStream.range(0, count).mapToObj(i -> ThreadLocalRandom.current().ints(minNumber, maxNumber + 1).distinct().limit(6).boxed().collect(Collectors.toList())).collect(Collectors.toList());
             return new BetNumbers(numbers, BetNumbersType.RANDOM);
         }
 

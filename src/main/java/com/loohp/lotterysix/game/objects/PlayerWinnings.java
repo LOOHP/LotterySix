@@ -79,8 +79,7 @@ public class PlayerWinnings {
     }
 
     public boolean isCombination(CompletedLotterySixGame game) {
-        BetNumbersType type = getWinningBet(game).getChosenNumbers().getType();
-        return type.equals(BetNumbersType.MULTIPLE) || type.equals(BetNumbersType.BANKER);
+        return getWinningBet(game).getChosenNumbers().isCombination();
     }
 
     public long getWinnings() {

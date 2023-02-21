@@ -29,7 +29,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
-public class WinningCombination {
+public class WinningCombination implements FormattedString {
 
     private final Set<Integer> numbers;
 
@@ -46,7 +46,8 @@ public class WinningCombination {
         return numbers.stream().sorted().map(each -> each.toString()).collect(Collectors.joining(" "));
     }
 
-    public String toColoredString() {
+    @Override
+    public String toFormattedString() {
         return numbers.stream().sorted().map(each -> ChatColorUtils.getNumberColor(each) + each.toString()).collect(Collectors.joining(" "));
     }
 

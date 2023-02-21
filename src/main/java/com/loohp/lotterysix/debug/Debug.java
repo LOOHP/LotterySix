@@ -79,7 +79,7 @@ public class Debug implements Listener {
             sender.sendMessage("");
             for (int i = 0; i < bets.size(); i++) {
                 PlayerBets bet = bets.get(i);
-                sender.sendMessage((i + 1) + ". " + bet.getChosenNumbers().toColoredString());
+                sender.sendMessage((i + 1) + ". " + bet.getChosenNumbers().toFormattedString());
                 sender.sendMessage("    " + ChatColor.GOLD + "Type: " + bet.getChosenNumbers().getType().name());
                 sender.sendMessage("    " + ChatColor.GOLD + "Price: $" + StringUtils.formatComma(bet.getBet()));
                 sender.sendMessage("");
@@ -97,14 +97,14 @@ public class Debug implements Listener {
                     sender.sendMessage(ChatColor.YELLOW + "Game ID: " + game.getGameId());
                     sender.sendMessage(ChatColor.YELLOW + "Game Number: " + game.getGameNumber());
                     sender.sendMessage(ChatColor.YELLOW + "Draw Date: " + LotterySixPlugin.getInstance().dateFormat.format(new Date(game.getDatetime())));
-                    sender.sendMessage(ChatColor.YELLOW + "Result: " + game.getDrawResult().toColoredString());
+                    sender.sendMessage(ChatColor.YELLOW + "Result: " + game.getDrawResult().toFormattedString());
                     sender.sendMessage("");
                     List<PlayerWinnings> winningsList = game.getSortedPlayerWinnings(player.getUniqueId());
                     int u = 1;
                     for (PlayerWinnings winnings : winningsList.subList(0, Math.min(50, winningsList.size()))) {
-                        sender.sendMessage(u++ + ". " + winnings.getWinningBet(game).getChosenNumbers().toColoredString());
+                        sender.sendMessage(u++ + ". " + winnings.getWinningBet(game).getChosenNumbers().toFormattedString());
                         if (winnings.isCombination(game)) {
-                            sender.sendMessage("    (" + winnings.getWinningCombination().toColoredString() + ")");
+                            sender.sendMessage("    (" + winnings.getWinningCombination().toFormattedString() + ")");
                         }
                         sender.sendMessage("    " + ChatColor.GOLD + "" + winnings.getTier().getShortHand() + " $" + StringUtils.formatComma(winnings.getWinnings()));
                         sender.sendMessage("    " + ChatColor.GOLD + "Type: " + winnings.getWinningBet(game).getChosenNumbers().getType().name());
@@ -113,7 +113,7 @@ public class Debug implements Listener {
                     }
                     for (PlayerBets bet : game.getPlayerBets(player.getUniqueId())) {
                         if (winningsList.stream().noneMatch(each -> each.getWinningBet(game).getBetId().equals(bet.getBetId()))) {
-                            sender.sendMessage(u++ + ". " + bet.getChosenNumbers().toColoredString());
+                            sender.sendMessage(u++ + ". " + bet.getChosenNumbers().toFormattedString());
                             sender.sendMessage("    " + ChatColor.GOLD + "No Winnings $0");
                             sender.sendMessage("    " + ChatColor.GOLD + "Type: " + bet.getChosenNumbers().getType().name());
                             sender.sendMessage("    " + ChatColor.GOLD + "Price: $" + StringUtils.formatComma(bet.getBet()));

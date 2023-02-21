@@ -37,7 +37,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-public class WinningNumbers {
+public class WinningNumbers implements FormattedString {
 
     public static final Pattern STRING_PATTERN = Pattern.compile("^([0-9]+) ([0-9]+) ([0-9]+) ([0-9]+) ([0-9]+) ([0-9]+) \\+ ([0-9]+)$");
 
@@ -176,7 +176,8 @@ public class WinningNumbers {
         return numbers.stream().sorted().map(each -> each.toString()).collect(Collectors.joining(" ")) + " + " + specialNumber;
     }
 
-    public String toColoredString() {
+    @Override
+    public String toFormattedString() {
         String numbersString = numbers.stream().sorted().map(each -> ChatColorUtils.getNumberColor(each) + each.toString()).collect(Collectors.joining(" "));
         return numbersString + " \u00a76+ " + ChatColorUtils.getNumberColor(specialNumber) + specialNumber;
     }

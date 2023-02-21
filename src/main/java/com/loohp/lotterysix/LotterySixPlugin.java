@@ -234,9 +234,11 @@ public class LotterySixPlugin extends JavaPlugin implements Listener {
             getServer().getPluginManager().registerEvents(new Updater(), this);
         }
 
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            if (!activeBossBar.getPlayers().contains(player)) {
-                activeBossBar.addPlayer(player);
+        if (activeBossBar != null) {
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                if (!activeBossBar.getPlayers().contains(player)) {
+                    activeBossBar.addPlayer(player);
+                }
             }
         }
 
@@ -335,7 +337,9 @@ public class LotterySixPlugin extends JavaPlugin implements Listener {
 
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
-        activeBossBar.addPlayer(event.getPlayer());
+        if (activeBossBar != null) {
+            activeBossBar.addPlayer(event.getPlayer());
+        }
         Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
             LotteryPlayer lotteryPlayer = instance.getPlayerPreferenceManager().loadLotteryPlayer(event.getPlayer().getUniqueId(), true);
             if (!instance.backendBungeecordMode) {
@@ -346,7 +350,9 @@ public class LotterySixPlugin extends JavaPlugin implements Listener {
 
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
-        activeBossBar.removePlayer(event.getPlayer());
+        if (activeBossBar != null) {
+            activeBossBar.removePlayer(event.getPlayer());
+        }
         Bukkit.getScheduler().runTaskAsynchronously(this, () -> instance.getPlayerPreferenceManager().unloadLotteryPlayer(event.getPlayer().getUniqueId(), true));
     }
 }

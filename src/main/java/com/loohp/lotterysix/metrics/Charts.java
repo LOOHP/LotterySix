@@ -26,11 +26,11 @@ import com.loohp.lotterysix.game.lottery.PlayableLotterySixGame;
 import com.loohp.lotterysix.game.objects.PlayerBets;
 import com.loohp.lotterysix.game.objects.PrizeTier;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.PrimitiveIterator;
 import java.util.concurrent.Callable;
 
 public class Charts {
@@ -101,10 +101,8 @@ public class Charts {
                 Map<String, Integer> valueMap = new HashMap<>();
                 if (getLatestGame().isPresent()) {
                     CompletedLotterySixGame game = getLatestGame().get();
-                    int[] numbers = game.getBets().stream().flatMapToInt(each -> each.getChosenNumbers().stream()).toArray();
-                    for (int i = 0; i < LotterySixPlugin.getInstance().numberOfChoices; i++) {
-                        int finalI = i;
-                        valueMap.put(i + "", (int) Arrays.stream(numbers).filter(u -> u == finalI).count());
+                    for (PrimitiveIterator.OfInt itr = game.getBets().stream().flatMapToInt(each -> each.getChosenNumbers().getAllNumbers().stream().mapToInt(i -> i)).iterator(); itr.hasNext();) {
+                        valueMap.merge(itr.nextInt() + "", 1, (a, b) -> a + b);
                     }
                 }
                 return valueMap;

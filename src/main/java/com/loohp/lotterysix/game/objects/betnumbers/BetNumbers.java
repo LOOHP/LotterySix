@@ -20,10 +20,11 @@
 
 package com.loohp.lotterysix.game.objects.betnumbers;
 
-import com.google.common.collect.Sets;
+import com.loohp.lotterysix.game.objects.FormattedString;
 import com.loohp.lotterysix.utils.ChatColorUtils;
 import org.paukov.combinatorics3.Generator;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -32,53 +33,61 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-public class BetNumbers {
+public class BetNumbers implements FormattedString {
 
     private final Set<Integer> bankers;
     private final Set<Integer> numbers;
+    private final List<Set<Integer>> additionalSets;
     private final BetNumbersType type;
 
     BetNumbers(Collection<Integer> numbers, BetNumbersType type) {
+        if (type.equals(BetNumbersType.BANKER)) {
+            throw new IllegalArgumentException("type cannot be banker");
+        }
         this.bankers = null;
         this.numbers = Collections.unmodifiableSet(new TreeSet<>(numbers));
+        this.additionalSets = null;
         this.type = type;
     }
 
     BetNumbers(Collection<Integer> bankers, Collection<Integer> numbers) {
         this.bankers = Collections.unmodifiableSet(new TreeSet<>(bankers));
         this.numbers = Collections.unmodifiableSet(new TreeSet<>(numbers));
+        this.additionalSets = null;
         this.type = BetNumbersType.BANKER;
     }
 
+    BetNumbers(List<Collection<Integer>> numbers, BetNumbersType type) {
+        if (type.equals(BetNumbersType.BANKER) || type.equals(BetNumbersType.MULTIPLE)) {
+            throw new IllegalArgumentException("type cannot be banker or multiple");
+        }
+        if (numbers.isEmpty()) {
+            throw new IllegalArgumentException("numbers cannot be empty");
+        }
+        this.bankers = null;
+        this.numbers = Collections.unmodifiableSet(new TreeSet<>(numbers.get(0)));
+        this.additionalSets = numbers.size() == 1 ? null : Collections.unmodifiableList(numbers.stream().skip(1).map(each -> Collections.unmodifiableSet(new TreeSet<>(each))).collect(Collectors.toList()));
+        this.type = type;
+    }
+
     public Iterator<Integer> iterator() {
-        return new Iterator<Integer>() {
-            private final Iterator<Integer> itr = numbers.iterator();
-
-            @Override
-            public boolean hasNext() {
-                return itr.hasNext();
-            }
-
-            @Override
-            public Integer next() {
-                return itr.next();
-            }
-        };
+        return numbers.stream().iterator();
     }
 
     public Stream<List<Integer>> combinations() {
+        Stream<List<Integer>> stream;
         if (hasNoBankers()) {
-            return Generator.combination(numbers).simple(6).stream();
+            stream = Generator.combination(numbers).simple(6).stream();
         } else {
-            return Generator.combination(numbers).simple(6 - bankers.size()).stream().peek(list -> list.addAll(bankers));
+            stream = Generator.combination(numbers).simple(6 - bankers.size()).stream().peek(list -> list.addAll(bankers));
         }
-    }
-
-    public IntStream stream() {
-        return numbers.stream().mapToInt(i -> i);
+        if (hasNoAdditionalSets()) {
+            return stream;
+        } else {
+            return Stream.concat(stream, additionalSets.stream().map(each -> new ArrayList<>(each)));
+        }
     }
 
     public Set<Integer> getNumbers() {
@@ -106,23 +115,7 @@ public class BetNumbers {
         if (hasNoBankers()) {
             return Collections.emptyIterator();
         }
-        return new Iterator<Integer>() {
-            private final Iterator<Integer> itr = bankers.iterator();
-
-            @Override
-            public boolean hasNext() {
-                return itr.hasNext();
-            }
-
-            @Override
-            public Integer next() {
-                return itr.next();
-            }
-        };
-    }
-
-    public IntStream bankersStream() {
-        return hasNoBankers() ? IntStream.empty() : bankers.stream().mapToInt(i -> i);
+        return bankers.stream().iterator();
     }
 
     public Set<Integer> getBankersNumbers() {
@@ -138,42 +131,91 @@ public class BetNumbers {
         return value;
     }
 
-    public Set<Integer> getAllNumbers() {
-        return hasNoBankers() ? numbers : Sets.union(bankers, numbers);
+    public boolean hasAdditionalSets() {
+        return additionalSets != null && !additionalSets.isEmpty();
+    }
+
+    public boolean hasNoAdditionalSets() {
+        return additionalSets == null || additionalSets.isEmpty();
+    }
+
+    public Iterator<Set<Integer>> additionalSetsIterator() {
+        if (hasNoAdditionalSets()) {
+            return Collections.emptyIterator();
+        }
+        return additionalSets.stream().map(each -> Collections.unmodifiableSet(each)).iterator();
+    }
+
+    public List<Set<Integer>> getAdditionalSets() {
+        if (hasNoAdditionalSets()) {
+            return Collections.emptyList();
+        }
+        return additionalSets.stream().map(each -> Collections.unmodifiableSet(each)).collect(Collectors.toList());
+    }
+
+    public int getSetsSize() {
+        if (hasNoAdditionalSets()) {
+            return 1;
+        }
+        return additionalSets.size() + 1;
+    }
+
+    public List<Integer> getAllNumbers() {
+        List<Integer> combined = new ArrayList<>(numbers);
+        if (hasBankers()) {
+            combined.addAll(bankers);
+        }
+        if (hasAdditionalSets()) {
+            for (Set<Integer> additional : additionalSets) {
+                combined.addAll(additional);
+            }
+        }
+        return combined;
     }
 
     public BetNumbersType getType() {
         return type;
     }
 
+    public boolean isCombination() {
+        return getSetsSize() > 1 || type.equals(BetNumbersType.MULTIPLE) || type.equals(BetNumbersType.BANKER);
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        BetNumbers numbers1 = (BetNumbers) o;
-        return Objects.equals(bankers, numbers1.bankers) && numbers.equals(numbers1.numbers) && type == numbers1.type;
+        BetNumbers that = (BetNumbers) o;
+        return Objects.equals(bankers, that.bankers) && numbers.equals(that.numbers) && Objects.equals(additionalSets, that.additionalSets) && type == that.type;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(bankers, numbers, type);
+        return Objects.hash(bankers, numbers, additionalSets, type);
     }
 
     @Override
     public String toString() {
         String numbersString = numbers.stream().map(each -> each.toString()).collect(Collectors.joining(" "));
-        if (hasNoBankers()) {
+        if (hasBankers()) {
+            numbersString = bankers.stream().map(each -> each.toString()).collect(Collectors.joining(" ")) + " > " + numbersString;
+        }
+        if (hasNoAdditionalSets()) {
             return numbersString;
         }
-        return bankers.stream().map(each -> each.toString()).collect(Collectors.joining(" ")) + " > " + numbersString;
+        return numbersString + " / " + additionalSets.stream().map(each -> each.stream().map(e -> e.toString()).collect(Collectors.joining(" "))).collect(Collectors.joining(" / "));
     }
 
-    public String toColoredString() {
+    @Override
+    public String toFormattedString() {
         String numbersString = numbers.stream().map(each -> ChatColorUtils.getNumberColor(each) + each.toString()).collect(Collectors.joining(" "));
-        if (hasNoBankers()) {
+        if (hasBankers()) {
+            numbersString = bankers.stream().map(each -> ChatColorUtils.getNumberColor(each) + each.toString()).collect(Collectors.joining(" ")) + " \u00a75> " + numbersString;;
+        }
+        if (hasNoAdditionalSets()) {
             return numbersString;
         }
-        return bankers.stream().map(each -> ChatColorUtils.getNumberColor(each) + each.toString()).collect(Collectors.joining(" ")) + " \u00a75> " + numbersString;
+        return numbersString + " \u00a75/ " + additionalSets.stream().map(each -> each.stream().map(e -> ChatColorUtils.getNumberColor(e) + e.toString()).collect(Collectors.joining(" "))).collect(Collectors.joining(" \u00a75/ "));
     }
 
 }

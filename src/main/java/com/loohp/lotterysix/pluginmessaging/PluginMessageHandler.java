@@ -253,13 +253,15 @@ public class PluginMessageHandler implements PluginMessageListener {
                             if (LotterySixPlugin.discordSRVHook != null) {
                                 LotterySixPlugin.discordSRVHook.reload();
                             }
-                            Bukkit.getScheduler().runTask(LotterySixPlugin.plugin, () -> {
-                                for (Player player : Bukkit.getOnlinePlayers()) {
-                                    if (!LotterySixPlugin.activeBossBar.getPlayers().contains(player)) {
-                                        LotterySixPlugin.activeBossBar.addPlayer(player);
+                            if (LotterySixPlugin.activeBossBar != null) {
+                                Bukkit.getScheduler().runTask(LotterySixPlugin.plugin, () -> {
+                                    for (Player player : Bukkit.getOnlinePlayers()) {
+                                        if (!LotterySixPlugin.activeBossBar.getPlayers().contains(player)) {
+                                            LotterySixPlugin.activeBossBar.addPlayer(player);
+                                        }
                                     }
-                                }
-                            });
+                                });
+                            }
                             break;
                         }
                         case 0x0B: { // Past Games Sync Check

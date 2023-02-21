@@ -221,6 +221,9 @@ GUI:
     Title: "&2Confirm Bet"
     LotteryInfo:
       - "&ePlease bet responsibly"
+    BulkRandom:
+      - "&cYou are about to purchase"
+      - "&e{EntriesTotal} &cRandom Bet Entries"
     Confirm:
       - "&aConfirm Unit Investment (${Price})"
     PartialConfirm:

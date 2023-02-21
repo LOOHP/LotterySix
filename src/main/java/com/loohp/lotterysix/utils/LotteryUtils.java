@@ -60,11 +60,11 @@ public class LotteryUtils {
     }
 
     public static long calculatePrice(BetNumbers numbers, LotterySix lotterySix) {
-        return calculatePrice(numbers.getType(), numbers.getNumbers().size(), numbers.getBankersNumbers().size(), lotterySix.pricePerBet);
+        return calculatePrice(numbers.getType(), numbers.getNumbers().size(), numbers.getBankersNumbers().size(), lotterySix.pricePerBet) * numbers.getSetsSize();
     }
 
     public static long calculatePrice(BetNumbersBuilder builder, LotterySix lotterySix) {
-        return calculatePrice(builder.getType(), builder.size(), builder.getType().equals(BetNumbersType.BANKER) ? ((BetNumbersBuilder.BankerBuilder) builder).bankerSize() : 0, lotterySix.pricePerBet);
+        return calculatePrice(builder.getType(), builder.size(), builder.getType().equals(BetNumbersType.BANKER) ? ((BetNumbersBuilder.BankerBuilder) builder).bankerSize() : 0, lotterySix.pricePerBet) * builder.setsSize();
     }
 
     public static long calculatePrice(BetNumbersType type, int size, int bankerSize, long pricePerBet) {

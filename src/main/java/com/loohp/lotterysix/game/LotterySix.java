@@ -173,6 +173,7 @@ public class LotterySix implements AutoCloseable {
     public String guiRandomEntryCountValue;
     public String guiConfirmNewBetTitle;
     public String[] guiConfirmNewBetLotteryInfo;
+    public String[] guiConfirmNewBetBulkRandom;
     public String[] guiConfirmNewBetConfirm;
     public String[] guiConfirmNewBetPartialConfirm;
     public String[] guiConfirmNewBetCancel;
@@ -787,6 +788,7 @@ public class LotterySix implements AutoCloseable {
         guiRandomEntryCountValue = config.getConfiguration().getString("GUI.RandomEntryCount.Value");
         guiConfirmNewBetTitle = config.getConfiguration().getString("GUI.ConfirmNewBet.Title");
         guiConfirmNewBetLotteryInfo = config.getConfiguration().getStringList("GUI.ConfirmNewBet.LotteryInfo").toArray(new String[0]);
+        guiConfirmNewBetBulkRandom = config.getConfiguration().getStringList("GUI.ConfirmNewBet.BulkRandom").toArray(new String[0]);
         guiConfirmNewBetConfirm = config.getConfiguration().getStringList("GUI.ConfirmNewBet.Confirm").toArray(new String[0]);
         guiConfirmNewBetPartialConfirm = config.getConfiguration().getStringList("GUI.ConfirmNewBet.PartialConfirm").toArray(new String[0]);
         guiConfirmNewBetCancel = config.getConfiguration().getStringList("GUI.ConfirmNewBet.Cancel").toArray(new String[0]);

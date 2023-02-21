@@ -173,7 +173,7 @@ public class DiscordSRVHook implements Listener, SlashCommandProvider {
                         List<PlayerWinnings> winningsList = game.getSortedPlayerWinnings(uuid);
                         for (PlayerWinnings winnings : winningsList) {
                             StringBuilder sb = new StringBuilder();
-                            sb.append("**").append(winnings.getWinningBet(game).getChosenNumbers().toString()).append("**\n");
+                            sb.append("**").append(winnings.getWinningBet(game).getChosenNumbers().toString().replace("/ ", "/\n")).append("**\n");
                             if (winnings.isCombination(game)) {
                                 sb.append("(").append(winnings.getWinningCombination().toString()).append(")\n");
                             }
@@ -189,7 +189,7 @@ public class DiscordSRVHook implements Listener, SlashCommandProvider {
                             for (PlayerBets bets : playerBets) {
                                 if (winningsList.stream().noneMatch(each -> each.getWinningBet(game).getBetId().equals(bets.getBetId()))) {
                                     StringBuilder sb = new StringBuilder();
-                                    sb.append(bets.getChosenNumbers().toString()).append("\n").append(lotterySix.discordSRVSlashCommandsViewPastDrawNoWinnings).append(" $0 ($").append(StringUtils.formatComma(game.getPricePerBet(bets.getType()))).append(")\n\n");
+                                    sb.append(bets.getChosenNumbers().toString().replace("/ ", "/\n")).append("\n").append(lotterySix.discordSRVSlashCommandsViewPastDrawNoWinnings).append(" $0 ($").append(StringUtils.formatComma(game.getPricePerBet(bets.getType()))).append(")\n\n");
                                     if (str.length() + sb.length() < 4090) {
                                         str.append(sb);
                                     } else {
@@ -239,7 +239,7 @@ public class DiscordSRVHook implements Listener, SlashCommandProvider {
                 } else {
                     for (PlayerBets bet : bets) {
                         StringBuilder str = new StringBuilder();
-                        str.append("**").append(bet.getChosenNumbers().toString()).append("** $").append(StringUtils.formatComma(bet.getBet())).append(" ($").append(StringUtils.formatComma(lotterySix.pricePerBet / bet.getType().getDivisor())).append(")\n\n");
+                        str.append("**").append(bet.getChosenNumbers().toString().replace("/ ", "/\n")).append("** $").append(StringUtils.formatComma(bet.getBet())).append(" ($").append(StringUtils.formatComma(lotterySix.pricePerBet / bet.getType().getDivisor())).append(")\n\n");
                         if (str.length() + sb.length() < 4090) {
                             sb.append(str);
                         } else {
