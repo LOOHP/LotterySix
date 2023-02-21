@@ -799,8 +799,10 @@ public class PlayableLotterySixGame implements IDedGame {
         } else {
             carryOverNext += secondTierPrizeTotal;
         }
-        
+
         long firstTierPrizeTotal = Math.min(maxTopPlacesPrize, carryOverRemaining + Math.max(lowestTopPlacesPrize, (long) Math.floor(totalRemaining * 0.45)));
+        long difference = Math.max(0, lowestTopPlacesPrize - (long) Math.floor(totalRemaining * 0.45));
+
         long firstTierCarryOver = 0;
         if (!firstPlaceEmpty) {
             if (thirdPlaceEmpty) {
@@ -834,7 +836,7 @@ public class PlayableLotterySixGame implements IDedGame {
                 break;
             }
             case ONLY_TICKET_SALES: {
-                carryOverNext += Math.max(0, firstTierCarryOver - lowestTopPlacesPrize);
+                carryOverNext += Math.max(0, firstTierCarryOver - difference);
                 break;
             }
             default: {
