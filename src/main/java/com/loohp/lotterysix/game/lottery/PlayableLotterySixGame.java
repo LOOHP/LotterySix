@@ -114,7 +114,9 @@ public class PlayableLotterySixGame implements IDedGame {
     public String toJson(Gson gson, boolean updateSaveTime) {
         getBetsReadWriteLock().readLock().lock();
         try {
-            lastSaved = System.currentTimeMillis();
+            if (updateSaveTime) {
+                lastSaved = System.currentTimeMillis();
+            }
             return gson.toJson(this);
         } finally {
             getBetsReadWriteLock().readLock().unlock();
