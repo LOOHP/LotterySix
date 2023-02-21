@@ -1002,9 +1002,9 @@ public class LotteryPluginGUI implements Listener {
         gui.addElement(new StaticGuiElement('h', XMaterial.GOLD_INGOT.parseItem(), click -> {
             if (game != null && game.isValid()) {
                 if (instance.backendBungeecordMode) {
-                    LotterySixPlugin.getPluginMessageHandler().requestAddBet(player.getName(), player.getUniqueId(), price, BetUnitType.FULL, betNumbers);
+                    LotterySixPlugin.getPluginMessageHandler().requestAddBet(player.getName(), player.getUniqueId(), price / betNumbers.size(), BetUnitType.FULL, betNumbers);
                 } else {
-                    AddBetResult result = game.addBet(player.getName(), player.getUniqueId(), price, BetUnitType.FULL, betNumbers);
+                    AddBetResult result = game.addBet(player.getName(), player.getUniqueId(), price / betNumbers.size(), BetUnitType.FULL, betNumbers);
                     switch (result) {
                         case SUCCESS: {
                             player.sendMessage(instance.messageBetPlaced.replace("{Price}", StringUtils.formatComma(price)));

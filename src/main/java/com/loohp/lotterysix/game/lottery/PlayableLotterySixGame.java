@@ -327,10 +327,12 @@ public class PlayableLotterySixGame implements IDedGame {
     private AddBetResult betResult0(UUID player, long price, Collection<PlayerBets> bets, AddBetResult result) {
         if (instance != null && !instance.backendBungeecordMode) {
             instance.getPlayerBetListener().accept(player, result, price, bets);
-            for (PlayerBets playerBet : bets) {
-                instance.getConsoleMessageConsumer().accept(
-                        playerBet.getName() + " (" + playerBet.getPlayer() + ") placed a bet worth $" + playerBet.getBet() + " (" + playerBet.getType() + ") with type " +
-                        playerBet.getChosenNumbers().getType() + " [" + playerBet.getChosenNumbers().toString() + "] to game " + gameNumber + " (" + gameId + ")");
+            if (result.isSuccess()) {
+                for (PlayerBets playerBet : bets) {
+                    instance.getConsoleMessageConsumer().accept(
+                            playerBet.getName() + " (" + playerBet.getPlayer() + ") placed a bet worth $" + playerBet.getBet() + " (" + playerBet.getType() + ") with type " +
+                                    playerBet.getChosenNumbers().getType() + " [" + playerBet.getChosenNumbers().toString() + "] to game " + gameNumber + " (" + gameId + ")");
+                }
             }
         }
         return result;
