@@ -172,14 +172,14 @@ public class Charts {
         metrics.addCustomChart(new Metrics.SingleLineChart("global_total_current_turnover", new Callable<Integer>() {
             @Override
             public Integer call() throws Exception {
-                return getCurrentGame().map(each -> (int) each.getTotalBets()).orElse(0);
+                return (int) Math.min(getCurrentGame().map(each -> each.getTotalBets()).orElse(0L), Integer.MAX_VALUE);
             }
         }));
 
         metrics.addCustomChart(new Metrics.SingleLineChart("global_total_previous_winnings", new Callable<Integer>() {
             @Override
             public Integer call() throws Exception {
-                return getLatestGame().map(each -> (int) each.getWinnings().stream().mapToLong(w -> w.getWinnings()).sum()).orElse(0);
+                return (int) Math.min(getLatestGame().map(each -> each.getWinnings().stream().mapToLong(w -> w.getWinnings()).sum()).orElse(0L), Integer.MAX_VALUE);
             }
         }));
 
