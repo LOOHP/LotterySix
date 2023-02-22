@@ -37,6 +37,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -210,4 +211,16 @@ public class CompletedLotterySixGame implements IDedGame {
         }).start();
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        CompletedLotterySixGame that = (CompletedLotterySixGame) o;
+        return datetime == that.datetime && pricePerBet == that.pricePerBet && totalPrizes == that.totalPrizes && remainingFunds == that.remainingFunds && Objects.equals(gameId, that.gameId) && Objects.equals(gameNumber, that.gameNumber) && Objects.equals(specialName, that.specialName) && Objects.equals(drawResult, that.drawResult) && Objects.equals(numberStatistics, that.numberStatistics) && Objects.equals(prizeForTier, that.prizeForTier) && Objects.equals(winners, that.winners) && Objects.equals(bets, that.bets);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(gameId, datetime, gameNumber, specialName, drawResult, numberStatistics, pricePerBet, prizeForTier, winners, bets, totalPrizes, remainingFunds);
+    }
 }

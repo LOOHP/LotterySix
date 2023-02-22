@@ -1166,7 +1166,7 @@ public class LotteryPluginGUI implements Listener {
         LazyCompletedLotterySixGameList completedGames = instance.getCompletedGames();
         LinkedList<CompletedLotterySixGameIndex> list = new LinkedList<>();
         Map<CompletedLotterySixGameIndex, Integer> position = new HashMap<>();
-        int startPosition = currentPosition - currentPosition % 5;
+        int startPosition = Math.max(0, currentPosition - currentPosition % 5);
         for (int i = startPosition; i < startPosition + 5 && i < completedGames.size(); i++) {
             CompletedLotterySixGameIndex gameIndex = completedGames.getIndex(i);
             list.add(gameIndex);
