@@ -116,10 +116,12 @@ public class CompletedLotterySixGame implements IDedGame {
         return datetime;
     }
 
+    @Override
     public boolean hasSpecialName() {
         return specialName != null && !specialName.isEmpty();
     }
 
+    @Override
     public String getSpecialName() {
         return specialName;
     }
