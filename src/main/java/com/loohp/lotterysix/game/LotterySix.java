@@ -152,6 +152,12 @@ public class LotterySix implements AutoCloseable {
     public String[] guiLastResultsYourBets;
     public String guiLastResultsNoWinnings;
     public String[] guiLastResultsNothing;
+    public String[] guiLastResultsListHistoricGames;
+    public String guiLastResultsHistoricGameListTitle;
+    public String[] guiLastResultsHistoricGameListInfo;
+    public String[] guiLastResultsHistoricGameListSpecialName;
+    public String[] guiLastResultsHistoricNewerGames;
+    public String[] guiLastResultsHistoricOlderGames;
     public String[] guiLastResultsLookupHistoricGames;
     public String guiGameNumberInputTitle;
     public String guiYourBetsTitle;
@@ -767,6 +773,12 @@ public class LotterySix implements AutoCloseable {
         guiLastResultsYourBets = config.getConfiguration().getStringList("GUI.LastResults.YourBets").toArray(new String[0]);
         guiLastResultsNoWinnings = config.getConfiguration().getString("GUI.LastResults.NoWinnings");
         guiLastResultsNothing = config.getConfiguration().getStringList("GUI.LastResults.Nothing").toArray(new String[0]);
+        guiLastResultsListHistoricGames = config.getConfiguration().getStringList("GUI.LastResults.ListHistoricGames").toArray(new String[0]);
+        guiLastResultsHistoricGameListTitle = config.getConfiguration().getString("GUI.LastResults.HistoricGameListTitle");
+        guiLastResultsHistoricGameListInfo = config.getConfiguration().getStringList("GUI.LastResults.HistoricGameListInfo").toArray(new String[0]);
+        guiLastResultsHistoricGameListSpecialName = config.getConfiguration().getStringList("GUI.LastResults.HistoricGameListSpecialName").toArray(new String[0]);
+        guiLastResultsHistoricNewerGames = config.getConfiguration().getStringList("GUI.LastResults.HistoricNewerGames").toArray(new String[0]);
+        guiLastResultsHistoricOlderGames = config.getConfiguration().getStringList("GUI.LastResults.HistoricOlderGames").toArray(new String[0]);
         guiLastResultsLookupHistoricGames = config.getConfiguration().getStringList("GUI.LastResults.LookupHistoricGames").toArray(new String[0]);
         guiGameNumberInputTitle = config.getConfiguration().getString("GUI.GameNumberInput.Title");
         guiYourBetsTitle = config.getConfiguration().getString("GUI.YourBets.Title");
@@ -882,12 +894,19 @@ public class LotterySix implements AutoCloseable {
         }
         File completedGameFile = new File(lotteryDataFolder, "completed.json");
         if (completedGameFile.exists()) {
+            boolean needSaving = false;
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(Files.newInputStream(completedGameFile.toPath()), StandardCharsets.UTF_8))) {
                 JsonArray array = GSON.fromJson(reader, JsonArray.class);
                 for (JsonElement element : array) {
                     CompletedLotterySixGameIndex gameIndex = GSON.fromJson(element.getAsJsonObject(), CompletedLotterySixGameIndex.class);
-                    if (new File(lotteryDataFolder, gameIndex.getDataFileName()).exists()) {
-                        completedGames.add(gameIndex);
+                    File detailFile = new File(lotteryDataFolder, gameIndex.getDataFileName());
+                    if (detailFile.exists()) {
+                        if (gameIndex.isDetailsComplete()) {
+                            completedGames.add(gameIndex);
+                        } else {
+                            needSaving = true;
+                            completedGames.add(LazyCompletedLotterySixGameList.loadFromFile(detailFile));
+                        }
                     }
                 }
             } catch (IOException e) {
@@ -897,18 +916,29 @@ public class LotterySix implements AutoCloseable {
                 //noinspection ResultOfMethodCallIgnored
                 completedGames.get(0);
             }
+            if (needSaving) {
+                JsonArray array = new JsonArray();
+                synchronized (completedGames.getIterateLock()) {
+                    for (CompletedLotterySixGameIndex gameIndex : completedGames.indexIterable()) {
+                        array.add(GSON.toJsonTree(gameIndex));
+                    }
+                }
+                try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(Files.newOutputStream(completedGameFile.toPath()), StandardCharsets.UTF_8))) {
+                    pw.println(GSON.toJson(array));
+                    pw.flush();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
         } else {
             for (File file : lotteryDataFolder.listFiles()) {
                 if (file.getName().endsWith(".json") && !file.equals(currentGameFile) && !file.equals(completedGameFile)) {
-                    CompletedLotterySixGame game = null;
-                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(Files.newInputStream(file.toPath()), StandardCharsets.UTF_8))) {
-                        game = GSON.fromJson(reader, CompletedLotterySixGame.class);
+                    try {
+                        CompletedLotterySixGame game = LazyCompletedLotterySixGameList.loadFromFile(file);
                         completedGames.add(game);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                    if (game != null) {
                         file.renameTo(new File(lotteryDataFolder, game.getDataFileName()));
+                    } catch (Throwable e) {
+                        e.printStackTrace();
                     }
                 }
             }

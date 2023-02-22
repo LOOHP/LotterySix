@@ -20,19 +20,28 @@
 
 package com.loohp.lotterysix.game.lottery;
 
+import com.loohp.lotterysix.game.objects.WinningNumbers;
+
 import java.util.Objects;
 import java.util.UUID;
 
 public class CompletedLotterySixGameIndex implements IDedGame {
 
+    private transient WinningNumbers drawResultCache;
+
     private final UUID gameId;
     private final long datetime;
     private final GameNumber gameNumber;
+    private final String drawResult;
+    private final String specialName;
 
-    public CompletedLotterySixGameIndex(UUID gameId, long datetime, GameNumber gameNumber) {
+    public CompletedLotterySixGameIndex(UUID gameId, long datetime, GameNumber gameNumber, WinningNumbers drawResult, String specialName) {
         this.gameId = gameId;
         this.datetime = datetime;
         this.gameNumber = gameNumber;
+        this.drawResultCache = drawResult;
+        this.drawResult = drawResult.toString();
+        this.specialName = specialName;
     }
 
     @Override
@@ -45,6 +54,11 @@ public class CompletedLotterySixGameIndex implements IDedGame {
         return gameNumber;
     }
 
+    @Override
+    public boolean hasSpecialName() {
+        return specialName != null && !specialName.isEmpty();
+    }
+
     public long getDatetime() {
         return datetime;
     }
@@ -53,16 +67,32 @@ public class CompletedLotterySixGameIndex implements IDedGame {
         return datetime + ".json";
     }
 
+    public WinningNumbers getDrawResult() {
+        if (drawResultCache != null) {
+            return drawResultCache;
+        }
+        return drawResultCache = WinningNumbers.fromString(drawResult);
+    }
+
+    @Override
+    public String getSpecialName() {
+        return specialName;
+    }
+
+    public boolean isDetailsComplete() {
+        return gameId != null && gameNumber != null && drawResult != null;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         CompletedLotterySixGameIndex gameIndex = (CompletedLotterySixGameIndex) o;
-        return datetime == gameIndex.datetime && gameId.equals(gameIndex.gameId) && Objects.equals(gameNumber, gameIndex.gameNumber);
+        return datetime == gameIndex.datetime && Objects.equals(gameId, gameIndex.gameId) && Objects.equals(gameNumber, gameIndex.gameNumber) && Objects.equals(drawResult, gameIndex.drawResult) && Objects.equals(specialName, gameIndex.specialName);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(gameId, datetime, gameNumber);
+        return Objects.hash(gameId, datetime, gameNumber, drawResult, specialName);
     }
 }

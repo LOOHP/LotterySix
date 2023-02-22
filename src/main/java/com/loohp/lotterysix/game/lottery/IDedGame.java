@@ -28,4 +28,8 @@ public interface IDedGame {
 
     GameNumber getGameNumber();
 
+    boolean hasSpecialName();
+
+    String getSpecialName();
+
 }

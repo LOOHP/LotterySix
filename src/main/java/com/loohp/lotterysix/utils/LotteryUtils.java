@@ -20,6 +20,7 @@
 
 package com.loohp.lotterysix.utils;
 
+import com.loohp.lotterysix.game.lottery.CompletedLotterySixGameIndex;
 import com.loohp.lotterysix.game.objects.LazyReplaceString;
 import com.loohp.lotterysix.game.LotterySix;
 import com.loohp.lotterysix.game.lottery.CompletedLotterySixGame;
@@ -102,6 +103,7 @@ public class LotteryUtils {
                 .replace("{Date}", () -> "-")
                 .replace("{GameNumberRaw}", () -> "-")
                 .replace("{GameNumber}", () -> "-")
+                .replace("{SpecialName}", () -> "")
                 .replace("{NumberOfChoices}", () -> lotterySix.numberOfChoices + "");
         for (PrizeTier prizeTier : PrizeTier.values()) {
             str = str.replace("{" + prizeTier.name() + "Odds}", () -> {
@@ -134,6 +136,7 @@ public class LotteryUtils {
                 .replace("{Date}", () -> lotterySix.dateFormat.format(new Date(game.getScheduledDateTime())))
                 .replace("{GameNumberRaw}", () -> game.getGameNumber() + "")
                 .replace("{GameNumber}", () -> game.getGameNumber() + (game.hasSpecialName() ? " " + game.getSpecialName() : ""))
+                .replace("{SpecialName}", () -> game.hasSpecialName() ? game.getSpecialName() : "")
                 .replace("{NumberOfChoices}", () -> lotterySix.numberOfChoices + "")
                 .replace("{PricePerBet}", () -> StringUtils.formatComma(lotterySix.pricePerBet))
                 .replace("{TotalBets}", () -> StringUtils.formatComma(game.getTotalBets()))
@@ -150,6 +153,35 @@ public class LotteryUtils {
             NumberStatistics stats = game.getNumberStatistics(i);
             str = str.replace("{" + i + "LastDrawn}", () -> stats.isNotEverDrawn() ? lotterySix.guiNumberStatisticsNever : (stats.getLastDrawn() == 0 ? "-" : stats.getLastDrawn() + ""));
             str = str.replace("{" + i + "TimesDrawn}", () -> stats.getTimesDrawn() + "");
+        }
+        return ChatColorUtils.translateAlternateColorCodes('&', player == null ? str.toString() : PlaceholderAPI.setPlaceholders(player, str.toString()));
+    }
+
+    public static String[] formatPlaceholders(OfflinePlayer player, String[] str, LotterySix lotterySix, CompletedLotterySixGameIndex game) {
+        String[] array = new String[str.length];
+        for (int i = 0; i < array.length; i++) {
+            array[i] = formatPlaceholders(player, str[i], lotterySix, game);
+        }
+        return array;
+    }
+
+    public static String formatPlaceholders(OfflinePlayer player, String input, LotterySix lotterySix, CompletedLotterySixGameIndex game) {
+        if (game == null) {
+            return formatPlaceholders(player, input, lotterySix);
+        }
+        LazyReplaceString str = new LazyReplaceString(input)
+                .replace("{Now}", () -> lotterySix.dateFormat.format(new Date()))
+                .replace("{Date}", () -> lotterySix.dateFormat.format(new Date(game.getDatetime())))
+                .replace("{GameNumberRaw}", () -> game.getGameNumber() + "")
+                .replace("{GameNumber}", () -> game.getGameNumber() + (game.hasSpecialName() ? " " + game.getSpecialName() : ""))
+                .replace("{SpecialName}", () -> game.hasSpecialName() ? game.getSpecialName() : "")
+                .replace("{NumberOfChoices}", () -> lotterySix.numberOfChoices + "")
+                .replace("{PricePerBet}", () -> StringUtils.formatComma(lotterySix.pricePerBet));
+        for (PrizeTier prizeTier : PrizeTier.values()) {
+            str = str.replace("{" + prizeTier.name() + "Odds}", () -> {
+                double odds = calculateOddsOneOver(lotterySix.numberOfChoices, prizeTier);
+                return Double.isFinite(odds) ? ODDS_FORMAT.format(odds) : "-";
+            });
         }
         return ChatColorUtils.translateAlternateColorCodes('&', player == null ? str.toString() : PlaceholderAPI.setPlaceholders(player, str.toString()));
     }
@@ -171,6 +203,7 @@ public class LotteryUtils {
                 .replace("{Date}", () -> lotterySix.dateFormat.format(new Date(game.getDatetime())))
                 .replace("{GameNumberRaw}", () -> game.getGameNumber() + "")
                 .replace("{GameNumber}", () -> game.getGameNumber() + (game.hasSpecialName() ? " " + game.getSpecialName() : ""))
+                .replace("{SpecialName}", () -> game.hasSpecialName() ? game.getSpecialName() : "")
                 .replace("{NumberOfChoices}", () -> lotterySix.numberOfChoices + "")
                 .replace("{PricePerBet}", () -> StringUtils.formatComma(lotterySix.pricePerBet))
                 .replace("{TotalBets}", () -> StringUtils.formatComma(game.getTotalBets()))

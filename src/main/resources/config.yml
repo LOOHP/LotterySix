@@ -155,6 +155,19 @@ GUI:
     NoWinnings: "&7No Winnings"
     Nothing:
       - "&cNo bets were placed"
+    ListHistoricGames:
+      - "&fHistoric Games List"
+      - "&7Look up older games"
+    HistoricGameListTitle: "&2{FromGameNumber} - {ToGameNumber}"
+    HistoricGameListInfo:
+      - "&aGame Number: {GameNumberRaw}"
+      - "&7Click to view details"
+    HistoricGameListSpecialName:
+      - "{SpecialName}"
+    HistoricNewerGames:
+      - "&aNewer Games"
+    HistoricOlderGames:
+      - "&eOlder Games"
     LookupHistoricGames:
       - "&fLook up historic games"
       - "&7Click and enter Game Number"

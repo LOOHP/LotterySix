@@ -23,7 +23,9 @@ package com.loohp.lotterysix;
 import com.cryptomorin.xseries.XMaterial;
 import com.loohp.lotterysix.game.LotterySix;
 import com.loohp.lotterysix.game.lottery.CompletedLotterySixGame;
+import com.loohp.lotterysix.game.lottery.CompletedLotterySixGameIndex;
 import com.loohp.lotterysix.game.lottery.GameNumber;
+import com.loohp.lotterysix.game.lottery.LazyCompletedLotterySixGameList;
 import com.loohp.lotterysix.game.lottery.PlayableLotterySixGame;
 import com.loohp.lotterysix.game.objects.AddBetResult;
 import com.loohp.lotterysix.game.objects.BetUnitType;
@@ -34,6 +36,7 @@ import com.loohp.lotterysix.game.objects.PlayerBets;
 import com.loohp.lotterysix.game.objects.PlayerPreferenceKey;
 import com.loohp.lotterysix.game.objects.PlayerStatsKey;
 import com.loohp.lotterysix.game.objects.PlayerWinnings;
+import com.loohp.lotterysix.game.objects.WinningNumbers;
 import com.loohp.lotterysix.game.objects.betnumbers.BetNumbers;
 import com.loohp.lotterysix.game.objects.betnumbers.BetNumbersBuilder;
 import com.loohp.lotterysix.game.objects.betnumbers.BetNumbersType;
@@ -78,6 +81,8 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -88,7 +93,11 @@ import java.util.stream.Collectors;
 public class LotteryPluginGUI implements Listener {
 
     private static String[] fillChars(int arrays) {
-        String[] strings = new String[arrays];
+        return fillChars(arrays, 0);
+    }
+
+    private static String[] fillChars(int arrays, int trail) {
+        String[] strings = new String[arrays + trail];
         char c = 'a';
         for (int i = 0; i < strings.length; i++) {
             StringBuilder sb = new StringBuilder(9);
@@ -235,9 +244,23 @@ public class LotteryPluginGUI implements Listener {
         Bukkit.getScheduler().runTaskLater(plugin, () -> inventoryGui.destroy(), 1);
     }
 
+    public void removeSecondLast(HumanEntity player) {
+        Deque<InventoryGui> history = InventoryGui.getHistory(player);
+        if (history.size() <= 1) {
+            return;
+        }
+        Iterator<InventoryGui> itr = history.descendingIterator();
+        itr.next();
+        InventoryGui inventoryGui = itr.next();
+        itr.remove();
+        Bukkit.getScheduler().runTaskLater(plugin, () -> inventoryGui.destroy(), 1);
+    }
+
     public void checkReopen(HumanEntity player) {
         if (instance.getPlayerPreferenceManager().getLotteryPlayer(player.getUniqueId()).getPreference(PlayerPreferenceKey.REOPEN_MENU_ON_PURCHASE, boolean.class)) {
-            getMainMenu((Player) player).show(player);
+            if (InventoryGui.getHistory(player).isEmpty()) {
+                getMainMenu((Player) player).show(player);
+            }
         }
     }
 
@@ -1121,37 +1144,114 @@ public class LotteryPluginGUI implements Listener {
                 }, 1);
                 return true;
             }, LotteryUtils.formatPlaceholders(player, instance.guiLastResultsYourBets, instance, game)));
-
-            ItemStack left = XMaterial.PAPER.parseItem();
-            ItemMeta leftMeta = left.getItemMeta();
-            leftMeta.setDisplayName(game.getGameNumber() == null ? " " : game.getGameNumber().toString());
-            left.setItemMeta(leftMeta);
             gui.addElement(new StaticGuiElement('j', XMaterial.MAP.parseItem(), click -> {
                 Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
-                Bukkit.getScheduler().runTaskLater(plugin, () -> new AnvilGUI.Builder().plugin(plugin)
-                        .title(LotteryUtils.formatPlaceholders(player, instance.guiGameNumberInputTitle, instance, game))
-                        .itemLeft(left)
-                        .onComplete(completion -> {
-                            Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
-                                String input = completion.getText().trim();
-                                try {
-                                    GameNumber gameNumber = GameNumber.fromString(input);
-                                    CompletedLotterySixGame targetGame = instance.getCompletedGames().get(gameNumber);
-                                    if (targetGame == null) {
-                                        player.sendMessage(instance.messageGameNumberNotFound);
-                                    } else {
-                                        Bukkit.getScheduler().runTaskLater(plugin, () -> getPastResults(player, targetGame).show(player), 2);
-                                    }
-                                } catch (Exception e) {
-                                    player.sendMessage(instance.messageGameNumberNotFound);
-                                }
-                            });
-                            return Collections.singletonList(AnvilGUI.ResponseAction.close());
-                        })
-                        .open(player), 2);
+                Bukkit.getScheduler().runTaskLater(plugin, () -> getPastResultsList(player, game).show(player), 2);
                 return true;
-            }, LotteryUtils.formatPlaceholders(player, instance.guiLastResultsLookupHistoricGames, instance, game)));
+            }, LotteryUtils.formatPlaceholders(player, instance.guiLastResultsListHistoricGames, instance, game)));
         }
+        gui.setCloseAction(action -> {
+            Bukkit.getScheduler().runTaskLater(plugin, () -> checkReopen(action.getPlayer()), 5);
+            return false;
+        });
+
+        return gui;
+    }
+
+    public InventoryGui getPastResultsList(Player player, CompletedLotterySixGame lastSelectedGame) {
+        return getPastResultsList(player, instance.getCompletedGames().indexOf(lastSelectedGame), lastSelectedGame);
+    }
+
+    public InventoryGui getPastResultsList(Player player, int currentPosition, CompletedLotterySixGame lastSelectedGame) {
+        LazyCompletedLotterySixGameList completedGames = instance.getCompletedGames();
+        LinkedList<CompletedLotterySixGameIndex> list = new LinkedList<>();
+        Map<CompletedLotterySixGameIndex, Integer> position = new HashMap<>();
+        int startPosition = currentPosition - currentPosition % 5;
+        for (int i = startPosition; i < startPosition + 5 && i < completedGames.size(); i++) {
+            CompletedLotterySixGameIndex gameIndex = completedGames.getIndex(i);
+            list.add(gameIndex);
+            position.put(gameIndex, i);
+        }
+        String[] guiSetup = fillChars(5, 1);
+        char lastChar = guiSetup[guiSetup.length - 1].charAt(8);
+        guiSetup[5] = " \0  \1  \2 ";
+        InventoryGui gui = new InventoryGui(plugin, LotteryUtils.formatPlaceholders(player, instance.guiLastResultsHistoricGameListTitle
+                .replace("{FromGameNumber}", list.getFirst().getGameNumber() + "").replace("{ToGameNumber}", list.getLast().getGameNumber() + ""), instance, lastSelectedGame), guiSetup);
+        gui.setFiller(XMaterial.BLACK_STAINED_GLASS_PANE.parseItem());
+        if (startPosition >= 5) {
+            gui.addElement(new StaticGuiElement('\0', XMaterial.ARROW.parseItem(), click -> {
+                Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                    getPastResultsList(player, currentPosition - 5, lastSelectedGame).show(player);
+                    removeSecondLast(player);
+                }, 1);
+                return true;
+            }, LotteryUtils.formatPlaceholders(player, instance.guiLastResultsHistoricNewerGames, instance, lastSelectedGame)));
+        } else {
+            gui.addElement(new StaticGuiElement('\0', XMaterial.BLACK_STAINED_GLASS_PANE.parseItem(), ChatColor.LIGHT_PURPLE.toString()));
+        }
+        if (startPosition + 5 < completedGames.size()) {
+            gui.addElement(new StaticGuiElement('\2', XMaterial.ARROW.parseItem(), click -> {
+                Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                    getPastResultsList(player, currentPosition + 5, lastSelectedGame).show(player);
+                    removeSecondLast(player);
+                }, 1);
+                return true;
+            }, LotteryUtils.formatPlaceholders(player, instance.guiLastResultsHistoricOlderGames, instance, lastSelectedGame)));
+        } else {
+            gui.addElement(new StaticGuiElement('\2', XMaterial.BLACK_STAINED_GLASS_PANE.parseItem(), ChatColor.LIGHT_PURPLE.toString()));
+        }
+        char c = 'a';
+        for (CompletedLotterySixGameIndex gameIndex : list) {
+            gui.addElement(new StaticGuiElement(c++, XMaterial.PAPER.parseItem(), click -> {
+                Bukkit.getScheduler().runTaskLater(plugin, () -> close(player, gui, false), 1);
+                Bukkit.getScheduler().runTaskLater(plugin, () -> getPastResults(player, completedGames.get(position.get(gameIndex))).show(player), 2);
+                return true;
+            }, LotteryUtils.formatPlaceholders(player, instance.guiLastResultsHistoricGameListInfo, instance, gameIndex)));
+            if (gameIndex.hasSpecialName()) {
+                gui.addElement(new StaticGuiElement(c++, setEnchanted(XMaterial.GOLD_INGOT.parseItem()), LotteryUtils.formatPlaceholders(player, instance.guiLastResultsHistoricGameListSpecialName, instance, gameIndex)));
+            } else {
+                gui.addElement(new StaticGuiElement(c++, new ItemStack(Material.AIR), ChatColor.LIGHT_PURPLE.toString()));
+            }
+            WinningNumbers winningNumbers = gameIndex.getDrawResult();
+            for (int i : winningNumbers.getNumbersOrdered()) {
+                gui.addElement(new StaticGuiElement(c++, getNumberItem(i), getNumberColor(i) + "" + i));
+            }
+            int specialNumber = winningNumbers.getSpecialNumber();
+            gui.addElement(new StaticGuiElement(c++, getNumberItem(specialNumber, true), getNumberColor(specialNumber) + "" + specialNumber));
+        }
+        while (c <= lastChar) {
+            gui.addElement(new StaticGuiElement(c++, new ItemStack(Material.AIR), ChatColor.LIGHT_PURPLE.toString()));
+        }
+
+        ItemStack left = XMaterial.PAPER.parseItem();
+        ItemMeta leftMeta = left.getItemMeta();
+        leftMeta.setDisplayName(lastSelectedGame.getGameNumber() == null ? " " : lastSelectedGame.getGameNumber().toString());
+        left.setItemMeta(leftMeta);
+        gui.addElement(new StaticGuiElement('\1', XMaterial.MAP.parseItem(), click -> {
+            Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
+            Bukkit.getScheduler().runTaskLater(plugin, () -> new AnvilGUI.Builder().plugin(plugin)
+                    .title(LotteryUtils.formatPlaceholders(player, instance.guiGameNumberInputTitle, instance, lastSelectedGame))
+                    .itemLeft(left)
+                    .onComplete(completion -> {
+                        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+                            String input = completion.getText().trim();
+                            try {
+                                GameNumber gameNumber = GameNumber.fromString(input);
+                                CompletedLotterySixGame targetGame = instance.getCompletedGames().get(gameNumber);
+                                if (targetGame == null) {
+                                    player.sendMessage(instance.messageGameNumberNotFound);
+                                } else {
+                                    Bukkit.getScheduler().runTaskLater(plugin, () -> getPastResults(player, targetGame).show(player), 2);
+                                }
+                            } catch (Exception e) {
+                                player.sendMessage(instance.messageGameNumberNotFound);
+                            }
+                        });
+                        return Collections.singletonList(AnvilGUI.ResponseAction.close());
+                    })
+                    .open(player), 2);
+            return true;
+        }, LotteryUtils.formatPlaceholders(player, instance.guiLastResultsLookupHistoricGames, instance, lastSelectedGame)));
         gui.setCloseAction(action -> {
             Bukkit.getScheduler().runTaskLater(plugin, () -> checkReopen(action.getPlayer()), 5);
             return false;

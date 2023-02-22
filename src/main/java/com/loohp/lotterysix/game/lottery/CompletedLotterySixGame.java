@@ -108,7 +108,7 @@ public class CompletedLotterySixGame implements IDedGame {
     }
 
     public CompletedLotterySixGameIndex toGameIndex() {
-        return new CompletedLotterySixGameIndex(gameId, datetime, gameNumber);
+        return new CompletedLotterySixGameIndex(gameId, datetime, gameNumber, drawResult, specialName);
     }
 
     public long getDatetime() {
@@ -116,7 +116,7 @@ public class CompletedLotterySixGame implements IDedGame {
     }
 
     public boolean hasSpecialName() {
-        return specialName != null;
+        return specialName != null && !specialName.isEmpty();
     }
 
     public String getSpecialName() {

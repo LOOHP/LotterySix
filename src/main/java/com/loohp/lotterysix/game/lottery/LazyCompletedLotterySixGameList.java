@@ -20,6 +20,8 @@
 
 package com.loohp.lotterysix.game.lottery;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
@@ -39,12 +41,19 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Spliterator;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 public class LazyCompletedLotterySixGameList extends AbstractList<CompletedLotterySixGame> {
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+
+    public static CompletedLotterySixGame loadFromFile(File file) {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(Files.newInputStream(file.toPath()), StandardCharsets.UTF_8))) {
+            return GSON.fromJson(reader, CompletedLotterySixGame.class);
+        } catch (IOException e) {
+            throw new IllegalStateException("Do not remove LotterySix game data from the file system while the server is running, please restart the server now", e);
+        }
+    }
 
     private final File lotteryDataFolder;
     private final List<CompletedLotterySixGameIndex> gameIndexes;
@@ -53,7 +62,8 @@ public class LazyCompletedLotterySixGameList extends AbstractList<CompletedLotte
     public LazyCompletedLotterySixGameList(File lotteryDataFolder) {
         this.lotteryDataFolder = lotteryDataFolder;
         this.gameIndexes = Collections.synchronizedList(new ArrayList<>());
-        this.cachedGames = new ConcurrentHashMap<>();
+        Cache<UUID, CompletedLotterySixGame> cache = CacheBuilder.newBuilder().maximumSize(20).build();
+        this.cachedGames = cache.asMap();
     }
 
     public Object getIterateLock() {
@@ -67,11 +77,7 @@ public class LazyCompletedLotterySixGameList extends AbstractList<CompletedLotte
         if (game != null) {
             return game;
         }
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(Files.newInputStream(new File(lotteryDataFolder, gameIndex.getDataFileName()).toPath()), StandardCharsets.UTF_8))) {
-            game = GSON.fromJson(reader, CompletedLotterySixGame.class);
-        } catch (IOException e) {
-            throw new IllegalStateException("Do not remove LotterySix game data from the file system while the server is running, please restart the server now", e);
-        }
+        game = loadFromFile(new File(lotteryDataFolder, gameIndex.getDataFileName()));
         cachedGames.put(gameIndex.getGameId(), game);
         return game;
     }

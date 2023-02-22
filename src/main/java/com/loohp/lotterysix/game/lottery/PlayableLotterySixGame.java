@@ -142,7 +142,7 @@ public class PlayableLotterySixGame implements IDedGame {
     }
 
     public boolean hasSpecialName() {
-        return specialName != null;
+        return specialName != null && !specialName.isEmpty();
     }
 
     public String getSpecialName() {
