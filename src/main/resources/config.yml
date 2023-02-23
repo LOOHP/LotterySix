@@ -165,6 +165,7 @@ GUI:
     HistoricGameListTitle: "&2{FromGameNumber} - {ToGameNumber}"
     HistoricGameListInfo:
       - "&aGame Number: {GameNumberRaw}"
+      - "&aDraw Date: {Date}"
       - "&7Click to view details"
     HistoricGameListSpecialName:
       - "{SpecialName}"
