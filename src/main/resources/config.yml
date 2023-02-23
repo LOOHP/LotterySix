@@ -90,6 +90,10 @@ LotterySix:
   MaxTopPlacesPrize: 9223372036854775807
 
 Restrictions:
+  #Allow players to still place bets even if their balance is going to be negative
+  #This setting is only effective if your economy allows negative balances
+  #Defaults to false as LotterySix aims to not make players go in debt due to playing the game
+  AllowLoans: false
   #Max amount of money a player can bet in a single round of LotterySix
   #Setting -1 means unlimited
   #To add a player to a group, give the permission "lotterysix.betlimit.<group>"

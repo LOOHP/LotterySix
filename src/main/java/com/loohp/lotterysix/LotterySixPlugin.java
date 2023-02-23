@@ -304,6 +304,12 @@ public class LotterySixPlugin extends JavaPlugin implements Listener {
         if (player == null) {
             return false;
         }
+        if (!instance.allowLoans) {
+            double currentBalance = econ.getBalance(player);
+            if (currentBalance - amount < 0) {
+                return false;
+            }
+        }
         return econ.withdrawPlayer(player, amount).transactionSuccess();
     }
 

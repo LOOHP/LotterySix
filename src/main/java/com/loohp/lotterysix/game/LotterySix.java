@@ -252,6 +252,7 @@ public class LotterySix implements AutoCloseable {
     public String discordSRVSlashCommandsViewNumberStatisticsTimesDrawnField;
     public String discordSRVSlashCommandsViewNumberStatisticsThumbnailURL;
 
+    public boolean allowLoans;
     public Map<String, Long> playerBetLimit;
 
     private final ExecutorService saveDataService;
@@ -873,6 +874,7 @@ public class LotterySix implements AutoCloseable {
         discordSRVSlashCommandsViewNumberStatisticsTimesDrawnField = config.getConfiguration().getString("DiscordSRV.SlashCommands.ViewNumberStatistics.TimesDrawnField");
         discordSRVSlashCommandsViewNumberStatisticsThumbnailURL = config.getConfiguration().getString("DiscordSRV.SlashCommands.ViewNumberStatistics.ThumbnailURL");
 
+        allowLoans = config.getConfiguration().getBoolean("Restrictions.AllowLoans");
         playerBetLimit = new HashMap<>();
         for (String group : config.getConfiguration().getConfigurationSection("Restrictions.BetLimitPerRound").getKeys(false)) {
             playerBetLimit.put(group, config.getConfiguration().getLong("Restrictions.BetLimitPerRound." + group));
