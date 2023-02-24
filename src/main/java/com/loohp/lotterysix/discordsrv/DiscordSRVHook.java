@@ -186,19 +186,20 @@ public class DiscordSRVHook implements Listener, SlashCommandProvider {
                                     List<PlayerWinnings> winningsForBet = game.getPlayerWinningsByBet(betId).values().stream().flatMap(each -> each.stream()).collect(Collectors.toList());
                                     PlayerBets bets = winnings.getWinningBet(game);
                                     BetNumbers betNumbers = bets.getChosenNumbers();
-                                    String[] numberStrings = betNumbers.toFormattedString().replace("/ ", "/\n\0").split("\0");
+                                    String[] numberStrings = betNumbers.toFormattedString().replace("/ ", "/\n").split("\n");
                                     int i = 0;
                                     for (String numbers : numberStrings) {
-                                        sb.append(numbers);
                                         int finalI = i;
                                         Optional<PlayerWinnings> optWinnings = winningsForBet.stream().filter(each -> each.getWinningCombination().getNumbers().equals(betNumbers.getSet(finalI))).findFirst();
                                         if (optWinnings.isPresent()) {
+                                            sb.append("**").append(ChatColor.stripColor(numbers)).append("**\n");
                                             PlayerWinnings localWinnings = optWinnings.get();
-                                            sb.append(ChatColor.stripColor(lotterySix.winningsDescription
+                                            sb.append("**").append(ChatColor.stripColor(lotterySix.winningsDescription
                                                     .replace("{Tier}", lotterySix.tierNames.get(localWinnings.getTier()))
                                                     .replace("{Winnings}", StringUtils.formatComma(localWinnings.getWinnings()))
-                                                    .replace("{UnitPrice}", StringUtils.formatComma(game.getPricePerBet(localWinnings.getWinningBet(game).getType())))));
+                                                    .replace("{UnitPrice}", StringUtils.formatComma(game.getPricePerBet(localWinnings.getWinningBet(game).getType()))))).append("**");
                                         } else {
+                                            sb.append(ChatColor.stripColor(numbers)).append("\n");
                                             sb.append(ChatColor.stripColor(lotterySix.winningsDescription
                                                     .replace("{Tier}", LotteryUtils.formatPlaceholders(null, lotterySix.guiLastResultsNoWinnings, lotterySix, game))
                                                     .replace("{Winnings}", StringUtils.formatComma(0))
