@@ -186,13 +186,13 @@ public class DiscordSRVHook implements Listener, SlashCommandProvider {
                                     List<PlayerWinnings> winningsForBet = game.getPlayerWinningsByBet(betId).values().stream().flatMap(each -> each.stream()).collect(Collectors.toList());
                                     PlayerBets bets = winnings.getWinningBet(game);
                                     BetNumbers betNumbers = bets.getChosenNumbers();
-                                    String[] numberStrings = betNumbers.toFormattedString().replace("/ ", "/\n").split("\n");
+                                    String[] numberStrings = betNumbers.toString().replace("/ ", "/\n").split("\n");
                                     int i = 0;
                                     for (String numbers : numberStrings) {
                                         int finalI = i;
                                         Optional<PlayerWinnings> optWinnings = winningsForBet.stream().filter(each -> each.getWinningCombination().getNumbers().equals(betNumbers.getSet(finalI))).findFirst();
                                         if (optWinnings.isPresent()) {
-                                            sb.append("**").append(ChatColor.stripColor(numbers)).append("**\n");
+                                            sb.append("**").append(numbers).append("**\n");
                                             PlayerWinnings localWinnings = optWinnings.get();
                                             sb.append("**").append(ChatColor.stripColor(lotterySix.winningsDescription
                                                     .replace("{Tier}", lotterySix.tierNames.get(localWinnings.getTier()))
