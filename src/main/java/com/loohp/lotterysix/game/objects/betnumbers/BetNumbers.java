@@ -173,12 +173,40 @@ public class BetNumbers implements FormattedString {
         return combined;
     }
 
+    public int setsIndexOf(Set<Integer> numberSet) {
+        if (numbers.equals(numberSet)) {
+            return 0;
+        }
+        if (hasNoAdditionalSets()) {
+            return -1;
+        }
+        return additionalSets.indexOf(numberSet);
+    }
+
+    public Set<Integer> getSet(int index) {
+        if (index == 0) {
+            return numbers;
+        }
+        if (hasNoAdditionalSets()) {
+            return null;
+        }
+        return additionalSets.get(index - 1);
+    }
+
     public BetNumbersType getType() {
         return type;
     }
 
+    public boolean isSingle() {
+        return !isCombination() && !isBulk();
+    }
+
     public boolean isCombination() {
-        return getSetsSize() > 1 || type.equals(BetNumbersType.MULTIPLE) || type.equals(BetNumbersType.BANKER);
+        return type.equals(BetNumbersType.MULTIPLE) || type.equals(BetNumbersType.BANKER);
+    }
+
+    public boolean isBulk() {
+        return getSetsSize() > 1;
     }
 
     @Override

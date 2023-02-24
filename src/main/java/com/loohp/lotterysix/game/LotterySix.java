@@ -126,6 +126,9 @@ public class LotterySix implements AutoCloseable {
     public Map<PrizeTier, String> tierNames;
     public String ticketDescription;
     public String winningsDescription;
+    public String multipleWinningsDescription;
+    public String bulkWinningsDescription;
+    public String combinationWinningsDescription;
 
     public boolean updaterEnabled;
 
@@ -754,6 +757,9 @@ public class LotterySix implements AutoCloseable {
 
         ticketDescription = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Formatting.TicketDescription"));
         winningsDescription = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Formatting.WinningsDescription"));
+        multipleWinningsDescription = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Formatting.MultipleWinningsDescription"));
+        bulkWinningsDescription = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Formatting.BulkWinningsDescription"));
+        combinationWinningsDescription = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Formatting.CombinationWinningsDescription"));
 
         updaterEnabled = config.getConfiguration().getBoolean("Options.Updater");
 

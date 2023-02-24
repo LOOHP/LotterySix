@@ -29,6 +29,8 @@ import com.loohp.lotterysix.game.lottery.PlayableLotterySixGame;
 import com.loohp.lotterysix.game.objects.LotterySixAction;
 import com.loohp.lotterysix.game.objects.PlayerBets;
 import com.loohp.lotterysix.game.objects.PlayerWinnings;
+import com.loohp.lotterysix.game.objects.PrizeTier;
+import com.loohp.lotterysix.game.objects.betnumbers.BetNumbers;
 import com.loohp.lotterysix.utils.LotteryUtils;
 import com.loohp.lotterysix.utils.StringUtils;
 import com.loohp.lotterysix.utils.SyncUtils;
@@ -54,8 +56,11 @@ import java.awt.Color;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 public class DiscordSRVHook implements Listener, SlashCommandProvider {
 
@@ -171,26 +176,77 @@ public class DiscordSRVHook implements Listener, SlashCommandProvider {
                     if (!playerBets.isEmpty()) {
                         str.append("\n\n").append(lotterySix.discordSRVSlashCommandsViewPastDrawYourBets).append("\n");
                         List<PlayerWinnings> winningsList = game.getSortedPlayerWinnings(uuid);
+                        Set<UUID> displayedBets = new HashSet<>();
                         for (PlayerWinnings winnings : winningsList) {
-                            StringBuilder sb = new StringBuilder();
-                            sb.append("**").append(winnings.getWinningBet(game).getChosenNumbers().toString().replace("/ ", "/\n")).append("**\n");
-                            if (winnings.isCombination(game)) {
-                                sb.append("(").append(winnings.getWinningCombination().toString()).append(")\n");
-                            }
-                            sb.append("**").append(ChatColor.stripColor(lotterySix.winningsDescription
-                                    .replace("{Tier}", lotterySix.tierNames.get(winnings.getTier()))
-                                    .replace("{Winnings}", StringUtils.formatComma(winnings.getWinnings()))
-                                    .replace("{UnitPrice}", StringUtils.formatComma(game.getPricePerBet(winnings.getWinningBet(game).getType()))))).append("**\n\n");
-                            if (str.length() + sb.length() < 4090) {
-                                str.append(sb);
-                            } else {
-                                exceedLimit = true;
-                                break;
+                            UUID betId = winnings.getWinningBetId();
+                            if (!displayedBets.contains(betId)) {
+                                displayedBets.add(betId);
+                                StringBuilder sb = new StringBuilder();
+                                if (winnings.isBulk(game)) {
+                                    List<PlayerWinnings> winningsForBet = game.getPlayerWinningsByBet(betId).values().stream().flatMap(each -> each.stream()).collect(Collectors.toList());
+                                    PlayerBets bets = winnings.getWinningBet(game);
+                                    BetNumbers betNumbers = bets.getChosenNumbers();
+                                    String[] numberStrings = betNumbers.toFormattedString().replace("/ ", "/\n\0").split("\0");
+                                    int i = 0;
+                                    for (String numbers : numberStrings) {
+                                        sb.append(numbers);
+                                        int finalI = i;
+                                        Optional<PlayerWinnings> optWinnings = winningsForBet.stream().filter(each -> each.getWinningCombination().getNumbers().equals(betNumbers.getSet(finalI))).findFirst();
+                                        if (optWinnings.isPresent()) {
+                                            PlayerWinnings localWinnings = optWinnings.get();
+                                            sb.append(ChatColor.stripColor(lotterySix.winningsDescription
+                                                    .replace("{Tier}", lotterySix.tierNames.get(localWinnings.getTier()))
+                                                    .replace("{Winnings}", StringUtils.formatComma(localWinnings.getWinnings()))
+                                                    .replace("{UnitPrice}", StringUtils.formatComma(game.getPricePerBet(localWinnings.getWinningBet(game).getType())))));
+                                        } else {
+                                            sb.append(ChatColor.stripColor(lotterySix.winningsDescription
+                                                    .replace("{Tier}", LotteryUtils.formatPlaceholders(null, lotterySix.guiLastResultsNoWinnings, lotterySix, game))
+                                                    .replace("{Winnings}", StringUtils.formatComma(0))
+                                                    .replace("{UnitPrice}", StringUtils.formatComma(game.getPricePerBet(bets.getType())))));
+                                        }
+                                        sb.append("\n");
+                                        i++;
+                                    }
+                                    sb.append("**").append(ChatColor.stripColor(lotterySix.bulkWinningsDescription
+                                            .replace("{HighestTier}", lotterySix.tierNames.get(winnings.getTier()))
+                                            .replace("{Winnings}", StringUtils.formatComma(winningsForBet.stream().mapToLong(each -> each.getWinnings()).sum()))
+                                            .replace("{UnitPrice}", StringUtils.formatComma(game.getPricePerBet(winnings.getWinningBet(game).getType()))))).append("**\n\n");
+                                } else {
+                                    sb.append("**").append(winnings.getWinningBet(game).getChosenNumbers().toString().replace("/ ", "/\n")).append("**\n");
+                                    if (winnings.isCombination(game)) {
+                                        Map<PrizeTier, List<PlayerWinnings>> winningsForBet = game.getPlayerWinningsByBet(betId);
+                                        for (PrizeTier prizeTier : PrizeTier.values()) {
+                                            List<PlayerWinnings> playerWinnings = winningsForBet.get(prizeTier);
+                                            if (playerWinnings != null && !playerWinnings.isEmpty()) {
+                                                sb.append(ChatColor.stripColor(lotterySix.multipleWinningsDescription
+                                                        .replace("{Tier}", lotterySix.tierNames.get(prizeTier))
+                                                        .replace("{Times}", String.valueOf(playerWinnings.size()))
+                                                        .replace("{Winnings}", StringUtils.formatComma(playerWinnings.get(0).getWinnings()))
+                                                        .replace("{UnitPrice}", StringUtils.formatComma(game.getPricePerBet(winnings.getWinningBet(game).getType()))))).append("\n");
+                                            }
+                                        }
+                                        sb.append("**").append(ChatColor.stripColor(lotterySix.combinationWinningsDescription
+                                                .replace("{HighestTier}", lotterySix.tierNames.get(winnings.getTier()))
+                                                .replace("{Winnings}", StringUtils.formatComma(winningsForBet.values().stream().flatMap(each -> each.stream()).mapToLong(each -> each.getWinnings()).sum()))
+                                                .replace("{UnitPrice}", StringUtils.formatComma(game.getPricePerBet(winnings.getWinningBet(game).getType()))))).append("**\n\n");
+                                    } else {
+                                        sb.append("**").append(ChatColor.stripColor(lotterySix.winningsDescription
+                                                .replace("{Tier}", lotterySix.tierNames.get(winnings.getTier()))
+                                                .replace("{Winnings}", StringUtils.formatComma(winnings.getWinnings()))
+                                                .replace("{UnitPrice}", StringUtils.formatComma(game.getPricePerBet(winnings.getWinningBet(game).getType()))))).append("**\n\n");
+                                    }
+                                }
+                                if (str.length() + sb.length() < 4090) {
+                                    str.append(sb);
+                                } else {
+                                    exceedLimit = true;
+                                    break;
+                                }
                             }
                         }
                         if (!exceedLimit) {
                             for (PlayerBets bets : playerBets) {
-                                if (winningsList.stream().noneMatch(each -> each.getWinningBet(game).getBetId().equals(bets.getBetId()))) {
+                                if (!displayedBets.contains(bets.getBetId())) {
                                     StringBuilder sb = new StringBuilder();
                                     sb.append(bets.getChosenNumbers().toString().replace("/ ", "/\n")).append("\n").append(ChatColor.stripColor(lotterySix.winningsDescription
                                                     .replace("{Tier}", lotterySix.discordSRVSlashCommandsViewPastDrawNoWinnings)

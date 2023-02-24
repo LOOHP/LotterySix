@@ -24,6 +24,7 @@ import com.cryptomorin.xseries.XMaterial;
 import com.loohp.lotterysix.LotterySixPlugin;
 import com.loohp.lotterysix.floodgate.FloodgateHook;
 import io.github.bananapuncher714.nbteditor.NBTEditor;
+import net.md_5.bungee.api.chat.BaseComponent;
 import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.chat.ComponentSerializer;
 import org.bukkit.Material;
@@ -69,13 +70,17 @@ public class BookUtils {
     }
 
     public static ItemStack setPages(ItemStack book, List<String> pages) {
+        return setPagesComponent(book, pages.stream().map(each -> new TextComponent(each)).collect(Collectors.toList()));
+    }
+
+    public static ItemStack setPagesComponent(ItemStack book, List<BaseComponent> pagesComponent) {
         if (book == null) {
             throw new IllegalArgumentException("Book cannot be null");
         }
         if (!book.getType().equals(MATERIAL_WRITTEN_BOOK)) {
             throw new IllegalArgumentException("Book must be Material.WRITTEN_BOOK");
         }
-        pages = pages.stream().map(each -> ComponentSerializer.toString(new TextComponent(each))).collect(Collectors.toList());
+        List<String> pages = pagesComponent.stream().map(each -> ComponentSerializer.toString(each)).collect(Collectors.toList());
         BookMeta meta = (BookMeta) book.getItemMeta();
         List<String> dummy = new ArrayList<>(pages.size());
         for (int i = 0; i < pages.size(); i++) {

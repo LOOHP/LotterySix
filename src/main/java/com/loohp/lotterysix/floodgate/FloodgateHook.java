@@ -22,14 +22,21 @@ package com.loohp.lotterysix.floodgate;
 
 import com.cryptomorin.xseries.XMaterial;
 import com.loohp.lotterysix.LotterySixPlugin;
-import org.bukkit.ChatColor;
+import net.md_5.bungee.api.ChatColor;
+import net.md_5.bungee.api.chat.BaseComponent;
+import net.md_5.bungee.api.chat.HoverEvent;
+import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta;
 import org.geysermc.cumulus.form.SimpleForm;
 import org.geysermc.floodgate.api.FloodgateApi;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 public class FloodgateHook {
 
@@ -52,8 +59,32 @@ public class FloodgateHook {
         if (!book.getType().equals(MATERIAL_WRITTEN_BOOK)) {
             throw new IllegalArgumentException("Book must be Material.WRITTEN_BOOK");
         }
-        String pages = String.join("\n\n" + ChatColor.RESET + "---------------------\n\n", ((BookMeta) book.getItemMeta()).getPages());
-        FloodgateApi.getInstance().sendForm(uuid, SimpleForm.builder().title("").content(pages));
+        List<BaseComponent[]> pages = ((BookMeta) book.getItemMeta()).spigot().getPages();
+        List<String> strPages = pages.stream().map(each -> {
+            BaseComponent component = Arrays.stream(each).reduce(new TextComponent(), (a, b) -> {
+                a.addExtra(b);
+                return a;
+            });
+            appendHoverEvents(component, h -> h.getAction().equals(HoverEvent.Action.SHOW_TEXT));
+            return component.toLegacyText();
+        }).collect(Collectors.toList());
+        String result = String.join("\n\n" + ChatColor.RESET + "---------------------\n\n", strPages);
+        FloodgateApi.getInstance().sendForm(uuid, SimpleForm.builder().title("").content(result));
+    }
+
+    private static void appendHoverEvents(BaseComponent component, Predicate<HoverEvent> predicate) {
+        if (component.getHoverEvent() != null && predicate.test(component.getHoverEvent())) {
+            boolean endsWithNewLine = component.toPlainText().endsWith("\n");
+            component.addExtra((endsWithNewLine ? "" : "\n") + ChatColor.RESET + "(" + Arrays.stream(component.getHoverEvent().getValue()).reduce(new TextComponent(), (a, b) -> {
+                a.addExtra(b);
+                return a;
+            }).toLegacyText() + ChatColor.RESET + ")\n");
+        }
+        if (component.getExtra() != null) {
+            for (BaseComponent extra : component.getExtra()) {
+                appendHoverEvents(extra, predicate);
+            }
+        }
     }
 
 }

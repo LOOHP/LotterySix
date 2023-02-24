@@ -86,6 +86,10 @@ public class PlayerWinnings {
         return getWinningBet(game).getChosenNumbers().isCombination();
     }
 
+    public boolean isBulk(CompletedLotterySixGame game) {
+        return getWinningBet(game).getChosenNumbers().isBulk();
+    }
+
     public long getWinnings() {
         return winnings;
     }

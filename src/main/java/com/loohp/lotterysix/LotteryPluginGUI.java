@@ -36,6 +36,7 @@ import com.loohp.lotterysix.game.objects.PlayerBets;
 import com.loohp.lotterysix.game.objects.PlayerPreferenceKey;
 import com.loohp.lotterysix.game.objects.PlayerStatsKey;
 import com.loohp.lotterysix.game.objects.PlayerWinnings;
+import com.loohp.lotterysix.game.objects.PrizeTier;
 import com.loohp.lotterysix.game.objects.WinningNumbers;
 import com.loohp.lotterysix.game.objects.betnumbers.BetNumbers;
 import com.loohp.lotterysix.game.objects.betnumbers.BetNumbersBuilder;
@@ -52,7 +53,9 @@ import de.themoep.inventorygui.InventoryGui;
 import de.themoep.inventorygui.StaticGuiElement;
 import io.github.bananapuncher714.nbteditor.NBTEditor;
 import net.md_5.bungee.api.ChatColor;
+import net.md_5.bungee.api.chat.BaseComponent;
 import net.md_5.bungee.api.chat.ClickEvent;
+import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.TextComponent;
 import net.wesjd.anvilgui.AnvilGUI;
 import org.bukkit.Bukkit;
@@ -81,12 +84,15 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -1111,44 +1117,112 @@ public class LotteryPluginGUI implements Listener {
                     Bukkit.getScheduler().runTaskLaterAsynchronously(plugin, () -> {
                         String winningNumberStr = game.getDrawResult().toFormattedString();
 
-                        List<String> pages = new ArrayList<>();
+                        List<BaseComponent> pages = new ArrayList<>();
                         List<PlayerWinnings> winningsList = game.getSortedPlayerWinnings(player.getUniqueId());
+                        Set<UUID> displayedBets = new HashSet<>();
                         for (PlayerWinnings winnings : winningsList) {
                             if (pages.size() > 100) {
                                 break;
                             }
-                            String str = winningNumberStr + "\n\n" + winnings.getWinningBet(game).getChosenNumbers().toFormattedString().replace("/ ", "/\n") + "\n";
-                            if (winnings.isCombination(game)) {
-                                str += ChatColor.BLACK + "(" + winnings.getWinningCombination().toFormattedString() + ChatColor.BLACK + ")\n";
+                            UUID betId = winnings.getWinningBetId();
+                            if (!displayedBets.contains(betId)) {
+                                displayedBets.add(betId);
+                                if (winnings.isBulk(game)) {
+                                    List<PlayerWinnings> winningsForBet = game.getPlayerWinningsByBet(betId).values().stream().flatMap(each -> each.stream()).collect(Collectors.toList());
+                                    TextComponent text = new TextComponent(winningNumberStr + "\n\n");
+                                    PlayerBets bets = winnings.getWinningBet(game);
+                                    BetNumbers betNumbers = bets.getChosenNumbers();
+                                    String[] numberStrings = betNumbers.toFormattedString().replace("/ ", "/\n\0").split("\0");
+                                    int i = 0;
+                                    for (String numbers : numberStrings) {
+                                        TextComponent numbersText = new TextComponent(numbers);
+                                        int finalI = i;
+                                        Optional<PlayerWinnings> optWinnings = winningsForBet.stream().filter(each -> each.getWinningCombination().getNumbers().equals(betNumbers.getSet(finalI))).findFirst();
+                                        if (optWinnings.isPresent()) {
+                                            PlayerWinnings localWinnings = optWinnings.get();
+                                            numbersText.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new BaseComponent[]{
+                                                    new TextComponent(instance.winningsDescription
+                                                            .replace("{Tier}", instance.tierNames.get(localWinnings.getTier()))
+                                                            .replace("{Winnings}", StringUtils.formatComma(localWinnings.getWinnings()))
+                                                            .replace("{UnitPrice}", StringUtils.formatComma(game.getPricePerBet(localWinnings.getWinningBet(game).getType()))))
+                                            }));
+                                        } else {
+                                            numbersText.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new BaseComponent[]{
+                                                    new TextComponent(instance.winningsDescription
+                                                            .replace("{Tier}", LotteryUtils.formatPlaceholders(player, instance.guiLastResultsNoWinnings, instance, game))
+                                                            .replace("{Winnings}", StringUtils.formatComma(0))
+                                                            .replace("{UnitPrice}", StringUtils.formatComma(game.getPricePerBet(bets.getType()))))
+                                            }));
+                                        }
+                                        text.addExtra(numbersText);
+                                        i++;
+                                    }
+                                    text.addExtra("\n");
+                                    text.addExtra(instance.bulkWinningsDescription
+                                            .replace("{HighestTier}", instance.tierNames.get(winnings.getTier()))
+                                            .replace("{Winnings}", StringUtils.formatComma(winningsForBet.stream().mapToLong(each -> each.getWinnings()).sum()))
+                                            .replace("{UnitPrice}", StringUtils.formatComma(game.getPricePerBet(winnings.getWinningBet(game).getType()))));
+                                    pages.add(text);
+                                } else if (winnings.isCombination(game)) {
+                                    Map<PrizeTier, List<PlayerWinnings>> winningsForBet = game.getPlayerWinningsByBet(betId);
+                                    TextComponent text = new TextComponent(winningNumberStr + "\n\n");
+                                    TextComponent numbersText = new TextComponent(winnings.getWinningBet(game).getChosenNumbers().toFormattedString().replace("/ ", "/\n"));
+
+                                    List<BaseComponent> hoverComponents = new ArrayList<>(7);
+                                    for (PrizeTier prizeTier : PrizeTier.values()) {
+                                        List<PlayerWinnings> playerWinnings = winningsForBet.get(prizeTier);
+                                        if (playerWinnings != null && !playerWinnings.isEmpty()) {
+                                            hoverComponents.add(new TextComponent(instance.multipleWinningsDescription
+                                                    .replace("{Tier}", instance.tierNames.get(prizeTier))
+                                                    .replace("{Times}", String.valueOf(playerWinnings.size()))
+                                                    .replace("{Winnings}", StringUtils.formatComma(playerWinnings.get(0).getWinnings()))
+                                                    .replace("{UnitPrice}", StringUtils.formatComma(game.getPricePerBet(winnings.getWinningBet(game).getType())))));
+                                        }
+                                    }
+                                    for (int i = 0; i < hoverComponents.size() - 1; i++) {
+                                        hoverComponents.get(i).addExtra("\n");
+                                    }
+
+                                    numbersText.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, hoverComponents.toArray(new BaseComponent[0])));
+                                    text.addExtra(numbersText);
+                                    text.addExtra("\n");
+                                    text.addExtra(instance.combinationWinningsDescription
+                                            .replace("{HighestTier}", instance.tierNames.get(winnings.getTier()))
+                                            .replace("{Winnings}", StringUtils.formatComma(winningsForBet.values().stream().flatMap(each -> each.stream()).mapToLong(each -> each.getWinnings()).sum()))
+                                            .replace("{UnitPrice}", StringUtils.formatComma(game.getPricePerBet(winnings.getWinningBet(game).getType()))));
+                                    pages.add(text);
+                                } else {
+                                    String str = winningNumberStr + "\n\n" + winnings.getWinningBet(game).getChosenNumbers().toFormattedString().replace("/ ", "/\n") + "\n";
+                                    str += instance.winningsDescription
+                                            .replace("{Tier}", instance.tierNames.get(winnings.getTier()))
+                                            .replace("{Winnings}", StringUtils.formatComma(winnings.getWinnings()))
+                                            .replace("{UnitPrice}", StringUtils.formatComma(game.getPricePerBet(winnings.getWinningBet(game).getType())));
+                                    pages.add(new TextComponent(str));
+                                }
                             }
-                            str += instance.winningsDescription
-                                    .replace("{Tier}", instance.tierNames.get(winnings.getTier()))
-                                    .replace("{Winnings}", StringUtils.formatComma(winnings.getWinnings()))
-                                    .replace("{UnitPrice}", StringUtils.formatComma(game.getPricePerBet(winnings.getWinningBet(game).getType())));
-                            pages.add(str);
                         }
                         for (PlayerBets bets : game.getPlayerBets(player.getUniqueId())) {
                             if (pages.size() > 100) {
                                 break;
                             }
-                            if (winningsList.stream().noneMatch(each -> each.getWinningBet(game).getBetId().equals(bets.getBetId()))) {
+                            if (!displayedBets.contains(bets.getBetId())) {
                                 String str = winningNumberStr + "\n\n" + bets.getChosenNumbers().toFormattedString().replace("/ ", "/\n") + "\n";
                                 str += instance.winningsDescription
                                         .replace("{Tier}", LotteryUtils.formatPlaceholders(player, instance.guiLastResultsNoWinnings, instance, game))
                                         .replace("{Winnings}", StringUtils.formatComma(0))
                                         .replace("{UnitPrice}", StringUtils.formatComma(game.getPricePerBet(bets.getType())));
-                                pages.add(str);
+                                pages.add(new TextComponent(str));
                             }
                         }
                         if (pages.isEmpty()) {
-                            pages.add(winningNumberStr + "\n\n" + String.join("\n", LotteryUtils.formatPlaceholders(player, instance.guiLastResultsNothing, instance, game)) + "\n");
+                            pages.add(new TextComponent(winningNumberStr + "\n\n" + String.join("\n", LotteryUtils.formatPlaceholders(player, instance.guiLastResultsNothing, instance, game)) + "\n"));
                         }
                         ItemStack itemStack = XMaterial.WRITTEN_BOOK.parseItem();
                         BookMeta meta = (BookMeta) itemStack.getItemMeta();
                         meta.setAuthor("LotterySix");
                         meta.setTitle("LotterySix");
                         itemStack.setItemMeta(meta);
-                        ItemStack book = BookUtils.setPages(itemStack, pages);
+                        ItemStack book = BookUtils.setPagesComponent(itemStack, pages);
                         Bukkit.getScheduler().runTaskLater(plugin, () -> BookUtils.openBook((Player) click.getWhoClicked(), book), 1);
                     }, 1);
                 }, 1);

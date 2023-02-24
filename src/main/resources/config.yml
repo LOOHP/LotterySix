@@ -46,6 +46,9 @@ Formatting:
     SEVENTH: "7th"
   TicketDescription: "&6${Price} (${UnitPrice})"
   WinningsDescription: "&6{Tier} ${Winnings} (${UnitPrice})"
+  MultipleWinningsDescription: "&6{Tier} ${Winnings} &7x{Times}"
+  BulkWinningsDescription: "&6{HighestTier}+ ${Winnings} (${UnitPrice})"
+  CombinationWinningsDescription: "&6{HighestTier}+ ${Winnings} (${UnitPrice})"
 
 #This option is only used on backend servers
 Bungeecord: false
