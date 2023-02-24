@@ -42,6 +42,7 @@ import com.loohp.lotterysix.game.objects.PlayerBets;
 import com.loohp.lotterysix.game.objects.PlayerPreferenceKey;
 import com.loohp.lotterysix.game.objects.PlayerWinnings;
 import com.loohp.lotterysix.game.objects.PrizeCalculationMode;
+import com.loohp.lotterysix.game.objects.PrizeTier;
 import com.loohp.lotterysix.game.objects.WinningNumbers;
 import com.loohp.lotterysix.game.player.LotteryPlayerManager;
 import com.loohp.lotterysix.utils.ChatColorUtils;
@@ -122,6 +123,9 @@ public class LotterySix implements AutoCloseable {
     public SimpleDateFormat dateFormat;
     public String trueFormat;
     public String falseFormat;
+    public Map<PrizeTier, String> tierNames;
+    public String ticketDescription;
+    public String winningsDescription;
 
     public boolean updaterEnabled;
 
@@ -742,6 +746,14 @@ public class LotterySix implements AutoCloseable {
         dateFormat.setTimeZone(timezone);
         trueFormat = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Formatting.Booleans.T"));
         falseFormat = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Formatting.Booleans.F"));
+
+        tierNames = new HashMap<>();
+        for (PrizeTier prizeTier : PrizeTier.values()) {
+            tierNames.put(prizeTier, ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Formatting.PrizeTiers." + prizeTier.name())));
+        }
+
+        ticketDescription = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Formatting.TicketDescription"));
+        winningsDescription = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Formatting.WinningsDescription"));
 
         updaterEnabled = config.getConfiguration().getBoolean("Options.Updater");
 

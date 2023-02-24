@@ -66,6 +66,10 @@ public class PlayerWinnings {
         return tier;
     }
 
+    public UUID getWinningBetId() {
+        return winningBetId;
+    }
+
     public PlayerBets getWinningBet(CompletedLotterySixGame game) {
         return game.getBet(winningBetId);
     }

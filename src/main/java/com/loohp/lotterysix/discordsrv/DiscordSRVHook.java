@@ -177,7 +177,10 @@ public class DiscordSRVHook implements Listener, SlashCommandProvider {
                             if (winnings.isCombination(game)) {
                                 sb.append("(").append(winnings.getWinningCombination().toString()).append(")\n");
                             }
-                            sb.append("**").append(winnings.getTier().getShortHand()).append(" $").append(StringUtils.formatComma(winnings.getWinnings())).append("** ($").append(StringUtils.formatComma(game.getPricePerBet(winnings.getWinningBet(game).getType()))).append(")").append("\n\n");
+                            sb.append("**").append(ChatColor.stripColor(lotterySix.winningsDescription
+                                    .replace("{Tier}", lotterySix.tierNames.get(winnings.getTier()))
+                                    .replace("{Winnings}", StringUtils.formatComma(winnings.getWinnings()))
+                                    .replace("{UnitPrice}", StringUtils.formatComma(game.getPricePerBet(winnings.getWinningBet(game).getType()))))).append("**\n\n");
                             if (str.length() + sb.length() < 4090) {
                                 str.append(sb);
                             } else {
@@ -189,7 +192,10 @@ public class DiscordSRVHook implements Listener, SlashCommandProvider {
                             for (PlayerBets bets : playerBets) {
                                 if (winningsList.stream().noneMatch(each -> each.getWinningBet(game).getBetId().equals(bets.getBetId()))) {
                                     StringBuilder sb = new StringBuilder();
-                                    sb.append(bets.getChosenNumbers().toString().replace("/ ", "/\n")).append("\n").append(lotterySix.discordSRVSlashCommandsViewPastDrawNoWinnings).append(" $0 ($").append(StringUtils.formatComma(game.getPricePerBet(bets.getType()))).append(")\n\n");
+                                    sb.append(bets.getChosenNumbers().toString().replace("/ ", "/\n")).append("\n").append(ChatColor.stripColor(lotterySix.winningsDescription
+                                                    .replace("{Tier}", lotterySix.discordSRVSlashCommandsViewPastDrawNoWinnings)
+                                                    .replace("{Winnings}", StringUtils.formatComma(0))
+                                                    .replace("{UnitPrice}", StringUtils.formatComma(game.getPricePerBet(bets.getType()))))).append("\n\n");
                                     if (str.length() + sb.length() < 4090) {
                                         str.append(sb);
                                     } else {
@@ -239,7 +245,9 @@ public class DiscordSRVHook implements Listener, SlashCommandProvider {
                 } else {
                     for (PlayerBets bet : bets) {
                         StringBuilder str = new StringBuilder();
-                        str.append("**").append(bet.getChosenNumbers().toString().replace("/ ", "/\n")).append("** $").append(StringUtils.formatComma(bet.getBet())).append(" ($").append(StringUtils.formatComma(lotterySix.pricePerBet / bet.getType().getDivisor())).append(")\n\n");
+                        str.append("**").append(bet.getChosenNumbers().toString().replace("/ ", "/\n")).append("**\n").append(ChatColor.stripColor(lotterySix.ticketDescription
+                                .replace("{Price}", StringUtils.formatComma(bet.getBet()))
+                                .replace("{UnitPrice}", StringUtils.formatComma(lotterySix.pricePerBet / bet.getType().getDivisor())))).append("\n\n");
                         if (str.length() + sb.length() < 4090) {
                             sb.append(str);
                         } else {

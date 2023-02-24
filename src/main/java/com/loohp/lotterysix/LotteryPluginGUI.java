@@ -542,7 +542,11 @@ public class LotteryPluginGUI implements Listener {
                 if (pages.size() > 100) {
                     break;
                 }
-                pages.add(title + "\n\n" + bet.getChosenNumbers().toFormattedString().replace("/ ", "/\n") + "\n" + ChatColor.GOLD + "$" + StringUtils.formatComma(bet.getBet()) + " ($" + StringUtils.formatComma(instance.pricePerBet / bet.getType().getDivisor()) + ")");
+                String str = title + "\n\n" + bet.getChosenNumbers().toFormattedString().replace("/ ", "/\n") + "\n";
+                str += instance.ticketDescription
+                        .replace("{Price}", StringUtils.formatComma(bet.getBet()))
+                        .replace("{UnitPrice}", StringUtils.formatComma(instance.pricePerBet / bet.getType().getDivisor()));
+                pages.add(str);
             }
         }
 
@@ -1117,7 +1121,10 @@ public class LotteryPluginGUI implements Listener {
                             if (winnings.isCombination(game)) {
                                 str += ChatColor.BLACK + "(" + winnings.getWinningCombination().toFormattedString() + ChatColor.BLACK + ")\n";
                             }
-                            str += ChatColor.GOLD + "" + winnings.getTier().getShortHand() + " $" + StringUtils.formatComma(winnings.getWinnings()) + " ($" + StringUtils.formatComma(game.getPricePerBet(winnings.getWinningBet(game).getType())) + ")";
+                            str += instance.winningsDescription
+                                    .replace("{Tier}", instance.tierNames.get(winnings.getTier()))
+                                    .replace("{Winnings}", StringUtils.formatComma(winnings.getWinnings()))
+                                    .replace("{UnitPrice}", StringUtils.formatComma(game.getPricePerBet(winnings.getWinningBet(game).getType())));
                             pages.add(str);
                         }
                         for (PlayerBets bets : game.getPlayerBets(player.getUniqueId())) {
@@ -1125,8 +1132,11 @@ public class LotteryPluginGUI implements Listener {
                                 break;
                             }
                             if (winningsList.stream().noneMatch(each -> each.getWinningBet(game).getBetId().equals(bets.getBetId()))) {
-                                String str = winningNumberStr + "\n\n" + bets.getChosenNumbers().toFormattedString().replace("/ ", "/\n") + "\n"
-                                        + LotteryUtils.formatPlaceholders(player, instance.guiLastResultsNoWinnings, instance, game) + " $0 ($" + StringUtils.formatComma(game.getPricePerBet(bets.getType())) + ")";
+                                String str = winningNumberStr + "\n\n" + bets.getChosenNumbers().toFormattedString().replace("/ ", "/\n") + "\n";
+                                str += instance.winningsDescription
+                                        .replace("{Tier}", LotteryUtils.formatPlaceholders(player, instance.guiLastResultsNoWinnings, instance, game))
+                                        .replace("{Winnings}", StringUtils.formatComma(0))
+                                        .replace("{UnitPrice}", StringUtils.formatComma(game.getPricePerBet(bets.getType())));
                                 pages.add(str);
                             }
                         }

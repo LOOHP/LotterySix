@@ -36,6 +36,16 @@ Formatting:
   Booleans:
     T: "&aEnabled"
     F: "&cDisabled"
+  PrizeTiers:
+    FIRST: "1st"
+    SECOND: "2nd"
+    THIRD: "3rd"
+    FOURTH: "4th"
+    FIFTH: "5th"
+    SIXTH: "6th"
+    SEVENTH: "7th"
+  TicketDescription: "&6${Price} (${UnitPrice})"
+  WinningsDescription: "&6{Tier} ${Winnings} (${UnitPrice})"
 
 #This option is only used on backend servers
 Bungeecord: false

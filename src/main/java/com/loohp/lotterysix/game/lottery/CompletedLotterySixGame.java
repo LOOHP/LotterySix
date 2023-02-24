@@ -47,6 +47,7 @@ public class CompletedLotterySixGame implements IDedGame {
 
     private transient Map<PrizeTier, List<PlayerWinnings>> winnersByTierCache;
     private transient Map<PrizeTier, Double> winnerCountForTierCache;
+    private transient Map<UUID, Map<PrizeTier, List<PlayerWinnings>>> winnersByBetCache;
 
     private final UUID gameId;
     private final long datetime;
@@ -90,6 +91,15 @@ public class CompletedLotterySixGame implements IDedGame {
             winnerCountForTierCache = new HashMap<>();
             for (PrizeTier prizeTier : PrizeTier.values()) {
                 winnerCountForTierCache.put(prizeTier, getWinnings(prizeTier).stream().mapToDouble(each -> each.getWinningBet(this).getType().getUnit()).sum());
+            }
+        }
+    }
+
+    private synchronized void cacheWinnersByBet() {
+        if (winnersByBetCache == null) {
+            winnersByBetCache = new HashMap<>();
+            for (PlayerWinnings winnings : winners) {
+                winnersByBetCache.computeIfAbsent(winnings.getWinningBetId(), k -> new HashMap<>()).computeIfAbsent(winnings.getTier(), k -> new ArrayList<>()).add(winnings);
             }
         }
     }
@@ -176,6 +186,15 @@ public class CompletedLotterySixGame implements IDedGame {
 
     public List<PlayerBets> getPlayerBets(UUID player) {
         return Collections.unmodifiableList(bets.values().stream().filter(each -> each.getPlayer().equals(player)).collect(Collectors.toList()));
+    }
+
+    public Map<PrizeTier, List<PlayerWinnings>> getPlayerWinningsByBet(PlayerBets bet) {
+        return getPlayerWinningsByBet(bet.getBetId());
+    }
+
+    public Map<PrizeTier, List<PlayerWinnings>> getPlayerWinningsByBet(UUID betId) {
+        cacheWinnersByBet();
+        return Collections.unmodifiableMap(winnersByBetCache.getOrDefault(betId, Collections.emptyMap()));
     }
 
     public long getTotalPrizes() {
