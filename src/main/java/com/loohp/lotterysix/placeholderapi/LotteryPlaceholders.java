@@ -24,6 +24,7 @@ import com.cronutils.model.Cron;
 import com.loohp.lotterysix.LotterySixPlugin;
 import com.loohp.lotterysix.game.objects.PlayerPreferenceKey;
 import com.loohp.lotterysix.game.objects.PlayerStatsKey;
+import com.loohp.lotterysix.game.objects.PrizeTier;
 import com.loohp.lotterysix.utils.CronUtils;
 import com.loohp.lotterysix.utils.LotteryUtils;
 import com.loohp.lotterysix.utils.StringUtils;
@@ -36,7 +37,16 @@ import java.util.Date;
 public class LotteryPlaceholders extends PlaceholderExpansion {
 
     private static String asString(Object input, boolean isMonetaryValue) {
-        return input == null ? "N/A" : (isMonetaryValue ? StringUtils.formatComma((long) input) : input.toString());
+        if (input == null) {
+            return "N/A";
+        }
+        if (isMonetaryValue) {
+            return StringUtils.formatComma((long) input);
+        }
+        if (input instanceof PrizeTier) {
+            return LotterySixPlugin.getInstance().tierNames.get(input);
+        }
+        return input.toString();
     }
 
     @Override
