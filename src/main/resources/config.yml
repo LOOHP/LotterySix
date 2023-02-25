@@ -106,6 +106,19 @@ LotterySix:
   CarryOverMode: "DEFAULT"
   #Highest possible value is 9223372036854775807
   MaxTopPlacesPrize: 9223372036854775807
+  #DO NOT CHANGE this section if you don't know what you are doing!
+  #These are carefully calculated values, used in the MarkSix lottery in real life
+  #If changed incorrectly, it might mess up your lottery at best, or turn your lottery into an infinite money generator at worse.
+  #You are STRONGLY ENCOURAGED to keep these settings AS-IS
+  PrizeTierSettings:
+    FOURTH:
+      MultiplierFromLast: 15
+    FIFTH:
+      MultiplierFromLast: 2
+    SIXTH:
+      MultiplierFromLast: 8
+    SEVENTH:
+      FixedPrizeMultiplier: 4
 
 Restrictions:
   #Allow players to still place bets even if their balance is going to be negative

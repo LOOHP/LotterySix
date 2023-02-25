@@ -84,7 +84,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 public class LotterySix implements AutoCloseable {
@@ -912,6 +911,18 @@ public class LotterySix implements AutoCloseable {
         } catch (IllegalArgumentException e) {
             lotteriesFundAccount = null;
         }
+
+        int seventhTierMultiplier = config.getConfiguration().getInt("LotterySix.PrizeTierSettings.SEVENTH.FixedPrizeMultiplier");
+        int sixthTierMultiplier = config.getConfiguration().getInt("LotterySix.PrizeTierSettings.SIXTH.MultiplierFromLast");
+        int fifthTierMultiplier = config.getConfiguration().getInt("LotterySix.PrizeTierSettings.FIFTH.MultiplierFromLast");
+        int fourthTierMultiplier = config.getConfiguration().getInt("LotterySix.PrizeTierSettings.FOURTH.MultiplierFromLast");
+        PrizeTier.SEVENTH.setFixedPrizeMultiplier(seventhTierMultiplier);
+        PrizeTier.SIXTH.setFixedPrizeMultiplier(seventhTierMultiplier * sixthTierMultiplier);
+        PrizeTier.SIXTH.setMinimumMultiplierFromLast(sixthTierMultiplier);
+        PrizeTier.FIFTH.setFixedPrizeMultiplier(seventhTierMultiplier * sixthTierMultiplier * fifthTierMultiplier);
+        PrizeTier.FIFTH.setMinimumMultiplierFromLast(fifthTierMultiplier);
+        PrizeTier.FOURTH.setFixedPrizeMultiplier(seventhTierMultiplier * sixthTierMultiplier * fifthTierMultiplier * fourthTierMultiplier);
+        PrizeTier.FOURTH.setMinimumMultiplierFromLast(fourthTierMultiplier);
     }
 
     public synchronized void loadData() {

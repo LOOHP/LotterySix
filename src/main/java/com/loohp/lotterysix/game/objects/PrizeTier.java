@@ -31,8 +31,8 @@ public enum PrizeTier {
     SEVENTH("7th", 4, 1);
 
     private final String shortHand;
-    private final int fixedPrizeMultiplier;
-    private final int minimumMultiplierFromLast;
+    private int fixedPrizeMultiplier;
+    private int minimumMultiplierFromLast;
     private final boolean isTopTier;
 
     PrizeTier(String shortHand, int fixedPrizeMultiplier, int minimumMultiplierFromLast, boolean isTopTier) {
@@ -54,8 +54,18 @@ public enum PrizeTier {
         return fixedPrizeMultiplier;
     }
 
+    @Deprecated
+    public void setFixedPrizeMultiplier(int fixedPrizeMultiplier) {
+        this.fixedPrizeMultiplier = fixedPrizeMultiplier;
+    }
+
     public int getMinimumMultiplierFromLast() {
         return minimumMultiplierFromLast;
+    }
+
+    @Deprecated
+    public void setMinimumMultiplierFromLast(int minimumMultiplierFromLast) {
+        this.minimumMultiplierFromLast = minimumMultiplierFromLast;
     }
 
     public boolean isTopTier() {
