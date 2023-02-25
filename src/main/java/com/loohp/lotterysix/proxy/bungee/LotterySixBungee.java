@@ -92,7 +92,7 @@ public class LotterySixBungee extends Plugin implements Listener {
         getProxy().getPluginManager().registerListener(this, pluginMessageBungee = new PluginMessageBungee(null));
         getProxy().registerChannel("lotterysix:main");
 
-        instance = new LotterySix(false, getDataFolder(), CONFIG_ID, c -> givePrizes(c), c -> refundBets(c), (p, a) -> takeMoney(p, a), (uuid, permission) -> {
+        instance = new LotterySix(false, getDataFolder(), CONFIG_ID, c -> givePrizes(c), c -> refundBets(c), (p, a) -> takeMoney(p, a), (p, a) -> giveMoney(p, a), (uuid, permission) -> {
             ProxiedPlayer player = getProxy().getPlayer(uuid);
             if (player != null) {
                 return player.hasPermission(permission);
@@ -203,6 +203,14 @@ public class LotterySixBungee extends Plugin implements Listener {
             pluginMessageBungee.syncPlayerData(lotteryPlayer);
             notifyPendingTransactions(lotteryPlayer);
         }
+    }
+
+    public static boolean giveMoney(UUID uuid, long amount) {
+        LotteryPlayer lotteryPlayer = instance.getPlayerPreferenceManager().getLotteryPlayer(uuid);
+        lotteryPlayer.updateStats(PlayerStatsKey.PENDING_TRANSACTION, long.class, i -> i + amount);
+        pluginMessageBungee.syncPlayerData(lotteryPlayer);
+        notifyPendingTransactions(lotteryPlayer);
+        return true;
     }
 
     public static boolean takeMoney(UUID uuid, long amount) {

@@ -132,7 +132,7 @@ public class LotterySixPlugin extends JavaPlugin implements Listener {
 
         getCommand("lotterysix").setExecutor(new Commands());
 
-        instance = new LotterySix(true, getDataFolder(), CONFIG_ID, c -> givePrizes(c), c -> refundBets(c), (p, a) -> takeMoneyOnline(p, a), (uuid, permission) -> {
+        instance = new LotterySix(true, getDataFolder(), CONFIG_ID, c -> givePrizes(c), c -> refundBets(c), (p, a) -> takeMoneyOnline(p, a), (p, a) -> giveMoney(p, a), (uuid, permission) -> {
             OfflinePlayer player = Bukkit.getOfflinePlayer(uuid);
             if (player.isOnline()) {
                 return player.getPlayer().hasPermission(permission);
@@ -293,6 +293,13 @@ public class LotterySixPlugin extends JavaPlugin implements Listener {
             lotteryPlayer.updateStats(PlayerStatsKey.PENDING_TRANSACTION, long.class, i -> i + entry.getValue());
             notifyPendingTransactions(lotteryPlayer);
         }
+    }
+
+    public static boolean giveMoney(UUID uuid, long amount) {
+        LotteryPlayer lotteryPlayer = instance.getPlayerPreferenceManager().getLotteryPlayer(uuid);
+        lotteryPlayer.updateStats(PlayerStatsKey.PENDING_TRANSACTION, long.class, i -> i + amount);
+        notifyPendingTransactions(lotteryPlayer);
+        return true;
     }
 
     public static boolean giveMoneyNow(UUID uuid, long amount) {

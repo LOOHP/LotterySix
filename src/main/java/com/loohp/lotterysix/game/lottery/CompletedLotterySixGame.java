@@ -61,8 +61,9 @@ public class CompletedLotterySixGame implements IDedGame {
     private final Map<UUID, PlayerBets> bets;
     private final long totalPrizes;
     private final long remainingFunds;
+    private final long lotteriesFunds;
 
-    public CompletedLotterySixGame(UUID gameId, long datetime, GameNumber gameNumber, String specialName, WinningNumbers drawResult, Map<Integer, NumberStatistics> numberStatistics, long pricePerBet, Map<PrizeTier, Long> prizeForTier, List<PlayerWinnings> winners, Map<UUID, PlayerBets> bets, long totalPrizes, long remainingFunds) {
+    public CompletedLotterySixGame(UUID gameId, long datetime, GameNumber gameNumber, String specialName, WinningNumbers drawResult, Map<Integer, NumberStatistics> numberStatistics, long pricePerBet, Map<PrizeTier, Long> prizeForTier, List<PlayerWinnings> winners, Map<UUID, PlayerBets> bets, long totalPrizes, long remainingFunds, long lotteriesFunds) {
         this.gameId = gameId;
         this.datetime = datetime;
         this.gameNumber = gameNumber;
@@ -75,6 +76,7 @@ public class CompletedLotterySixGame implements IDedGame {
         this.bets = Collections.unmodifiableMap(bets);
         this.totalPrizes = totalPrizes;
         this.remainingFunds = remainingFunds;
+        this.lotteriesFunds = lotteriesFunds;
     }
 
     private synchronized void cacheWinnersByTier() {
@@ -214,9 +216,13 @@ public class CompletedLotterySixGame implements IDedGame {
         return remainingFunds;
     }
 
+    public long getLotteriesFunds() {
+        return lotteriesFunds;
+    }
+
     public void givePrizesAndUpdateStats(LotterySix instance) {
-        instance.givePrizes(winners);
         new Thread(() -> {
+            instance.givePrizes(winners);
             Map<UUID, Long> transactions = new HashMap<>();
             Map<UUID, PrizeTier> prizeTiers = new HashMap<>();
             for (PlayerWinnings winning : winners) {
@@ -228,6 +234,9 @@ public class CompletedLotterySixGame implements IDedGame {
                 PrizeTier prizeTier = prizeTiers.get(entry.getKey());
                 lotteryPlayer.updateStats(PlayerStatsKey.TOTAL_WINNINGS, long.class, i -> i + entry.getValue());
                 lotteryPlayer.updateStats(PlayerStatsKey.HIGHEST_WON_TIER, PrizeTier.class, t -> t == null || prizeTier.ordinal() < t.ordinal(), prizeTier);
+            }
+            if (instance.lotteriesFundAccount != null) {
+                instance.giveMoney(instance.lotteriesFundAccount, lotteriesFunds);
             }
         }).start();
     }

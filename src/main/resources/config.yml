@@ -87,6 +87,11 @@ LotterySix:
   EstimationRoundToNearest: 1000000
   #This percentage of total bets acquired will be taken from the prize pool
   TaxPercentage: 0.25
+  #Tax percentage taken will be loaded into this account
+  #This is a PLAYER UUID
+  #For example, "d26f544b-392a-4a41-891f-fa470f5e6b40"
+  #Set to '-' to disable
+  LotteriesFundAccount: "-"
   #Prize Calculation Mode
   #This affects carry over prize calculation as well
   #HKJC mode is an IRL prize money calculation method used by the HKJC

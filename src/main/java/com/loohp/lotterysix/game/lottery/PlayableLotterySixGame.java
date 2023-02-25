@@ -422,21 +422,24 @@ public class PlayableLotterySixGame implements IDedGame {
             return hkjcCalculation(pricePerBet, maxTopPlacesPrize, taxPercentage, tiers, winningNumbers, newNumberStats);
         }
 
+        long totalBetsFund = getTotalBets();
         CarryOverMode carryOverMode = instance == null ? CarryOverMode.DEFAULT : instance.carryOverMode;
         long totalPrize;
         switch (carryOverMode) {
             case DEFAULT: {
-                totalPrize = (lowestTopPlacesPrize / 2) + carryOverFund + (long) Math.floor(getTotalBets() * (1.0 - taxPercentage));
+                totalPrize = (lowestTopPlacesPrize / 2) + carryOverFund + (long) Math.floor(totalBetsFund * (1.0 - taxPercentage));
                 break;
             }
             case ONLY_TICKET_SALES: {
-                totalPrize = lowestTopPlacesPrize + carryOverFund + (long) Math.floor(getTotalBets() * (1.0 - taxPercentage));
+                totalPrize = lowestTopPlacesPrize + carryOverFund + (long) Math.floor(totalBetsFund * (1.0 - taxPercentage));
                 break;
             }
             default: {
                 throw new RuntimeException("Unknown carry over mode: " + carryOverMode);
             }
         }
+
+        long lotteriesFunds = totalBetsFund - (long) Math.floor(totalBetsFund * (1.0 - taxPercentage));
 
         Map<PrizeTier, Long> prizeForTier = new EnumMap<>(PrizeTier.class);
 
@@ -640,14 +643,16 @@ public class PlayableLotterySixGame implements IDedGame {
             }
         }
 
-        return new CompletedLotterySixGame(gameId, scheduledDateTime, gameNumber, specialName, winningNumbers, newNumberStats, pricePerBet, prizeForTier, winnings, bets, totalPrizes, carryOverNext);
+        return new CompletedLotterySixGame(gameId, scheduledDateTime, gameNumber, specialName, winningNumbers, newNumberStats, pricePerBet, prizeForTier, winnings, bets, totalPrizes, carryOverNext, lotteriesFunds);
     }
 
     private synchronized CompletedLotterySixGame hkjcCalculation(long pricePerBet, long maxTopPlacesPrize, double taxPercentage, Map<PrizeTier, List<Pair<PlayerBets, WinningCombination>>> tiers, WinningNumbers winningNumbers, Map<Integer, NumberStatistics> newNumberStats) {
         PrizeTier[] prizeTiers = PrizeTier.values();
-        long totalFund = (long) Math.floor(getTotalBets() * (1.0 - taxPercentage));
+        long totalBetsFund = getTotalBets();
+        long totalFund = (long) Math.floor(totalBetsFund * (1.0 - taxPercentage));
         long totalFundForFourthToSeventh = (long) Math.floor((double) totalFund * 0.6);
         long totalFourthToSeventhFundRequired = 0;
+        long lotteriesFunds = totalBetsFund - totalFund;
 
         Map<PrizeTier, Long> portionsFourthToSeventh = new EnumMap<>(PrizeTier.class);
         Map<PrizeTier, Double> unitsFourthToSeventh = new EnumMap<>(PrizeTier.class);
@@ -889,7 +894,7 @@ public class PlayableLotterySixGame implements IDedGame {
         winnings.sort(Comparator.comparing((PlayerWinnings playerWinnings) -> playerWinnings.getTier()).thenComparing((PlayerWinnings playerWinnings) -> playerWinnings.getWinningBet(bets).getTimePlaced()));
         this.valid = false;
 
-        return new CompletedLotterySixGame(gameId, scheduledDateTime, gameNumber, specialName, winningNumbers, newNumberStats, pricePerBet, prizeForTier, winnings, bets, totalPrizes, carryOverNext);
+        return new CompletedLotterySixGame(gameId, scheduledDateTime, gameNumber, specialName, winningNumbers, newNumberStats, pricePerBet, prizeForTier, winnings, bets, totalPrizes, carryOverNext, lotteriesFunds);
     }
 
 }

@@ -84,6 +84,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 public class LotterySix implements AutoCloseable {
@@ -261,6 +262,7 @@ public class LotterySix implements AutoCloseable {
 
     public boolean allowLoans;
     public Map<String, Long> playerBetLimit;
+    public UUID lotteriesFundAccount;
 
     private final ExecutorService saveDataService;
     private final AtomicLong lastSaveBegin;
@@ -276,6 +278,7 @@ public class LotterySix implements AutoCloseable {
     private final Consumer<Collection<PlayerWinnings>> givePrizesConsumer;
     private final Consumer<Collection<PlayerBets>> refundBetsConsumer;
     private final BiPredicate<UUID, Long> takeMoneyConsumer;
+    private final BiPredicate<UUID, Long> giveMoneyConsumer;
     private final BiPredicate<UUID, String> hasPermissionPredicate;
     private final Consumer<Boolean> lockRunnable;
     private final Supplier<Collection<UUID>> onlinePlayersSupplier;
@@ -288,12 +291,13 @@ public class LotterySix implements AutoCloseable {
     private final Consumer<String> consoleMessageConsumer;
     private final BiConsumer<BossBarInfo, IDedGame> bossBarUpdater;
 
-    public LotterySix(boolean isBackend, File dataFolder, String configId, Consumer<Collection<PlayerWinnings>> givePrizesConsumer, Consumer<Collection<PlayerBets>> refundBetsConsumer, BiPredicate<UUID, Long> takeMoneyConsumer, BiPredicate<UUID, String> hasPermissionPredicate, Consumer<Boolean> lockRunnable, Supplier<Collection<UUID>> onlinePlayersSupplier, MessageConsumer messageSendingConsumer, MessageConsumer titleSendingConsumer, BetResultConsumer playerBetListener, Consumer<Collection<PlayerBets>> playerBetsInvalidateListener, Consumer<LotterySixAction> actionListener, Consumer<LotteryPlayer> lotteryPlayerUpdateListener, Consumer<String> consoleMessageConsumer, BiConsumer<BossBarInfo, IDedGame> bossBarUpdater) {
+    public LotterySix(boolean isBackend, File dataFolder, String configId, Consumer<Collection<PlayerWinnings>> givePrizesConsumer, Consumer<Collection<PlayerBets>> refundBetsConsumer, BiPredicate<UUID, Long> takeMoneyConsumer, BiPredicate<UUID, Long> giveMoneyConsumer, BiPredicate<UUID, String> hasPermissionPredicate, Consumer<Boolean> lockRunnable, Supplier<Collection<UUID>> onlinePlayersSupplier, MessageConsumer messageSendingConsumer, MessageConsumer titleSendingConsumer, BetResultConsumer playerBetListener, Consumer<Collection<PlayerBets>> playerBetsInvalidateListener, Consumer<LotterySixAction> actionListener, Consumer<LotteryPlayer> lotteryPlayerUpdateListener, Consumer<String> consoleMessageConsumer, BiConsumer<BossBarInfo, IDedGame> bossBarUpdater) {
         this.dataFolder = dataFolder;
         this.configId = configId;
         this.givePrizesConsumer = givePrizesConsumer;
         this.refundBetsConsumer = refundBetsConsumer;
         this.takeMoneyConsumer = takeMoneyConsumer;
+        this.giveMoneyConsumer = giveMoneyConsumer;
         this.hasPermissionPredicate = hasPermissionPredicate;
         this.lockRunnable = lockRunnable;
         this.onlinePlayersSupplier = onlinePlayersSupplier;
@@ -641,6 +645,10 @@ public class LotterySix implements AutoCloseable {
         return takeMoneyConsumer.test(player, amount);
     }
 
+    public boolean giveMoney(UUID player, long amount) {
+        return giveMoneyConsumer.test(player, amount);
+    }
+
     public boolean isGameLocked() {
         return gameLocked;
     }
@@ -896,6 +904,13 @@ public class LotterySix implements AutoCloseable {
         playerBetLimit = new HashMap<>();
         for (String group : config.getConfiguration().getConfigurationSection("Restrictions.BetLimitPerRound").getKeys(false)) {
             playerBetLimit.put(group, config.getConfiguration().getLong("Restrictions.BetLimitPerRound." + group));
+        }
+
+        String lotteriesFundAccountStr = config.getConfiguration().getString("LotterySix.LotteriesFundAccount");
+        try {
+            lotteriesFundAccount = UUID.fromString(lotteriesFundAccountStr);
+        } catch (IllegalArgumentException e) {
+            lotteriesFundAccount = null;
         }
     }
 
