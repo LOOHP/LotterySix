@@ -42,6 +42,7 @@ import com.loohp.lotterysix.utils.StringUtils;
 
 import java.math.BigDecimal;
 import java.security.SecureRandom;
+import java.time.Year;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -73,7 +74,8 @@ public class PlayableLotterySixGame implements IDedGame {
     }
 
     public static PlayableLotterySixGame createNewGame(LotterySix instance, long scheduledDateTime, String specialName, Map<Integer, NumberStatistics> numberStatistics, long carryOverFund, long lowestTopPlacesPrize) {
-        return new PlayableLotterySixGame(instance, UUID.randomUUID(), scheduledDateTime, specialName, numberStatistics, lowestTopPlacesPrize, carryOverFund, true);
+        GameNumber gameNumber = instance == null ? new GameNumber(Year.now(), 1) : instance.dateToGameNumber(scheduledDateTime);
+        return new PlayableLotterySixGame(instance, UUID.randomUUID(), scheduledDateTime, gameNumber, specialName, numberStatistics, lowestTopPlacesPrize, carryOverFund, true);
     }
 
     private transient LotterySix instance;
@@ -89,13 +91,13 @@ public class PlayableLotterySixGame implements IDedGame {
     private volatile boolean valid;
     private volatile long lastSaved;
 
-    private PlayableLotterySixGame(LotterySix instance, UUID gameId, long scheduledDateTime, String specialName, Map<Integer, NumberStatistics> numberStatistics, long lowestTopPlacesPrize, long carryOverFund, boolean valid) {
+    private PlayableLotterySixGame(LotterySix instance, UUID gameId, long scheduledDateTime, GameNumber gameNumber, String specialName, Map<Integer, NumberStatistics> numberStatistics, long lowestTopPlacesPrize, long carryOverFund, boolean valid) {
         this.instance = instance;
         this.gameId = gameId;
         this.scheduledDateTime = scheduledDateTime;
         this.specialName = specialName;
         this.numberStatistics = new ConcurrentHashMap<>(numberStatistics);
-        this.gameNumber = instance.dateToGameNumber(scheduledDateTime);
+        this.gameNumber = gameNumber;
         this.bets = new LinkedHashMap<>();
         this.carryOverFund = carryOverFund;
         this.lowestTopPlacesPrize = lowestTopPlacesPrize;
@@ -284,7 +286,7 @@ public class PlayableLotterySixGame implements IDedGame {
 
     private synchronized AddBetResult addBet(String name, UUID player, Collection<PlayerBets> bets) {
         long price = bets.stream().mapToLong(each -> each.getBet()).sum();
-        if (instance.isGameLocked()) {
+        if (instance != null && instance.isGameLocked()) {
             return betResult0(player, price, bets, AddBetResult.GAME_LOCKED);
         }
         if (instance != null && !instance.backendBungeecordMode) {
@@ -375,13 +377,25 @@ public class PlayableLotterySixGame implements IDedGame {
     }
 
     public CompletedLotterySixGame runLottery(int maxNumber, long pricePerBet, long maxTopPlacesPrize, double taxPercentage) {
+        PrizeCalculationMode prizeCalculationMode = instance == null ? PrizeCalculationMode.DEFAULT : instance.prizeCalculationMode;
+        CarryOverMode carryOverMode = instance == null ? CarryOverMode.DEFAULT : instance.carryOverMode;
+        return runLottery(maxNumber, pricePerBet, maxTopPlacesPrize, taxPercentage, prizeCalculationMode, carryOverMode);
+    }
+
+    public CompletedLotterySixGame runLottery(int maxNumber, long pricePerBet, long maxTopPlacesPrize, double taxPercentage, PrizeCalculationMode prizeCalculationMode, CarryOverMode carryOverMode) {
         SecureRandom random = new SecureRandom();
         int[] num = random.ints(1, maxNumber + 1).distinct().limit(7).toArray();
         WinningNumbers winningNumbers = new WinningNumbers(num[0], num[1], num[2], num[3], num[4], num[5], num[6]);
-        return runLottery(maxNumber, pricePerBet, maxTopPlacesPrize, taxPercentage, winningNumbers);
+        return runLottery(maxNumber, pricePerBet, maxTopPlacesPrize, taxPercentage, winningNumbers, prizeCalculationMode, carryOverMode);
     }
 
-    public synchronized CompletedLotterySixGame runLottery(int maxNumber, long pricePerBet, long maxTopPlacesPrize, double taxPercentage, WinningNumbers winningNumbers) {
+    public CompletedLotterySixGame runLottery(int maxNumber, long pricePerBet, long maxTopPlacesPrize, double taxPercentage, WinningNumbers winningNumbers) {
+        PrizeCalculationMode prizeCalculationMode = instance == null ? PrizeCalculationMode.DEFAULT : instance.prizeCalculationMode;
+        CarryOverMode carryOverMode = instance == null ? CarryOverMode.DEFAULT : instance.carryOverMode;
+        return runLottery(maxNumber, pricePerBet, maxTopPlacesPrize, taxPercentage, winningNumbers, prizeCalculationMode, carryOverMode);
+    }
+
+    public synchronized CompletedLotterySixGame runLottery(int maxNumber, long pricePerBet, long maxTopPlacesPrize, double taxPercentage, WinningNumbers winningNumbers, PrizeCalculationMode prizeCalculationMode, CarryOverMode carryOverMode) {
         if (instance != null && instance.backendBungeecordMode) {
             throw new IllegalStateException("lottery cannot be run on backend server while on bungeecord mode");
         }
@@ -417,13 +431,11 @@ public class PlayableLotterySixGame implements IDedGame {
             }).start();
         }
 
-        PrizeCalculationMode prizeCalculationMode = instance == null ? PrizeCalculationMode.DEFAULT : instance.prizeCalculationMode;
         if (prizeCalculationMode.equals(PrizeCalculationMode.HKJC)) {
             return hkjcCalculation(pricePerBet, maxTopPlacesPrize, taxPercentage, tiers, winningNumbers, newNumberStats);
         }
 
         long totalBetsFund = getTotalBets();
-        CarryOverMode carryOverMode = instance == null ? CarryOverMode.DEFAULT : instance.carryOverMode;
         long totalPrize;
         switch (carryOverMode) {
             case DEFAULT: {
