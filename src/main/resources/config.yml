@@ -448,7 +448,7 @@ DiscordSRV:
       - "7th Tier Prize: ${SEVENTHPrize} x{SEVENTHPrizeCount}"
       - ""
       - "*Congratulations!*"
-    ThumbnailURL: "https://static.wikia.nocookie.net/minecraft_gamepedia/images/8/8a/Gold_Ingot_JE4_BE2.png"
+    ThumbnailURL: "https://resources.loohpjames.com/spigot/plugins/lotterysix/icon_large.png"
   SlashCommands:
     Global:
       Messages:
@@ -464,7 +464,7 @@ DiscordSRV:
       NoResults: "No results are available"
       YourBets: "**Your bets**"
       NoWinnings: "No Winnings"
-      ThumbnailURL: "https://static.wikia.nocookie.net/minecraft_gamepedia/images/8/8a/Gold_Ingot_JE4_BE2.png"
+      ThumbnailURL: "https://resources.loohpjames.com/spigot/plugins/lotterysix/icon_large.png"
     #SlashCommand /mybets
     ViewCurrentBets:
       Enabled: true
@@ -477,7 +477,7 @@ DiscordSRV:
         - "Estimated Prize Pool: ${PrizePool}"
       NoBets: "You haven't placed any bets"
       NoGame: "There are no LotterySix games scheduled"
-      ThumbnailURL: "https://static.wikia.nocookie.net/minecraft_gamepedia/images/8/8a/Gold_Ingot_JE4_BE2.png"
+      ThumbnailURL: "https://resources.loohpjames.com/spigot/plugins/lotterysix/icon_large.png"
     #SlashCommand /numberstats
     ViewNumberStatistics:
       Enabled: true
@@ -485,7 +485,7 @@ DiscordSRV:
       NumberField: "Number"
       LastDrawnField: "Since Last Drawn"
       TimesDrawnField: "Times Drawn"
-      ThumbnailURL: "https://static.wikia.nocookie.net/minecraft_gamepedia/images/8/8a/Gold_Ingot_JE4_BE2.png"
+      ThumbnailURL: "https://resources.loohpjames.com/spigot/plugins/lotterysix/icon_large.png"
 
 Options:
   Updater: true
