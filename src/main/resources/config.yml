@@ -448,7 +448,7 @@ DiscordSRV:
       - "7th Tier Prize: ${SEVENTHPrize} x{SEVENTHPrizeCount}"
       - ""
       - "*Congratulations!*"
-    ThumbnailURL: "https://resources.loohpjames.com/spigot/plugins/lotterysix/icon_large.png"
+    ThumbnailURL: "https://resources.loohpjames.com/spigot/plugins/lotterysix/icon.png"
   SlashCommands:
     Global:
       Messages:
@@ -464,7 +464,7 @@ DiscordSRV:
       NoResults: "No results are available"
       YourBets: "**Your bets**"
       NoWinnings: "No Winnings"
-      ThumbnailURL: "https://resources.loohpjames.com/spigot/plugins/lotterysix/icon_large.png"
+      ThumbnailURL: "https://resources.loohpjames.com/spigot/plugins/lotterysix/icon.png"
     #SlashCommand /mybets
     ViewCurrentBets:
       Enabled: true
@@ -477,7 +477,7 @@ DiscordSRV:
         - "Estimated Prize Pool: ${PrizePool}"
       NoBets: "You haven't placed any bets"
       NoGame: "There are no LotterySix games scheduled"
-      ThumbnailURL: "https://resources.loohpjames.com/spigot/plugins/lotterysix/icon_large.png"
+      ThumbnailURL: "https://resources.loohpjames.com/spigot/plugins/lotterysix/icon.png"
     #SlashCommand /numberstats
     ViewNumberStatistics:
       Enabled: true
@@ -485,7 +485,7 @@ DiscordSRV:
       NumberField: "Number"
       LastDrawnField: "Since Last Drawn"
       TimesDrawnField: "Times Drawn"
-      ThumbnailURL: "https://resources.loohpjames.com/spigot/plugins/lotterysix/icon_large.png"
+      ThumbnailURL: "https://resources.loohpjames.com/spigot/plugins/lotterysix/icon.png"
 
 Options:
   Updater: true
