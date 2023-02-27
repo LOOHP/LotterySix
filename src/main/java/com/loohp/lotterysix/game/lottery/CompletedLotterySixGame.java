@@ -89,7 +89,7 @@ public class CompletedLotterySixGame implements IDedGame {
     }
 
     private synchronized void cacheWinnerCountForTier() {
-        if (winnersByTierCache == null) {
+        if (winnerCountForTierCache == null) {
             winnerCountForTierCache = new HashMap<>();
             for (PrizeTier prizeTier : PrizeTier.values()) {
                 winnerCountForTierCache.put(prizeTier, getWinnings(prizeTier).stream().mapToDouble(each -> each.getWinningBet(this).getType().getUnit()).sum());

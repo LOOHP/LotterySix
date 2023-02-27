@@ -109,7 +109,7 @@ LotterySix:
   #DO NOT CHANGE this section if you don't know what you are doing!
   #These are carefully calculated values, used in the MarkSix lottery in real life
   #If changed incorrectly, it might mess up your lottery at best, or turn your lottery into an infinite money generator at worse.
-  #You are STRONGLY ENCOURAGED to keep these settings AS-IS
+  #You are STRONGLY ADVISED to keep these settings AS-IS
   PrizeTierSettings:
     FOURTH:
       MultiplierFromLast: 15
