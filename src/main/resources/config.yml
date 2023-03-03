@@ -487,5 +487,8 @@ DiscordSRV:
       TimesDrawnField: "Times Drawn"
       ThumbnailURL: "https://resources.loohpjames.com/spigot/plugins/lotterysix/icon.png"
 
+PlaceholderAPI:
+  HideResultsWhileGameIsLocked: true
+
 Options:
   Updater: true

@@ -38,6 +38,13 @@ public class LazyReplaceString implements CharSequence {
         return this;
     }
 
+    public LazyReplaceString replace(String target, String replacement) {
+        if (value.contains(target)) {
+            return new LazyReplaceString(value.replace(target, replacement));
+        }
+        return this;
+    }
+
     @Override
     public int length() {
         return value.length();

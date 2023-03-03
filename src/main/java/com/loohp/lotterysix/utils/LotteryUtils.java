@@ -128,31 +128,54 @@ public class LotteryUtils {
     }
 
     public static String formatPlaceholders(OfflinePlayer player, String input, LotterySix lotterySix, PlayableLotterySixGame game) {
+        LazyReplaceString str;
         if (game == null) {
-            return formatPlaceholders(player, input, lotterySix);
-        }
-        LazyReplaceString str = new LazyReplaceString(input)
-                .replace("{Now}", () -> lotterySix.dateFormat.format(new Date()))
-                .replace("{Date}", () -> lotterySix.dateFormat.format(new Date(game.getScheduledDateTime())))
-                .replace("{GameNumberRaw}", () -> game.getGameNumber() + "")
-                .replace("{GameNumber}", () -> game.getGameNumber() + (game.hasSpecialName() ? " " + game.getSpecialName() : ""))
-                .replace("{SpecialName}", () -> game.hasSpecialName() ? game.getSpecialName() : "")
-                .replace("{NumberOfChoices}", () -> lotterySix.numberOfChoices + "")
-                .replace("{PricePerBet}", () -> StringUtils.formatComma(lotterySix.pricePerBet))
-                .replace("{TotalBets}", () -> StringUtils.formatComma(game.getTotalBets()))
-                .replace("{CarryOverFund}", () -> StringUtils.formatComma(game.getCarryOverFund(lotterySix.estimationRoundToNearest)))
-                .replace("{PrizePool}", () -> StringUtils.formatComma(game.estimatedPrizePool(lotterySix.maxTopPlacesPrize, lotterySix.taxPercentage, lotterySix.estimationRoundToNearest)))
-                .replace("{BetPlayerNames}", () -> chainPlayerBetNames(game.getBets()));
-        for (PrizeTier prizeTier : PrizeTier.values()) {
-            str = str.replace("{" + prizeTier.name() + "Odds}", () -> {
-                double odds = calculateOddsOneOver(lotterySix.numberOfChoices, prizeTier);
-                return Double.isFinite(odds) ? ODDS_FORMAT.format(odds) : "-";
-            });
-        }
-        for (int i = 1; i <= lotterySix.numberOfChoices; i++) {
-            NumberStatistics stats = game.getNumberStatistics(i);
-            str = str.replace("{" + i + "LastDrawn}", () -> stats.isNotEverDrawn() ? lotterySix.guiNumberStatisticsNever : (stats.getLastDrawn() == 0 ? "-" : stats.getLastDrawn() + ""));
-            str = str.replace("{" + i + "TimesDrawn}", () -> stats.getTimesDrawn() + "");
+            str = new LazyReplaceString(input)
+                    .replace("{Now}", () -> lotterySix.dateFormat.format(new Date()))
+                    .replace("{Date}", "-")
+                    .replace("{GameNumberRaw}", "-")
+                    .replace("{GameNumber}", "-")
+                    .replace("{SpecialName}", "")
+                    .replace("{NumberOfChoices}", () -> lotterySix.numberOfChoices + "")
+                    .replace("{PricePerBet}", () -> StringUtils.formatComma(lotterySix.pricePerBet))
+                    .replace("{TotalBets}", "-")
+                    .replace("{CarryOverFund}", "-")
+                    .replace("{PrizePool}", "-")
+                    .replace("{BetPlayerNames}", "-");
+            for (PrizeTier prizeTier : PrizeTier.values()) {
+                str = str.replace("{" + prizeTier.name() + "Odds}", () -> {
+                    double odds = calculateOddsOneOver(lotterySix.numberOfChoices, prizeTier);
+                    return Double.isFinite(odds) ? ODDS_FORMAT.format(odds) : "-";
+                });
+            }
+            for (int i = 1; i <= lotterySix.numberOfChoices; i++) {
+                str = str.replace("{" + i + "LastDrawn}", "-");
+                str = str.replace("{" + i + "TimesDrawn}", "-");
+            }
+        } else {
+            str = new LazyReplaceString(input)
+                    .replace("{Now}", () -> lotterySix.dateFormat.format(new Date()))
+                    .replace("{Date}", () -> lotterySix.dateFormat.format(new Date(game.getScheduledDateTime())))
+                    .replace("{GameNumberRaw}", () -> game.getGameNumber() + "")
+                    .replace("{GameNumber}", () -> game.getGameNumber() + (game.hasSpecialName() ? " " + game.getSpecialName() : ""))
+                    .replace("{SpecialName}", () -> game.hasSpecialName() ? game.getSpecialName() : "")
+                    .replace("{NumberOfChoices}", () -> lotterySix.numberOfChoices + "")
+                    .replace("{PricePerBet}", () -> StringUtils.formatComma(lotterySix.pricePerBet))
+                    .replace("{TotalBets}", () -> StringUtils.formatComma(game.getTotalBets()))
+                    .replace("{CarryOverFund}", () -> StringUtils.formatComma(game.getCarryOverFund(lotterySix.estimationRoundToNearest)))
+                    .replace("{PrizePool}", () -> StringUtils.formatComma(game.estimatedPrizePool(lotterySix.maxTopPlacesPrize, lotterySix.taxPercentage, lotterySix.estimationRoundToNearest)))
+                    .replace("{BetPlayerNames}", () -> chainPlayerBetNames(game.getBets()));
+            for (PrizeTier prizeTier : PrizeTier.values()) {
+                str = str.replace("{" + prizeTier.name() + "Odds}", () -> {
+                    double odds = calculateOddsOneOver(lotterySix.numberOfChoices, prizeTier);
+                    return Double.isFinite(odds) ? ODDS_FORMAT.format(odds) : "-";
+                });
+            }
+            for (int i = 1; i <= lotterySix.numberOfChoices; i++) {
+                NumberStatistics stats = game.getNumberStatistics(i);
+                str = str.replace("{" + i + "LastDrawn}", () -> stats.isNotEverDrawn() ? lotterySix.guiNumberStatisticsNever : (stats.getLastDrawn() == 0 ? "-" : stats.getLastDrawn() + ""));
+                str = str.replace("{" + i + "TimesDrawn}", () -> stats.getTimesDrawn() + "");
+            }
         }
         return ChatColorUtils.translateAlternateColorCodes('&', player == null ? str.toString() : PlaceholderAPI.setPlaceholders(player, str.toString()));
     }
@@ -166,22 +189,37 @@ public class LotteryUtils {
     }
 
     public static String formatPlaceholders(OfflinePlayer player, String input, LotterySix lotterySix, CompletedLotterySixGameIndex game) {
+        LazyReplaceString str;
         if (game == null) {
-            return formatPlaceholders(player, input, lotterySix);
-        }
-        LazyReplaceString str = new LazyReplaceString(input)
-                .replace("{Now}", () -> lotterySix.dateFormat.format(new Date()))
-                .replace("{Date}", () -> lotterySix.dateFormat.format(new Date(game.getDatetime())))
-                .replace("{GameNumberRaw}", () -> game.getGameNumber() + "")
-                .replace("{GameNumber}", () -> game.getGameNumber() + (game.hasSpecialName() ? " " + game.getSpecialName() : ""))
-                .replace("{SpecialName}", () -> game.hasSpecialName() ? game.getSpecialName() : "")
-                .replace("{NumberOfChoices}", () -> lotterySix.numberOfChoices + "")
-                .replace("{PricePerBet}", () -> StringUtils.formatComma(lotterySix.pricePerBet));
-        for (PrizeTier prizeTier : PrizeTier.values()) {
-            str = str.replace("{" + prizeTier.name() + "Odds}", () -> {
-                double odds = calculateOddsOneOver(lotterySix.numberOfChoices, prizeTier);
-                return Double.isFinite(odds) ? ODDS_FORMAT.format(odds) : "-";
-            });
+            str = new LazyReplaceString(input)
+                    .replace("{Now}", () -> lotterySix.dateFormat.format(new Date()))
+                    .replace("{Date}", "-")
+                    .replace("{GameNumberRaw}", "-")
+                    .replace("{GameNumber}", "-")
+                    .replace("{SpecialName}", "")
+                    .replace("{NumberOfChoices}", () -> lotterySix.numberOfChoices + "")
+                    .replace("{PricePerBet}", () -> StringUtils.formatComma(lotterySix.pricePerBet));
+            for (PrizeTier prizeTier : PrizeTier.values()) {
+                str = str.replace("{" + prizeTier.name() + "Odds}", () -> {
+                    double odds = calculateOddsOneOver(lotterySix.numberOfChoices, prizeTier);
+                    return Double.isFinite(odds) ? ODDS_FORMAT.format(odds) : "-";
+                });
+            }
+        } else {
+            str = new LazyReplaceString(input)
+                    .replace("{Now}", () -> lotterySix.dateFormat.format(new Date()))
+                    .replace("{Date}", () -> lotterySix.dateFormat.format(new Date(game.getDatetime())))
+                    .replace("{GameNumberRaw}", () -> game.getGameNumber() + "")
+                    .replace("{GameNumber}", () -> game.getGameNumber() + (game.hasSpecialName() ? " " + game.getSpecialName() : ""))
+                    .replace("{SpecialName}", () -> game.hasSpecialName() ? game.getSpecialName() : "")
+                    .replace("{NumberOfChoices}", () -> lotterySix.numberOfChoices + "")
+                    .replace("{PricePerBet}", () -> StringUtils.formatComma(lotterySix.pricePerBet));
+            for (PrizeTier prizeTier : PrizeTier.values()) {
+                str = str.replace("{" + prizeTier.name() + "Odds}", () -> {
+                    double odds = calculateOddsOneOver(lotterySix.numberOfChoices, prizeTier);
+                    return Double.isFinite(odds) ? ODDS_FORMAT.format(odds) : "-";
+                });
+            }
         }
         return ChatColorUtils.translateAlternateColorCodes('&', player == null ? str.toString() : PlaceholderAPI.setPlaceholders(player, str.toString()));
     }
@@ -195,49 +233,90 @@ public class LotteryUtils {
     }
 
     public static String formatPlaceholders(OfflinePlayer player, String input, LotterySix lotterySix, CompletedLotterySixGame game) {
+        LazyReplaceString str;
         if (game == null) {
-            return formatPlaceholders(player, input, lotterySix);
-        }
-        LazyReplaceString str = new LazyReplaceString(input)
-                .replace("{Now}", () -> lotterySix.dateFormat.format(new Date()))
-                .replace("{Date}", () -> lotterySix.dateFormat.format(new Date(game.getDatetime())))
-                .replace("{GameNumberRaw}", () -> game.getGameNumber() + "")
-                .replace("{GameNumber}", () -> game.getGameNumber() + (game.hasSpecialName() ? " " + game.getSpecialName() : ""))
-                .replace("{SpecialName}", () -> game.hasSpecialName() ? game.getSpecialName() : "")
-                .replace("{NumberOfChoices}", () -> lotterySix.numberOfChoices + "")
-                .replace("{PricePerBet}", () -> StringUtils.formatComma(lotterySix.pricePerBet))
-                .replace("{TotalBets}", () -> StringUtils.formatComma(game.getTotalBets()))
-                .replace("{TotalPrizes}", () -> StringUtils.formatComma(game.getTotalPrizes()))
-                .replace("{LotteriesFundsRaised}", () -> StringUtils.formatComma(game.getLotteriesFunds()))
-                .replace("{FirstNumber}", () -> ChatColorUtils.applyNumberColor(game.getDrawResult().getNumber(0)))
-                .replace("{SecondNumber}", () -> ChatColorUtils.applyNumberColor(game.getDrawResult().getNumber(1)))
-                .replace("{ThirdNumber}", () -> ChatColorUtils.applyNumberColor(game.getDrawResult().getNumber(2)))
-                .replace("{FourthNumber}", () -> ChatColorUtils.applyNumberColor(game.getDrawResult().getNumber(3)))
-                .replace("{FifthNumber}", () -> ChatColorUtils.applyNumberColor(game.getDrawResult().getNumber(4)))
-                .replace("{SixthNumber}", () -> ChatColorUtils.applyNumberColor(game.getDrawResult().getNumber(5)))
-                .replace("{FirstNumberOrdered}", () -> ChatColorUtils.applyNumberColor(game.getDrawResult().getNumberOrdered(0)))
-                .replace("{SecondNumberOrdered}", () -> ChatColorUtils.applyNumberColor(game.getDrawResult().getNumberOrdered(1)))
-                .replace("{ThirdNumberOrdered}", () -> ChatColorUtils.applyNumberColor(game.getDrawResult().getNumberOrdered(2)))
-                .replace("{FourthNumberOrdered}", () -> ChatColorUtils.applyNumberColor(game.getDrawResult().getNumberOrdered(3)))
-                .replace("{FifthNumberOrdered}", () -> ChatColorUtils.applyNumberColor(game.getDrawResult().getNumberOrdered(4)))
-                .replace("{SixthNumberOrdered}", () -> ChatColorUtils.applyNumberColor(game.getDrawResult().getNumberOrdered(5)))
-                .replace("{SpecialNumber}", () -> ChatColorUtils.applyNumberColor(game.getDrawResult().getSpecialNumber()))
-                .replace("{BetPlayerNames}", () -> chainPlayerBetNames(game.getBets()));
-        for (PrizeTier prizeTier : PrizeTier.values()) {
-            String prizeTierName = prizeTier.name();
-            str = str
-                    .replace("{" + prizeTier.name() + "Odds}", () -> {
-                        double odds = calculateOddsOneOver(lotterySix.numberOfChoices, prizeTier);
-                        return Double.isFinite(odds) ? ODDS_FORMAT.format(odds) : "-";
-                    })
-                    .replace("{" + prizeTierName + "Prize}", () -> StringUtils.formatComma(game.getPrizeForTier(prizeTier)))
-                    .replace("{" + prizeTierName + "PrizeCount}", () -> BET_COUNT_FORMAT.format(game.getWinnerCountForTier(prizeTier)) + "")
-                    .replace("{" + prizeTierName + "PlayerNames}", () -> chainPlayerWinningsNames(game.getWinnings(prizeTier)));
-        }
-        for (int i = 1; i <= lotterySix.numberOfChoices; i++) {
-            NumberStatistics stats = game.getNumberStatistics(i);
-            str = str.replace("{" + i + "LastDrawn}", () -> stats.isNotEverDrawn() ? lotterySix.guiNumberStatisticsNever : (stats.getLastDrawn() == 0 ? "-" : stats.getLastDrawn() + ""));
-            str = str.replace("{" + i + "TimesDrawn}", () -> stats.getTimesDrawn() + "");
+            str = new LazyReplaceString(input)
+                    .replace("{Now}", () -> lotterySix.dateFormat.format(new Date()))
+                    .replace("{Date}", "-")
+                    .replace("{GameNumberRaw}", "-")
+                    .replace("{GameNumber}", "-")
+                    .replace("{SpecialName}", "")
+                    .replace("{NumberOfChoices}", () -> lotterySix.numberOfChoices + "")
+                    .replace("{PricePerBet}", () -> StringUtils.formatComma(lotterySix.pricePerBet))
+                    .replace("{TotalBets}", () -> "-")
+                    .replace("{TotalPrizes}", () -> "-")
+                    .replace("{LotteriesFundsRaised}", () -> "-")
+                    .replace("{FirstNumber}", () -> "-")
+                    .replace("{SecondNumber}", () -> "-")
+                    .replace("{ThirdNumber}", () -> "-")
+                    .replace("{FourthNumber}", () -> "-")
+                    .replace("{FifthNumber}", () -> "-")
+                    .replace("{SixthNumber}", () -> "-")
+                    .replace("{FirstNumberOrdered}", "-")
+                    .replace("{SecondNumberOrdered}", "-")
+                    .replace("{ThirdNumberOrdered}", "-")
+                    .replace("{FourthNumberOrdered}", "-")
+                    .replace("{FifthNumberOrdered}", "-")
+                    .replace("{SixthNumberOrdered}", "-")
+                    .replace("{SpecialNumber}", "-")
+                    .replace("{BetPlayerNames}", "-");
+            for (PrizeTier prizeTier : PrizeTier.values()) {
+                String prizeTierName = prizeTier.name();
+                str = str
+                        .replace("{" + prizeTier.name() + "Odds}", () -> {
+                            double odds = calculateOddsOneOver(lotterySix.numberOfChoices, prizeTier);
+                            return Double.isFinite(odds) ? ODDS_FORMAT.format(odds) : "-";
+                        })
+                        .replace("{" + prizeTierName + "Prize}", "-")
+                        .replace("{" + prizeTierName + "PrizeCount}", "-")
+                        .replace("{" + prizeTierName + "PlayerNames}", "-");
+            }
+            for (int i = 1; i <= lotterySix.numberOfChoices; i++) {
+                str = str.replace("{" + i + "LastDrawn}", "-");
+                str = str.replace("{" + i + "TimesDrawn}", "-");
+            }
+        } else {
+            str = new LazyReplaceString(input)
+                    .replace("{Now}", () -> lotterySix.dateFormat.format(new Date()))
+                    .replace("{Date}", () -> lotterySix.dateFormat.format(new Date(game.getDatetime())))
+                    .replace("{GameNumberRaw}", () -> game.getGameNumber() + "")
+                    .replace("{GameNumber}", () -> game.getGameNumber() + (game.hasSpecialName() ? " " + game.getSpecialName() : ""))
+                    .replace("{SpecialName}", () -> game.hasSpecialName() ? game.getSpecialName() : "")
+                    .replace("{NumberOfChoices}", () -> lotterySix.numberOfChoices + "")
+                    .replace("{PricePerBet}", () -> StringUtils.formatComma(lotterySix.pricePerBet))
+                    .replace("{TotalBets}", () -> StringUtils.formatComma(game.getTotalBets()))
+                    .replace("{TotalPrizes}", () -> StringUtils.formatComma(game.getTotalPrizes()))
+                    .replace("{LotteriesFundsRaised}", () -> StringUtils.formatComma(game.getLotteriesFunds()))
+                    .replace("{FirstNumber}", () -> ChatColorUtils.applyNumberColor(game.getDrawResult().getNumber(0)))
+                    .replace("{SecondNumber}", () -> ChatColorUtils.applyNumberColor(game.getDrawResult().getNumber(1)))
+                    .replace("{ThirdNumber}", () -> ChatColorUtils.applyNumberColor(game.getDrawResult().getNumber(2)))
+                    .replace("{FourthNumber}", () -> ChatColorUtils.applyNumberColor(game.getDrawResult().getNumber(3)))
+                    .replace("{FifthNumber}", () -> ChatColorUtils.applyNumberColor(game.getDrawResult().getNumber(4)))
+                    .replace("{SixthNumber}", () -> ChatColorUtils.applyNumberColor(game.getDrawResult().getNumber(5)))
+                    .replace("{FirstNumberOrdered}", () -> ChatColorUtils.applyNumberColor(game.getDrawResult().getNumberOrdered(0)))
+                    .replace("{SecondNumberOrdered}", () -> ChatColorUtils.applyNumberColor(game.getDrawResult().getNumberOrdered(1)))
+                    .replace("{ThirdNumberOrdered}", () -> ChatColorUtils.applyNumberColor(game.getDrawResult().getNumberOrdered(2)))
+                    .replace("{FourthNumberOrdered}", () -> ChatColorUtils.applyNumberColor(game.getDrawResult().getNumberOrdered(3)))
+                    .replace("{FifthNumberOrdered}", () -> ChatColorUtils.applyNumberColor(game.getDrawResult().getNumberOrdered(4)))
+                    .replace("{SixthNumberOrdered}", () -> ChatColorUtils.applyNumberColor(game.getDrawResult().getNumberOrdered(5)))
+                    .replace("{SpecialNumber}", () -> ChatColorUtils.applyNumberColor(game.getDrawResult().getSpecialNumber()))
+                    .replace("{BetPlayerNames}", () -> chainPlayerBetNames(game.getBets()));
+            for (PrizeTier prizeTier : PrizeTier.values()) {
+                String prizeTierName = prizeTier.name();
+                str = str
+                        .replace("{" + prizeTier.name() + "Odds}", () -> {
+                            double odds = calculateOddsOneOver(lotterySix.numberOfChoices, prizeTier);
+                            return Double.isFinite(odds) ? ODDS_FORMAT.format(odds) : "-";
+                        })
+                        .replace("{" + prizeTierName + "Prize}", () -> StringUtils.formatComma(game.getPrizeForTier(prizeTier)))
+                        .replace("{" + prizeTierName + "PrizeCount}", () -> BET_COUNT_FORMAT.format(game.getWinnerCountForTier(prizeTier)) + "")
+                        .replace("{" + prizeTierName + "PlayerNames}", () -> chainPlayerWinningsNames(game.getWinnings(prizeTier)));
+            }
+            for (int i = 1; i <= lotterySix.numberOfChoices; i++) {
+                NumberStatistics stats = game.getNumberStatistics(i);
+                str = str.replace("{" + i + "LastDrawn}", () -> stats.isNotEverDrawn() ? lotterySix.guiNumberStatisticsNever : (stats.getLastDrawn() == 0 ? "-" : stats.getLastDrawn() + ""));
+                str = str.replace("{" + i + "TimesDrawn}", () -> stats.getTimesDrawn() + "");
+            }
         }
         return ChatColorUtils.translateAlternateColorCodes('&', player == null ? str.toString() : PlaceholderAPI.setPlaceholders(player, str.toString()));
     }

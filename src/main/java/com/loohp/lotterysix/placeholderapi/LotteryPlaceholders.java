@@ -22,6 +22,8 @@ package com.loohp.lotterysix.placeholderapi;
 
 import com.cronutils.model.Cron;
 import com.loohp.lotterysix.LotterySixPlugin;
+import com.loohp.lotterysix.game.lottery.CompletedLotterySixGame;
+import com.loohp.lotterysix.game.lottery.PlayableLotterySixGame;
 import com.loohp.lotterysix.game.objects.PlayerPreferenceKey;
 import com.loohp.lotterysix.game.objects.PlayerStatsKey;
 import com.loohp.lotterysix.game.objects.PrizeTier;
@@ -79,6 +81,9 @@ public class LotteryPlaceholders extends PlaceholderExpansion {
         if (identifier.startsWith("currentgame_")) {
             if (LotterySixPlugin.getInstance().getCurrentGame() == null) {
                 return "";
+            } else if (LotterySixPlugin.getInstance().isGameLocked() && LotterySixPlugin.getInstance().placeholderAPIHideResultsWhileGameIsLocked) {
+                String str = "{" + identifier.substring("currentgame_".length()) + "}";
+                return LotteryUtils.formatPlaceholders(offlineplayer, str, LotterySixPlugin.getInstance(), (PlayableLotterySixGame) null);
             } else {
                 String str = "{" + identifier.substring("currentgame_".length()) + "}";
                 return LotteryUtils.formatPlaceholders(offlineplayer, str, LotterySixPlugin.getInstance(), LotterySixPlugin.getInstance().getCurrentGame());
@@ -86,6 +91,9 @@ public class LotteryPlaceholders extends PlaceholderExpansion {
         } else if (identifier.startsWith("lastgame_")) {
             if (LotterySixPlugin.getInstance().getCompletedGames().isEmpty()) {
                 return "";
+            } else if (LotterySixPlugin.getInstance().isGameLocked() && LotterySixPlugin.getInstance().placeholderAPIHideResultsWhileGameIsLocked) {
+                String str = "{" + identifier.substring("lastgame_".length()) + "}";
+                return LotteryUtils.formatPlaceholders(offlineplayer, str, LotterySixPlugin.getInstance(), (CompletedLotterySixGame) null);
             } else {
                 String str = "{" + identifier.substring("lastgame_".length()) + "}";
                 return LotteryUtils.formatPlaceholders(offlineplayer, str, LotterySixPlugin.getInstance(), LotterySixPlugin.getInstance().getCompletedGames().get(0));

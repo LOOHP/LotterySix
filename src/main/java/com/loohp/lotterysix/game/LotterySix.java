@@ -259,6 +259,8 @@ public class LotterySix implements AutoCloseable {
     public String discordSRVSlashCommandsViewNumberStatisticsTimesDrawnField;
     public String discordSRVSlashCommandsViewNumberStatisticsThumbnailURL;
 
+    public boolean placeholderAPIHideResultsWhileGameIsLocked;
+
     public boolean allowLoans;
     public Map<String, Long> playerBetLimit;
     public UUID lotteriesFundAccount;
@@ -341,16 +343,18 @@ public class LotterySix implements AutoCloseable {
                     long now = System.currentTimeMillis();
                     if (!backendBungeecordMode) {
                         if (currentGame == null) {
-                            if ((announcerPreDrawBossBarEnabled || announcerDrawBossBarEnabled) && !gameLocked) {
-                                bossBarUpdater.accept(BossBarInfo.CLEAR, null);
-                            }
-                            if (runInterval != null && CronUtils.satisfyByCurrentMinute(runInterval, timezone)) {
-                                startNewGame();
-                                counter = 0;
+                            if (!gameLocked) {
+                                if (announcerPreDrawBossBarEnabled || announcerDrawBossBarEnabled) {
+                                    bossBarUpdater.accept(BossBarInfo.CLEAR, null);
+                                }
+                                if (runInterval != null && CronUtils.satisfyByCurrentMinute(runInterval, timezone)) {
+                                    startNewGame();
+                                    counter = 0;
+                                }
                             }
                         } else {
                             long timeLeft = currentGame.getScheduledDateTime() - now;
-                            if (announcerPreDrawBossBarEnabled) {
+                            if (announcerPreDrawBossBarEnabled && !gameLocked) {
                                 if (timeLeft > 0 && timeLeft < announcerPreDrawBossBarTimeBeforeDraw) {
                                     double progress = Math.max(0.0, Math.min(1.0, (double) timeLeft / (double) announcerPreDrawBossBarTimeBeforeDraw));
                                     BossBarInfo info = new BossBarInfo(announcerPreDrawBossBarMessage, announcerPreDrawBossBarColor, announcerPreDrawBossBarStyle, progress);
@@ -898,6 +902,8 @@ public class LotterySix implements AutoCloseable {
         discordSRVSlashCommandsViewNumberStatisticsLastDrawnField = config.getConfiguration().getString("DiscordSRV.SlashCommands.ViewNumberStatistics.LastDrawnField");
         discordSRVSlashCommandsViewNumberStatisticsTimesDrawnField = config.getConfiguration().getString("DiscordSRV.SlashCommands.ViewNumberStatistics.TimesDrawnField");
         discordSRVSlashCommandsViewNumberStatisticsThumbnailURL = config.getConfiguration().getString("DiscordSRV.SlashCommands.ViewNumberStatistics.ThumbnailURL");
+
+        placeholderAPIHideResultsWhileGameIsLocked = config.getConfiguration().getBoolean("PlaceholderAPI.HideResultsWhileGameIsLocked");
 
         allowLoans = config.getConfiguration().getBoolean("Restrictions.AllowLoans");
         playerBetLimit = new HashMap<>();
