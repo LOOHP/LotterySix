@@ -79,9 +79,7 @@ public class LotteryPlaceholders extends PlaceholderExpansion {
     @Override
     public String onRequest(OfflinePlayer offlineplayer, String identifier) {
         if (identifier.startsWith("currentgame_")) {
-            if (LotterySixPlugin.getInstance().getCurrentGame() == null) {
-                return "";
-            } else if (LotterySixPlugin.getInstance().isGameLocked() && LotterySixPlugin.getInstance().placeholderAPIHideResultsWhileGameIsLocked) {
+            if (LotterySixPlugin.getInstance().getCurrentGame() == null || (LotterySixPlugin.getInstance().isGameLocked() && LotterySixPlugin.getInstance().placeholderAPIHideResultsWhileGameIsLocked)) {
                 String str = "{" + identifier.substring("currentgame_".length()) + "}";
                 return LotteryUtils.formatPlaceholders(offlineplayer, str, LotterySixPlugin.getInstance(), (PlayableLotterySixGame) null);
             } else {
@@ -89,9 +87,7 @@ public class LotteryPlaceholders extends PlaceholderExpansion {
                 return LotteryUtils.formatPlaceholders(offlineplayer, str, LotterySixPlugin.getInstance(), LotterySixPlugin.getInstance().getCurrentGame());
             }
         } else if (identifier.startsWith("lastgame_")) {
-            if (LotterySixPlugin.getInstance().getCompletedGames().isEmpty()) {
-                return "";
-            } else if (LotterySixPlugin.getInstance().isGameLocked() && LotterySixPlugin.getInstance().placeholderAPIHideResultsWhileGameIsLocked) {
+            if (LotterySixPlugin.getInstance().getCompletedGames().isEmpty() || (LotterySixPlugin.getInstance().isGameLocked() && LotterySixPlugin.getInstance().placeholderAPIHideResultsWhileGameIsLocked)) {
                 String str = "{" + identifier.substring("lastgame_".length()) + "}";
                 return LotteryUtils.formatPlaceholders(offlineplayer, str, LotterySixPlugin.getInstance(), (CompletedLotterySixGame) null);
             } else {
