@@ -48,6 +48,12 @@ public class LotteryUtils {
     public static final BigInteger SIX_FACTORIAL = BigInteger.valueOf(720);
     public static final DecimalFormat ODDS_FORMAT = new DecimalFormat("0.##");
     public static final DecimalFormat BET_COUNT_FORMAT = new DecimalFormat("0.0");
+    
+    private static SimpleDateFormat dateFormat(LotterySix instance, String pattern) {
+        SimpleDateFormat format = new SimpleDateFormat(pattern, instance.locale);
+        format.setTimeZone(instance.timezone);
+        return format;
+    }
 
     public static String oneSignificantFigure(long value) {
         StringBuilder sb = new StringBuilder(Long.toString(value));
@@ -100,7 +106,7 @@ public class LotteryUtils {
     public static String formatPlaceholders(OfflinePlayer player, String input, LotterySix lotterySix) {
         LazyReplaceString str = new LazyReplaceString(input)
                 .replace("{Now}", () -> lotterySix.dateFormat.format(new Date()))
-                .replaceAll("\\{Now_(.*?)}", result -> new SimpleDateFormat(result.group(1)).format(new Date()))
+                .replaceAll("\\{Now_(.*?)}", result -> dateFormat(lotterySix, result.group(1)).format(new Date()))
                 .replace("{PricePerBet}", () -> StringUtils.formatComma(lotterySix.pricePerBet))
                 .replace("{Date}", () -> "-")
                 .replace("{GameNumberRaw}", () -> "-")
@@ -134,7 +140,7 @@ public class LotteryUtils {
         if (game == null) {
             str = new LazyReplaceString(input)
                     .replace("{Now}", () -> lotterySix.dateFormat.format(new Date()))
-                    .replaceAll("\\{Now_(.*?)}", result -> new SimpleDateFormat(result.group(1)).format(new Date()))
+                    .replaceAll("\\{Now_(.*?)}", result -> dateFormat(lotterySix, result.group(1)).format(new Date()))
                     .replace("{Date}", "-")
                     .replaceAll("\\{Date_(.*?)}", result -> "-")
                     .replace("{GameNumberRaw}", "-")
@@ -159,9 +165,9 @@ public class LotteryUtils {
         } else {
             str = new LazyReplaceString(input)
                     .replace("{Now}", () -> lotterySix.dateFormat.format(new Date()))
-                    .replaceAll("\\{Now_(.*?)}", result -> new SimpleDateFormat(result.group(1)).format(new Date()))
+                    .replaceAll("\\{Now_(.*?)}", result -> dateFormat(lotterySix, result.group(1)).format(new Date()))
                     .replace("{Date}", () -> lotterySix.dateFormat.format(new Date(game.getScheduledDateTime())))
-                    .replaceAll("\\{Date_(.*?)}", result -> new SimpleDateFormat(result.group(1)).format(new Date(game.getScheduledDateTime())))
+                    .replaceAll("\\{Date_(.*?)}", result -> dateFormat(lotterySix, result.group(1)).format(new Date(game.getScheduledDateTime())))
                     .replace("{GameNumberRaw}", () -> game.getGameNumber() + "")
                     .replace("{GameNumber}", () -> game.getGameNumber() + (game.hasSpecialName() ? " " + game.getSpecialName() : ""))
                     .replace("{SpecialName}", () -> game.hasSpecialName() ? game.getSpecialName() : "")
@@ -199,7 +205,7 @@ public class LotteryUtils {
         if (game == null) {
             str = new LazyReplaceString(input)
                     .replace("{Now}", () -> lotterySix.dateFormat.format(new Date()))
-                    .replaceAll("\\{Now_(.*?)}", result -> new SimpleDateFormat(result.group(1)).format(new Date()))
+                    .replaceAll("\\{Now_(.*?)}", result -> dateFormat(lotterySix, result.group(1)).format(new Date()))
                     .replace("{Date}", "-")
                     .replaceAll("\\{Date_(.*?)}", result -> "-")
                     .replace("{GameNumberRaw}", "-")
@@ -216,9 +222,9 @@ public class LotteryUtils {
         } else {
             str = new LazyReplaceString(input)
                     .replace("{Now}", () -> lotterySix.dateFormat.format(new Date()))
-                    .replaceAll("\\{Now_(.*?)}", result -> new SimpleDateFormat(result.group(1)).format(new Date()))
+                    .replaceAll("\\{Now_(.*?)}", result -> dateFormat(lotterySix, result.group(1)).format(new Date()))
                     .replace("{Date}", () -> lotterySix.dateFormat.format(new Date(game.getDatetime())))
-                    .replaceAll("\\{Date_(.*?)}", result -> new SimpleDateFormat(result.group(1)).format(new Date(game.getDatetime())))
+                    .replaceAll("\\{Date_(.*?)}", result -> dateFormat(lotterySix, result.group(1)).format(new Date(game.getDatetime())))
                     .replace("{GameNumberRaw}", () -> game.getGameNumber() + "")
                     .replace("{GameNumber}", () -> game.getGameNumber() + (game.hasSpecialName() ? " " + game.getSpecialName() : ""))
                     .replace("{SpecialName}", () -> game.hasSpecialName() ? game.getSpecialName() : "")
@@ -247,7 +253,7 @@ public class LotteryUtils {
         if (game == null) {
             str = new LazyReplaceString(input)
                     .replace("{Now}", () -> lotterySix.dateFormat.format(new Date()))
-                    .replaceAll("\\{Now_(.*?)}", result -> new SimpleDateFormat(result.group(1)).format(new Date()))
+                    .replaceAll("\\{Now_(.*?)}", result -> dateFormat(lotterySix, result.group(1)).format(new Date()))
                     .replace("{Date}", "-")
                     .replaceAll("\\{Date_(.*?)}", result -> "-")
                     .replace("{GameNumberRaw}", "-")
@@ -290,9 +296,9 @@ public class LotteryUtils {
         } else {
             str = new LazyReplaceString(input)
                     .replace("{Now}", () -> lotterySix.dateFormat.format(new Date()))
-                    .replaceAll("\\{Now_(.*?)}", result -> new SimpleDateFormat(result.group(1)).format(new Date()))
+                    .replaceAll("\\{Now_(.*?)}", result -> dateFormat(lotterySix, result.group(1)).format(new Date()))
                     .replace("{Date}", () -> lotterySix.dateFormat.format(new Date(game.getDatetime())))
-                    .replaceAll("\\{Date_(.*?)}", result -> new SimpleDateFormat(result.group(1)).format(new Date(game.getDatetime())))
+                    .replaceAll("\\{Date_(.*?)}", result -> dateFormat(lotterySix, result.group(1)).format(new Date(game.getDatetime())))
                     .replace("{GameNumberRaw}", () -> game.getGameNumber() + "")
                     .replace("{GameNumber}", () -> game.getGameNumber() + (game.hasSpecialName() ? " " + game.getSpecialName() : ""))
                     .replace("{SpecialName}", () -> game.hasSpecialName() ? game.getSpecialName() : "")
