@@ -69,8 +69,8 @@ public class PlayableLotterySixGame implements IDedGame {
     private static final Map<Object, Map<String, Object>> LOCKS_AND_FLAGS = Collections.synchronizedMap(new WeakHashMap<>());
 
     @SuppressWarnings("unchecked")
-    private static <T, V> V getSharedLockOrFlag(T object, String key, Supplier<V> constructor) {
-        return (V) LOCKS_AND_FLAGS.computeIfAbsent(object, k -> new ConcurrentHashMap<>()).computeIfAbsent(key, k -> constructor.get());
+    private static <T, V> V getSharedLockOrFlag(T owner, String key, Supplier<V> constructor) {
+        return (V) LOCKS_AND_FLAGS.computeIfAbsent(owner, k -> new ConcurrentHashMap<>()).computeIfAbsent(key, k -> constructor.get());
     }
 
     public static PlayableLotterySixGame createNewGame(LotterySix instance, long scheduledDateTime, String specialName, Map<Integer, NumberStatistics> numberStatistics, long carryOverFund, long lowestTopPlacesPrize) {

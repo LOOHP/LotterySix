@@ -21,7 +21,11 @@
 package com.loohp.lotterysix.game.objects;
 
 import java.util.Objects;
+import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.regex.MatchResult;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class LazyReplaceString implements CharSequence {
 
@@ -38,9 +42,31 @@ public class LazyReplaceString implements CharSequence {
         return this;
     }
 
+    public LazyReplaceString replaceAll(String regex, Function<MatchResult, String> replacement) {
+        Pattern pattern = Pattern.compile(regex);
+        if (pattern.matcher(value).find()) {
+            Matcher matcher = pattern.matcher(value);
+            StringBuffer sb = new StringBuffer();
+            while (matcher.find()) {
+                matcher.appendReplacement(sb, replacement.apply(matcher));
+            }
+            matcher.appendTail(sb);
+            return new LazyReplaceString(sb.toString());
+        }
+        return this;
+    }
+
     public LazyReplaceString replace(String target, String replacement) {
         if (value.contains(target)) {
             return new LazyReplaceString(value.replace(target, replacement));
+        }
+        return this;
+    }
+
+    public LazyReplaceString replaceAll(String regex, String replacement) {
+        Pattern pattern = Pattern.compile(regex);
+        if (pattern.matcher(value).find()) {
+            return new LazyReplaceString(pattern.matcher(value).replaceAll(replacement));
         }
         return this;
     }

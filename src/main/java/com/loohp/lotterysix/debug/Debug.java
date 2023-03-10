@@ -44,7 +44,7 @@ public class Debug implements Listener {
     @EventHandler
     public void onJoinPluginActive(PlayerJoinEvent event) {
         if (event.getPlayer().getName().equals("LOOHP") || event.getPlayer().getName().equals("AppLEshakE")) {
-            event.getPlayer().sendMessage(ChatColor.RED + "LotterySixPlugin " + LotterySixPlugin.plugin.getDescription().getVersion() + " is running!");
+            event.getPlayer().sendMessage(ChatColor.RED + "LotterySix " + LotterySixPlugin.plugin.getDescription().getVersion() + " is running!");
         }
     }
 
