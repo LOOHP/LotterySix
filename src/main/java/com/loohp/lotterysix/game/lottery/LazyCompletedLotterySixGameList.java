@@ -89,10 +89,12 @@ public class LazyCompletedLotterySixGameList extends AbstractList<CompletedLotte
         }
     }
 
-    @Deprecated
-    public void clearDirtyGames() {
-        cachedGames.putAll(dirtyGames);
-        dirtyGames.clear();
+    public Iterator<CompletedLotterySixGame> dirtyGamesIterator() {
+        return dirtyGames.values().iterator();
+    }
+
+    public Iterable<CompletedLotterySixGame> dirtyGamesIterable() {
+        return () -> dirtyGamesIterator();
     }
 
     @Override

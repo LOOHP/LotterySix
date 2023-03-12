@@ -1064,19 +1064,19 @@ public class LotterySix implements AutoCloseable {
                 e.printStackTrace();
             }
             synchronized (completedGames.getIterateLock()) {
-                for (CompletedLotterySixGameIndex gameIndex : completedGames.indexIterable()) {
-                    File file = new File(lotteryDataFolder, gameIndex.getDataFileName());
-                    if (!file.exists()) {
-                        try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(Files.newOutputStream(file.toPath()), StandardCharsets.UTF_8))) {
-                            pw.println(GSON.toJson(completedGames.get(gameIndex)));
-                            pw.flush();
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
+                Iterator<CompletedLotterySixGame> itr = completedGames.dirtyGamesIterator();
+                while (itr.hasNext()) {
+                    CompletedLotterySixGame game = itr.next();
+                    File file = new File(lotteryDataFolder, game.getDataFileName());
+                    try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(Files.newOutputStream(file.toPath()), StandardCharsets.UTF_8))) {
+                        pw.println(GSON.toJson(game));
+                        itr.remove();
+                        pw.flush();
+                    } catch (IOException e) {
+                        e.printStackTrace();
                     }
                 }
             }
-            completedGames.clearDirtyGames();
         }
     }
 }
