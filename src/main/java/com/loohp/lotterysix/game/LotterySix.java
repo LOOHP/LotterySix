@@ -1076,6 +1076,7 @@ public class LotterySix implements AutoCloseable {
                     }
                 }
             }
+            completedGames.clearDirtyGames();
         }
     }
 }

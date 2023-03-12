@@ -41,6 +41,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Spliterator;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 public class LazyCompletedLotterySixGameList extends AbstractList<CompletedLotterySixGame> {
@@ -58,22 +59,46 @@ public class LazyCompletedLotterySixGameList extends AbstractList<CompletedLotte
     private final File lotteryDataFolder;
     private final List<CompletedLotterySixGameIndex> gameIndexes;
     private final Map<UUID, CompletedLotterySixGame> cachedGames;
+    private final Map<UUID, CompletedLotterySixGame> dirtyGames;
 
     public LazyCompletedLotterySixGameList(File lotteryDataFolder) {
         this.lotteryDataFolder = lotteryDataFolder;
         this.gameIndexes = Collections.synchronizedList(new ArrayList<>());
         Cache<UUID, CompletedLotterySixGame> cache = CacheBuilder.newBuilder().maximumSize(20).build();
         this.cachedGames = cache.asMap();
+        this.dirtyGames = new ConcurrentHashMap<>();
     }
 
     public Object getIterateLock() {
         return gameIndexes;
     }
+    
+    private CompletedLotterySixGame lookForCached(UUID gameId) {
+        CompletedLotterySixGame game = dirtyGames.get(gameId);
+        if (game != null) {
+            return game;
+        }
+        return cachedGames.get(gameId);
+    }
+
+    public void setGameDirty(UUID gameId) {
+        CompletedLotterySixGame game = lookForCached(gameId);
+        if (game != null) {
+            cachedGames.remove(gameId);
+            dirtyGames.put(gameId, game);
+        }
+    }
+
+    @Deprecated
+    public void clearDirtyGames() {
+        cachedGames.putAll(dirtyGames);
+        dirtyGames.clear();
+    }
 
     @Override
     public CompletedLotterySixGame get(int index) {
         CompletedLotterySixGameIndex gameIndex = gameIndexes.get(index);
-        CompletedLotterySixGame game = cachedGames.get(gameIndex.getGameId());
+        CompletedLotterySixGame game = lookForCached(gameIndex.getGameId());
         if (game != null) {
             return game;
         }
@@ -83,7 +108,7 @@ public class LazyCompletedLotterySixGameList extends AbstractList<CompletedLotte
     }
 
     public CompletedLotterySixGame get(CompletedLotterySixGameIndex gameIndex) {
-        CompletedLotterySixGame game = cachedGames.get(gameIndex.getGameId());
+        CompletedLotterySixGame game = lookForCached(gameIndex.getGameId());
         if (game != null) {
             return game;
         }
@@ -119,7 +144,7 @@ public class LazyCompletedLotterySixGameList extends AbstractList<CompletedLotte
         cachedGames.remove(lastGame.getGameId());
         CompletedLotterySixGameIndex gameIndex = element.toGameIndex();
         gameIndexes.set(index, gameIndex);
-        cachedGames.put(gameIndex.getGameId(), element);
+        dirtyGames.put(gameIndex.getGameId(), element);
         return lastGame;
     }
 
@@ -134,7 +159,7 @@ public class LazyCompletedLotterySixGameList extends AbstractList<CompletedLotte
     public void add(int index, CompletedLotterySixGame element) {
         CompletedLotterySixGameIndex gameIndex = element.toGameIndex();
         gameIndexes.add(index, gameIndex);
-        cachedGames.put(gameIndex.getGameId(), element);
+        dirtyGames.put(gameIndex.getGameId(), element);
     }
 
     public void add(CompletedLotterySixGameIndex gameIndex) {

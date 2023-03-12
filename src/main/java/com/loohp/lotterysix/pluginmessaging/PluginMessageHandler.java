@@ -69,6 +69,7 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.EnumMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -158,6 +159,7 @@ public class PluginMessageHandler implements PluginMessageListener {
                             UUID gameId = DataTypeIO.readUUID(in);
                             if (lastGame != null && lastGame.getGameId().equals(gameId)) {
                                 gsonOfInstance(lastGame).fromJson(DataTypeIO.readString(in, StandardCharsets.UTF_8), CompletedLotterySixGame.class);
+                                instance.getCompletedGames().setGameDirty(lastGame.getGameId());
                             } else {
                                 CompletedLotterySixGame game = GSON.fromJson(DataTypeIO.readString(in, StandardCharsets.UTF_8), CompletedLotterySixGame.class);
                                 instance.setLastGame(game);
@@ -270,11 +272,22 @@ public class PluginMessageHandler implements PluginMessageListener {
                         }
                         case 0x0C: { // Past Games Sync Check Missing
                             int size = in.readInt();
-                            for (int i = 0; i < size; i++) {
-                                instance.getCompletedGames().add(GSON.fromJson(DataTypeIO.readString(in, StandardCharsets.UTF_8), CompletedLotterySixGame.class));
-                            }
                             if (size > 0) {
-                                instance.getCompletedGames().indexSort(Comparator.comparing((CompletedLotterySixGameIndex gameIndex) -> gameIndex.getDatetime()).reversed());
+                                for (int i = 0; i < size; i++) {
+                                    UUID gameId = DataTypeIO.readUUID(in);
+                                    Optional<CompletedLotterySixGameIndex> optGame = instance.getCompletedGames().indexStream().filter(each -> each.getGameId().equals(gameId)).findFirst();
+                                    if (optGame.isPresent()) {
+                                        CompletedLotterySixGame game = instance.getCompletedGames().get(optGame.get());
+                                        gsonOfInstance(game).fromJson(DataTypeIO.readString(in, StandardCharsets.UTF_8), CompletedLotterySixGame.class);
+                                        instance.getCompletedGames().setGameDirty(game.getGameId());
+                                    } else {
+                                        instance.getCompletedGames().add(GSON.fromJson(DataTypeIO.readString(in, StandardCharsets.UTF_8), CompletedLotterySixGame.class));
+                                    }
+                                }
+                                if (instance.getCompletedGames().size() > 0) {
+                                    instance.getCompletedGames().indexSort(Comparator.comparing((CompletedLotterySixGameIndex gameIndex) -> gameIndex.getDatetime()).reversed());
+                                }
+                                instance.requestSave(false);
                             }
                             break;
                         }

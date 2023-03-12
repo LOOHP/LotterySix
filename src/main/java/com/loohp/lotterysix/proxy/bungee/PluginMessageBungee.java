@@ -402,13 +402,18 @@ public class PluginMessageBungee implements Listener {
         try {
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             DataOutputStream out = new DataOutputStream(outputStream);
+            List<CompletedLotterySixGame> games = new ArrayList<>();
             synchronized (instance.getCompletedGames().getIterateLock()) {
-                out.writeInt(instance.getCompletedGames().size() - gameIds.size());
                 for (CompletedLotterySixGame game : instance.getCompletedGames()) {
                     if (!gameIds.contains(game.getGameId())) {
-                        DataTypeIO.writeString(out, GSON.toJson(game), StandardCharsets.UTF_8);
+                        games.add(game);
                     }
                 }
+            }
+            out.writeInt(games.size());
+            for (CompletedLotterySixGame game : games) {
+                DataTypeIO.writeUUID(out, game.getGameId());
+                DataTypeIO.writeString(out, GSON.toJson(game), StandardCharsets.UTF_8);
             }
             sendData(target, 0x0C, outputStream.toByteArray());
         } catch (IOException e) {
