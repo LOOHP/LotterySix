@@ -329,6 +329,10 @@ public class PluginMessageHandler implements PluginMessageListener {
                                             player.sendMessage(instance.messageBetLimitReachedPermission.replace("{Price}", StringUtils.formatComma(price)));
                                             break;
                                         }
+                                        case LIMIT_CHANCE_PER_SELECTION: {
+                                            player.sendMessage(instance.messageBetLimitMaximumChancePerSelection.replace("{Price}", StringUtils.formatComma(price)));
+                                            break;
+                                        }
                                         case ACCOUNT_SUSPENDED: {
                                             long time = instance.getPlayerPreferenceManager().getLotteryPlayer(player.getUniqueId()).getPreference(PlayerPreferenceKey.SUSPEND_ACCOUNT_UNTIL, long.class);
                                             player.sendMessage(instance.messageBettingAccountSuspended.replace("{Date}", instance.dateFormat.format(new Date(time))).replace("{Price}", StringUtils.formatComma(price)));

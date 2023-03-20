@@ -493,7 +493,7 @@ public class CommandsBungee extends Command implements TabExecutor {
                 }
                 if (sender.hasPermission("lotterysix.settopprizefund")) {
                     if ("settopprizefund".equalsIgnoreCase(args[0])) {
-                        long max = LotteryUtils.calculatePrice(BetNumbersType.MULTIPLE, LotterySixBungee.getInstance().numberOfChoices, 0, LotterySixBungee.getInstance().pricePerBet);
+                        long max = LotteryUtils.calculatePrice(LotterySixBungee.getInstance().numberOfChoices, 0, LotterySixBungee.getInstance().pricePerBet);
                         long high = Math.round(max / 0.5);
                         long low = Math.round(high * 0.125);
                         String highStr = LotteryUtils.oneSignificantFigure(high);

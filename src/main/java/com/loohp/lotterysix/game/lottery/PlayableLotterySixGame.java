@@ -300,6 +300,12 @@ public class PlayableLotterySixGame implements IDedGame {
             if (permissionLimit >= 0 && permissionLimit < totalBets) {
                 return betResult0(player, price, bets, AddBetResult.LIMIT_PERMISSION);
             }
+            for (PlayerBets bet : bets) {
+                BetNumbers numbers = bet.getChosenNumbers();
+                if (numbers.isCombination() && MathUtils.combinationsCount(numbers.getNumbers().size(), numbers.getBankersNumbers().size()) > instance.maximumChancePerSelection) {
+                    return betResult0(player, price, bets, AddBetResult.LIMIT_CHANCE_PER_SELECTION);
+                }
+            }
             if (!instance.takeMoney(player, price)) {
                 return betResult0(player, price, bets, AddBetResult.NOT_ENOUGH_MONEY);
             }

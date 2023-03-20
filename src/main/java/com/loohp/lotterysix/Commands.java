@@ -501,7 +501,7 @@ public class Commands implements CommandExecutor, TabCompleter {
                 }
                 if (sender.hasPermission("lotterysix.settopprizefund")) {
                     if ("settopprizefund".equalsIgnoreCase(args[0])) {
-                        long max = LotteryUtils.calculatePrice(BetNumbersType.MULTIPLE, LotterySixPlugin.getInstance().numberOfChoices, 0, LotterySixPlugin.getInstance().pricePerBet);
+                        long max = LotteryUtils.calculatePrice(LotterySixPlugin.getInstance().numberOfChoices, 0, LotterySixPlugin.getInstance().pricePerBet);
                         long high = Math.round(max / 0.5);
                         long low = Math.round(high * 0.125);
                         String highStr = LotteryUtils.oneSignificantFigure(high);

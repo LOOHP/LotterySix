@@ -20,33 +20,31 @@
 
 package com.loohp.lotterysix.utils;
 
-import com.loohp.lotterysix.game.lottery.CompletedLotterySixGameIndex;
-import com.loohp.lotterysix.game.objects.BetUnitType;
-import com.loohp.lotterysix.game.objects.LazyReplaceString;
 import com.loohp.lotterysix.game.LotterySix;
 import com.loohp.lotterysix.game.lottery.CompletedLotterySixGame;
+import com.loohp.lotterysix.game.lottery.CompletedLotterySixGameIndex;
 import com.loohp.lotterysix.game.lottery.PlayableLotterySixGame;
+import com.loohp.lotterysix.game.objects.BetUnitType;
+import com.loohp.lotterysix.game.objects.LazyReplaceString;
 import com.loohp.lotterysix.game.objects.NumberStatistics;
 import com.loohp.lotterysix.game.objects.PlayerBets;
 import com.loohp.lotterysix.game.objects.PlayerWinnings;
 import com.loohp.lotterysix.game.objects.PrizeTier;
 import com.loohp.lotterysix.game.objects.betnumbers.BetNumbers;
 import com.loohp.lotterysix.game.objects.betnumbers.BetNumbersBuilder;
-import com.loohp.lotterysix.game.objects.betnumbers.BetNumbersType;
 import me.clip.placeholderapi.PlaceholderAPI;
 import org.bukkit.OfflinePlayer;
 
-import java.math.BigInteger;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.Collection;
 import java.util.Date;
 import java.util.stream.Collectors;
-import java.util.stream.LongStream;
+
+import static com.loohp.lotterysix.utils.MathUtils.probabilityFormula;
 
 public class LotteryUtils {
 
-    public static final BigInteger SIX_FACTORIAL = BigInteger.valueOf(720);
     public static final DecimalFormat ODDS_FORMAT = new DecimalFormat("0.##");
     public static final DecimalFormat BET_COUNT_FORMAT = new DecimalFormat("0.0");
     
@@ -64,41 +62,19 @@ public class LotteryUtils {
         return sb.toString();
     }
 
-    public static BigInteger factorial(long number) {
-        return LongStream.rangeClosed(1, number).mapToObj(i -> BigInteger.valueOf(i)).reduce(BigInteger.ONE, (x, y) -> x.multiply(y));
-    }
-
     public static long calculatePrice(BetNumbers numbers, LotterySix lotterySix) {
-        return calculatePrice(numbers.getType(), numbers.getNumbers().size(), numbers.getBankersNumbers().size(), lotterySix.pricePerBet) * numbers.getSetsSize();
+        return calculatePrice(numbers.getNumbers().size(), numbers.getBankersNumbers().size(), lotterySix.pricePerBet) * numbers.getSetsSize();
     }
 
     public static long calculatePrice(BetNumbersBuilder builder, LotterySix lotterySix) {
         if (!builder.completed()) {
             return 0;
         }
-        return calculatePrice(builder.getType(), builder.size(), builder.bankerSize(), lotterySix.pricePerBet) * builder.setsSize();
+        return calculatePrice(builder.size(), builder.bankerSize(), lotterySix.pricePerBet) * builder.setsSize();
     }
 
-    public static long calculatePrice(BetNumbersType type, int size, int bankerSize, long pricePerBet) {
-        long permutations = 0;
-        switch (type) {
-            case SINGLE:
-            case RANDOM: {
-                permutations = 1;
-                break;
-            }
-            case MULTIPLE:
-            case MULTIPLE_RANDOM: {
-                permutations = factorial(size).divide((factorial(size - 6).multiply(SIX_FACTORIAL))).longValue();
-                break;
-            }
-            case BANKER:
-            case BANKER_RANDOM: {
-                permutations = factorial(size).divide(factorial(size - (6 - bankerSize)).multiply(factorial(6 - bankerSize))).longValue();
-                break;
-            }
-        }
-        return permutations * pricePerBet;
+    public static long calculatePrice(int size, int bankerSize, long pricePerBet) {
+        return MathUtils.combinationsCount(size, bankerSize) * pricePerBet;
     }
 
     public static String[] formatPlaceholders(OfflinePlayer player, String[] str, LotterySix lotterySix) {
@@ -394,14 +370,6 @@ public class LotteryUtils {
     public static double calculateOddsOneOver(int numberOfChoices, PrizeTier prizeTier) {
         double odds = calculateOdds(numberOfChoices, prizeTier);
         return 1.0 / odds;
-    }
-
-    private static double probabilityFormula(double a, double b) {
-        double result = 1;
-        for (; b > 0; a--, b--) {
-            result *= a / b;
-        }
-        return result;
     }
 
 }

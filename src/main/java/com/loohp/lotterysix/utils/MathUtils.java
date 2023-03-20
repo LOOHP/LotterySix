@@ -20,7 +20,12 @@
 
 package com.loohp.lotterysix.utils;
 
+import java.math.BigInteger;
+import java.util.stream.LongStream;
+
 public class MathUtils {
+
+    public static final BigInteger SIX_FACTORIAL = BigInteger.valueOf(720);
 
     public static long followRound(long follow, long value) {
         return followRound(follow, value, true);
@@ -80,6 +85,32 @@ public class MathUtils {
         }
         long result = (long) (Math.floor(value / d) * d);
         return (result <= 0 ? value : result) * signNum;
+    }
+
+    public static BigInteger factorial(long number) {
+        return LongStream.rangeClosed(1, number).mapToObj(i -> BigInteger.valueOf(i)).reduce(BigInteger.ONE, (x, y) -> x.multiply(y));
+    }
+
+    public static double probabilityFormula(double a, double b) {
+        double result = 1;
+        for (; b > 0; a--, b--) {
+            result *= a / b;
+        }
+        return result;
+    }
+
+    public static long combinationsCount(int size, int bankerSize) {
+        if (size < 6) {
+            return 0;
+        } else if (bankerSize <= 0) {
+            if (size == 6) {
+                return 1;
+            } else {
+                return factorial(size).divide((factorial(size - 6).multiply(SIX_FACTORIAL))).longValue();
+            }
+        } else {
+            return factorial(size).divide(factorial(size - (6 - bankerSize)).multiply(factorial(6 - bankerSize))).longValue();
+        }
     }
 
 }

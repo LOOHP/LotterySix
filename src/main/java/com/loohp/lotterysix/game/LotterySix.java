@@ -115,6 +115,7 @@ public class LotterySix implements AutoCloseable {
     public String messagePendingClaimed;
     public String messageGameNumberNotFound;
     public String messageBettingAccountSuspended;
+    public String messageBetLimitMaximumChancePerSelection;
 
     public String explanationMessage;
     public String explanationURL;
@@ -275,6 +276,7 @@ public class LotterySix implements AutoCloseable {
     public boolean allowLoans;
     public Map<String, Long> playerBetLimit;
     public UUID lotteriesFundAccount;
+    public long maximumChancePerSelection;
 
     public XMaterial numberItemsType;
     public boolean numberItemsSetStackSize;
@@ -756,6 +758,7 @@ public class LotterySix implements AutoCloseable {
         messagePendingClaimed = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Messages.PendingClaimed"));
         messageGameNumberNotFound = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Messages.GameNumberNotFound"));
         messageBettingAccountSuspended = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Messages.BettingAccountSuspended"));
+        messageBetLimitMaximumChancePerSelection = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Messages.BetLimitMaximumChancePerSelection"));
 
         explanationMessage = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Explanation.Message"));
         explanationURL = config.getConfiguration().getString("Explanation.URL");
@@ -935,13 +938,13 @@ public class LotterySix implements AutoCloseable {
         for (String group : config.getConfiguration().getConfigurationSection("Restrictions.BetLimitPerRound").getKeys(false)) {
             playerBetLimit.put(group, config.getConfiguration().getLong("Restrictions.BetLimitPerRound." + group));
         }
-
         String lotteriesFundAccountStr = config.getConfiguration().getString("LotterySix.LotteriesFundAccount");
         try {
             lotteriesFundAccount = UUID.fromString(lotteriesFundAccountStr);
         } catch (IllegalArgumentException e) {
             lotteriesFundAccount = null;
         }
+        maximumChancePerSelection = config.getConfiguration().getLong("Restrictions.MaximumChancePerSelection");
 
         String typeStr = config.getConfiguration().getString("NumberItems.ItemType");
         numberItemsType = typeStr.equalsIgnoreCase("DEFAULT") ? null : XMaterial.valueOf(typeStr.toUpperCase());

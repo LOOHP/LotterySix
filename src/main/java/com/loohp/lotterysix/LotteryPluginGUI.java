@@ -719,7 +719,7 @@ public class LotteryPluginGUI implements Listener {
             gui.addElement(new DynamicGuiElement('h', () -> new StaticGuiElement('g', getNumberItem(size.get(), NumberSelectedState.NOT_SELECTED), Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryMultipleSizeValue, instance)).map(each -> each.replace("{Count}", size.get() + "")).toArray(String[]::new))));
 
             gui.addElement(new DynamicGuiElement('l', () -> {
-                long price = LotteryUtils.calculatePrice(BetNumbersType.MULTIPLE_RANDOM, size.get(), 0, instance.pricePerBet);
+                long price = LotteryUtils.calculatePrice(size.get(), 0, instance.pricePerBet);
                 return new StaticGuiElement('l', setItemSize(XMaterial.PAPER.parseItem(), 1), click -> {
                     Bukkit.getScheduler().runTaskLater(plugin, () -> getComplexBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.multipleRandom(1, instance.numberOfChoices, size.get(), 1).map(each -> each.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2);
                     return true;
@@ -730,7 +730,7 @@ public class LotteryPluginGUI implements Listener {
                         .replace("{PricePartial}", StringUtils.formatComma(price / BetUnitType.PARTIAL.getDivisor()))).toArray(String[]::new));
             }));
             gui.addElement(new DynamicGuiElement('m', () -> {
-                long price = LotteryUtils.calculatePrice(BetNumbersType.MULTIPLE_RANDOM, size.get(), 0, instance.pricePerBet);
+                long price = LotteryUtils.calculatePrice(size.get(), 0, instance.pricePerBet);
                 return new StaticGuiElement('m', setItemSize(XMaterial.PAPER.parseItem(), 2), click -> {
                     Bukkit.getScheduler().runTaskLater(plugin, () -> getComplexBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.multipleRandom(1, instance.numberOfChoices, size.get(), 2).map(each -> each.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2);
                     return true;
@@ -741,7 +741,7 @@ public class LotteryPluginGUI implements Listener {
                         .replace("{PricePartial}", StringUtils.formatComma(price * 2 / BetUnitType.PARTIAL.getDivisor()))).toArray(String[]::new));
             }));
             gui.addElement(new DynamicGuiElement('n', () -> {
-                long price = LotteryUtils.calculatePrice(BetNumbersType.MULTIPLE_RANDOM, size.get(), 0, instance.pricePerBet);
+                long price = LotteryUtils.calculatePrice(size.get(), 0, instance.pricePerBet);
                 return new StaticGuiElement('n', setItemSize(XMaterial.PAPER.parseItem(), 5), click -> {
                     Bukkit.getScheduler().runTaskLater(plugin, () -> getComplexBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.multipleRandom(1, instance.numberOfChoices, size.get(), 5).map(each -> each.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2);
                     return true;
@@ -752,7 +752,7 @@ public class LotteryPluginGUI implements Listener {
                         .replace("{PricePartial}", StringUtils.formatComma(price * 5 / BetUnitType.PARTIAL.getDivisor()))).toArray(String[]::new));
             }));
             gui.addElement(new DynamicGuiElement('o', () -> {
-                long price = LotteryUtils.calculatePrice(BetNumbersType.MULTIPLE_RANDOM, size.get(), 0, instance.pricePerBet);
+                long price = LotteryUtils.calculatePrice(size.get(), 0, instance.pricePerBet);
                 return new StaticGuiElement('o', setItemSize(XMaterial.PAPER.parseItem(), 10), click -> {
                     Bukkit.getScheduler().runTaskLater(plugin, () -> getComplexBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.multipleRandom(1, instance.numberOfChoices, size.get(), 10).map(each -> each.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2);
                     return true;
@@ -801,7 +801,7 @@ public class LotteryPluginGUI implements Listener {
 
 
             gui.addElement(new DynamicGuiElement('l', () -> {
-                long price = LotteryUtils.calculatePrice(BetNumbersType.BANKER_RANDOM, selectionSize.get(), bankerSize.get(), instance.pricePerBet);
+                long price = LotteryUtils.calculatePrice(selectionSize.get(), bankerSize.get(), instance.pricePerBet);
                 return new StaticGuiElement('l', setItemSize(XMaterial.PAPER.parseItem(), 1), click -> {
                     Bukkit.getScheduler().runTaskLater(plugin, () -> getComplexBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.bankerRandom(1, instance.numberOfChoices, bankerSize.get(), selectionSize.get(), 1).map(each -> each.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2);
                     return true;
@@ -812,7 +812,7 @@ public class LotteryPluginGUI implements Listener {
                         .replace("{PricePartial}", StringUtils.formatComma(price / BetUnitType.PARTIAL.getDivisor()))).toArray(String[]::new));
             }));
             gui.addElement(new DynamicGuiElement('m', () -> {
-                long price = LotteryUtils.calculatePrice(BetNumbersType.BANKER_RANDOM, selectionSize.get(), bankerSize.get(), instance.pricePerBet);
+                long price = LotteryUtils.calculatePrice(selectionSize.get(), bankerSize.get(), instance.pricePerBet);
                 return new StaticGuiElement('m', setItemSize(XMaterial.PAPER.parseItem(), 2), click -> {
                     Bukkit.getScheduler().runTaskLater(plugin, () -> getComplexBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.bankerRandom(1, instance.numberOfChoices, bankerSize.get(), selectionSize.get(), 2).map(each -> each.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2);
                     return true;
@@ -823,7 +823,7 @@ public class LotteryPluginGUI implements Listener {
                         .replace("{PricePartial}", StringUtils.formatComma(price * 2 / BetUnitType.PARTIAL.getDivisor()))).toArray(String[]::new));
             }));
             gui.addElement(new DynamicGuiElement('n', () -> {
-                long price = LotteryUtils.calculatePrice(BetNumbersType.BANKER_RANDOM, selectionSize.get(), bankerSize.get(), instance.pricePerBet);
+                long price = LotteryUtils.calculatePrice(selectionSize.get(), bankerSize.get(), instance.pricePerBet);
                 return new StaticGuiElement('n', setItemSize(XMaterial.PAPER.parseItem(), 5), click -> {
                     Bukkit.getScheduler().runTaskLater(plugin, () -> getComplexBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.bankerRandom(1, instance.numberOfChoices, bankerSize.get(), selectionSize.get(), 5).map(each -> each.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2);
                     return true;
@@ -834,7 +834,7 @@ public class LotteryPluginGUI implements Listener {
                         .replace("{PricePartial}", StringUtils.formatComma(price * 5 / BetUnitType.PARTIAL.getDivisor()))).toArray(String[]::new));
             }));
             gui.addElement(new DynamicGuiElement('o', () -> {
-                long price = LotteryUtils.calculatePrice(BetNumbersType.BANKER_RANDOM, selectionSize.get(), bankerSize.get(), instance.pricePerBet);
+                long price = LotteryUtils.calculatePrice(selectionSize.get(), bankerSize.get(), instance.pricePerBet);
                 return new StaticGuiElement('o', setItemSize(XMaterial.PAPER.parseItem(), 10), click -> {
                     Bukkit.getScheduler().runTaskLater(plugin, () -> getComplexBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.bankerRandom(1, instance.numberOfChoices, bankerSize.get(), selectionSize.get(), 10).map(each -> each.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2);
                     return true;
@@ -1070,6 +1070,10 @@ public class LotteryPluginGUI implements Listener {
                             player.sendMessage(instance.messageBetLimitReachedPermission.replace("{Price}", StringUtils.formatComma(price)));
                             break;
                         }
+                        case LIMIT_CHANCE_PER_SELECTION: {
+                            player.sendMessage(instance.messageBetLimitMaximumChancePerSelection.replace("{Price}", StringUtils.formatComma(price)));
+                            break;
+                        }
                         case ACCOUNT_SUSPENDED: {
                             long time = instance.getPlayerPreferenceManager().getLotteryPlayer(player.getUniqueId()).getPreference(PlayerPreferenceKey.SUSPEND_ACCOUNT_UNTIL, long.class);
                             player.sendMessage(instance.messageBettingAccountSuspended.replace("{Date}", instance.dateFormat.format(new Date(time))).replace("{Price}", StringUtils.formatComma(price)));
@@ -1136,6 +1140,10 @@ public class LotteryPluginGUI implements Listener {
                             player.sendMessage(instance.messageBetLimitReachedPermission.replace("{Price}", StringUtils.formatComma(partial)));
                             break;
                         }
+                        case LIMIT_CHANCE_PER_SELECTION: {
+                            player.sendMessage(instance.messageBetLimitMaximumChancePerSelection.replace("{Price}", StringUtils.formatComma(partial)));
+                            break;
+                        }
                         case ACCOUNT_SUSPENDED: {
                             long time = instance.getPlayerPreferenceManager().getLotteryPlayer(player.getUniqueId()).getPreference(PlayerPreferenceKey.SUSPEND_ACCOUNT_UNTIL, long.class);
                             player.sendMessage(instance.messageBettingAccountSuspended.replace("{Date}", instance.dateFormat.format(new Date(time))).replace("{Price}", StringUtils.formatComma(partial)));
@@ -1176,6 +1184,10 @@ public class LotteryPluginGUI implements Listener {
                         }
                         case LIMIT_PERMISSION: {
                             player.sendMessage(instance.messageBetLimitReachedPermission.replace("{Price}", StringUtils.formatComma(price)));
+                            break;
+                        }
+                        case LIMIT_CHANCE_PER_SELECTION: {
+                            player.sendMessage(instance.messageBetLimitMaximumChancePerSelection.replace("{Price}", StringUtils.formatComma(price)));
                             break;
                         }
                         case ACCOUNT_SUSPENDED: {
@@ -1242,6 +1254,10 @@ public class LotteryPluginGUI implements Listener {
                         }
                         case LIMIT_PERMISSION: {
                             player.sendMessage(instance.messageBetLimitReachedPermission.replace("{Price}", StringUtils.formatComma(price)));
+                            break;
+                        }
+                        case LIMIT_CHANCE_PER_SELECTION: {
+                            player.sendMessage(instance.messageBetLimitMaximumChancePerSelection.replace("{Price}", StringUtils.formatComma(price)));
                             break;
                         }
                         case ACCOUNT_SUSPENDED: {
@@ -1311,6 +1327,10 @@ public class LotteryPluginGUI implements Listener {
                             player.sendMessage(instance.messageBetLimitReachedPermission.replace("{Price}", StringUtils.formatComma(partial)));
                             break;
                         }
+                        case LIMIT_CHANCE_PER_SELECTION: {
+                            player.sendMessage(instance.messageBetLimitMaximumChancePerSelection.replace("{Price}", StringUtils.formatComma(partial)));
+                            break;
+                        }
                         case ACCOUNT_SUSPENDED: {
                             long time = instance.getPlayerPreferenceManager().getLotteryPlayer(player.getUniqueId()).getPreference(PlayerPreferenceKey.SUSPEND_ACCOUNT_UNTIL, long.class);
                             player.sendMessage(instance.messageBettingAccountSuspended.replace("{Date}", instance.dateFormat.format(new Date(time))).replace("{Price}", StringUtils.formatComma(partial)));
@@ -1351,6 +1371,10 @@ public class LotteryPluginGUI implements Listener {
                         }
                         case LIMIT_PERMISSION: {
                             player.sendMessage(instance.messageBetLimitReachedPermission.replace("{Price}", StringUtils.formatComma(price)));
+                            break;
+                        }
+                        case LIMIT_CHANCE_PER_SELECTION: {
+                            player.sendMessage(instance.messageBetLimitMaximumChancePerSelection.replace("{Price}", StringUtils.formatComma(price)));
                             break;
                         }
                         case ACCOUNT_SUSPENDED: {

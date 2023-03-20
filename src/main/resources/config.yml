@@ -18,6 +18,7 @@ Messages:
   PendingClaimed: "&aPending balance of ${Money} claimed!"
   GameNumberNotFound: "&cNo game with that game number can be found"
   BettingAccountSuspended: "&cYou have suspended yourself from placing any bets until {Date}"
+  BetLimitMaximumChancePerSelection: "&cThe total bet units exceed limit for a selection!"
 
 Explanation:
   Message: "&aFor the explanation on how LotterySix works, please visit: &bhttps://github.com/LOOHP/LotterySix/wiki/LotterySix-Draw-&-Prizes-Explanation"
@@ -133,6 +134,11 @@ Restrictions:
   BetLimitPerRound:
     default: -1
     minor: 0
+  #Maximum bet units a single number selection can have
+  #You can use this to, for example, stop players from selecting every number
+  #in one go in multiple selection
+  #Default is 2760681 (Combinations of selecting 38 numbers)
+  MaximumChancePerSelection: 2760681
 
 GUI:
   MainMenu:
