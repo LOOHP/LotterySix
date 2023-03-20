@@ -167,9 +167,8 @@ public class LotteryPluginGUI implements Listener {
         if (enchanted) {
             itemStack = setEnchanted(itemStack);
         }
-        ItemMeta itemMeta = itemStack.getItemMeta();
-        itemMeta.setCustomModelData(LotterySixPlugin.getInstance().numberItemsCustomModelData + selectedState.getCustomModelDataOffset() + number);
-        itemStack.setItemMeta(itemMeta);
+        int itemModelData = LotterySixPlugin.getInstance().numberItemsCustomModelData + selectedState.getCustomModelDataOffset() + number;
+        itemStack = NBTEditor.set(itemStack, itemModelData, "CustomModelData");
         return NBTEditor.set(itemStack, number, "LotterySixNumber");
     }
 
