@@ -123,6 +123,30 @@ public abstract class BetNumbersBuilder {
         }
     }
 
+    public static MultipleRandomBuilder multipleRandom(int minNumber, int maxNumber, int size) {
+        return new BetNumbersBuilder.MultipleRandomBuilder(minNumber, maxNumber, size);
+    }
+
+    public static Stream<MultipleRandomBuilder> multipleRandom(int minNumber, int maxNumber, int size, int count) {
+        if (count <= 0) {
+            throw new IllegalArgumentException("count cannot be 0 or negative");
+        } else {
+            return IntStream.range(0, count).mapToObj(i -> new BetNumbersBuilder.MultipleRandomBuilder(minNumber, maxNumber, size));
+        }
+    }
+
+    public static BankerRandomBuilder bankerRandom(int minNumber, int maxNumber, int bankerSize, int selectionSize) {
+        return new BetNumbersBuilder.BankerRandomBuilder(minNumber, maxNumber, bankerSize, selectionSize);
+    }
+
+    public static Stream<BankerRandomBuilder> bankerRandom(int minNumber, int maxNumber, int bankerSize, int selectionSize, int count) {
+        if (count <= 0) {
+            throw new IllegalArgumentException("count cannot be 0 or negative");
+        } else {
+            return IntStream.range(0, count).mapToObj(i -> new BetNumbersBuilder.BankerRandomBuilder(minNumber, maxNumber, bankerSize, selectionSize));
+        }
+    }
+
     protected final int minNumber;
     protected final int maxNumber;
     protected final BetNumbersType type;
@@ -149,13 +173,15 @@ public abstract class BetNumbersBuilder {
 
     public abstract BetNumbersBuilder removeNumber(int number);
 
+    public int bankerSize() {
+        return 0;
+    }
+
     public abstract int size();
 
     public abstract boolean contains(int i);
 
-    public boolean canAdd() {
-        return size() < maxNumber - minNumber + 1;
-    }
+    public abstract boolean canAdd();
 
     public int setsSize() {
         return 1;
@@ -221,6 +247,11 @@ public abstract class BetNumbersBuilder {
         }
 
         @Override
+        public boolean canAdd() {
+            return !completed();
+        }
+
+        @Override
         public BetNumbers build() {
             if (!completed()) {
                 throw new IllegalStateException("Lottery Number builder not yet completed!");
@@ -262,6 +293,11 @@ public abstract class BetNumbersBuilder {
         public synchronized MultipleBuilder removeNumber(int number) {
             numbers.remove((Object) number);
             return this;
+        }
+
+        @Override
+        public boolean canAdd() {
+            return size() < maxNumber - minNumber + 1;
         }
 
         @Override
@@ -354,6 +390,7 @@ public abstract class BetNumbersBuilder {
             return selections.size();
         }
 
+        @Override
         public int bankerSize() {
             return bankers.size();
         }
@@ -402,7 +439,7 @@ public abstract class BetNumbersBuilder {
             if (!completed()) {
                 throw new IllegalStateException("Lottery Number builder not yet completed!");
             }
-            return new BetNumbers(bankers, selections);
+            return new BetNumbers(bankers, selections, BetNumbersType.BANKER);
         }
 
     }
@@ -441,6 +478,11 @@ public abstract class BetNumbersBuilder {
         }
 
         @Override
+        public boolean canAdd() {
+            return false;
+        }
+
+        @Override
         public boolean contains(int i) {
             throw new UnsupportedOperationException("Cannot check contained numbers in random builder");
         }
@@ -459,6 +501,144 @@ public abstract class BetNumbersBuilder {
         public BetNumbers build() {
             List<Collection<Integer>> numbers = IntStream.range(0, count).mapToObj(i -> ThreadLocalRandom.current().ints(minNumber, maxNumber + 1).distinct().limit(6).boxed().collect(Collectors.toList())).collect(Collectors.toList());
             return new BetNumbers(numbers, BetNumbersType.RANDOM);
+        }
+
+    }
+
+    public static class MultipleRandomBuilder extends BetNumbersBuilder {
+
+        private final int size;
+
+        private MultipleRandomBuilder(int minNumber, int maxNumber, int size) {
+            super(minNumber, maxNumber, BetNumbersType.MULTIPLE_RANDOM);
+            if (maxNumber + 1 - minNumber < size) {
+                throw new IllegalArgumentException("not enough numbers to satisfy size");
+            }
+            this.size = size;
+        }
+
+        @Override
+        public synchronized MultipleBuilder addNumber(int number) {
+            throw new UnsupportedOperationException("Cannot check contained numbers in random builder");
+        }
+
+        @Override
+        public IntObjectPair<BetNumbersBuilder> addRandomNumber() {
+            throw new UnsupportedOperationException("Cannot check contained numbers in random builder");
+        }
+
+        @Override
+        public synchronized MultipleBuilder removeNumber(int number) {
+            throw new UnsupportedOperationException("Cannot check contained numbers in random builder");
+        }
+
+        @Override
+        public boolean canAdd() {
+            return false;
+        }
+
+        @Override
+        public int size() {
+            return size;
+        }
+
+        @Override
+        public boolean contains(int i) {
+            throw new UnsupportedOperationException("Cannot check contained numbers in random builder");
+        }
+
+        @Override
+        public boolean completed() {
+            return true;
+        }
+
+        @Override
+        public BetNumbers build() {
+            List<Integer> numbers = ThreadLocalRandom.current().ints(minNumber, maxNumber + 1).distinct().limit(size).boxed().collect(Collectors.toList());
+            return new BetNumbers(numbers, BetNumbersType.MULTIPLE_RANDOM);
+        }
+
+    }
+
+    public static class BankerRandomBuilder extends BetNumbersBuilder {
+
+        private final int bankersSize;
+        private final int selectionSize;
+
+        private BankerRandomBuilder(int minNumber, int maxNumber, int bankersSize, int selectionSize) {
+            super(minNumber, maxNumber, BetNumbersType.BANKER_RANDOM);
+            if (maxNumber + 1 - minNumber < bankersSize + selectionSize) {
+                throw new IllegalArgumentException("not enough numbers to satisfy size");
+            }
+            this.bankersSize = bankersSize;
+            this.selectionSize = selectionSize;
+        }
+
+        @Override
+        public synchronized BankerBuilder addNumber(int number) {
+            throw new UnsupportedOperationException("Cannot check contained numbers in random builder");
+        }
+
+        @Override
+        public IntObjectPair<BetNumbersBuilder> addRandomNumber() {
+            throw new UnsupportedOperationException("Cannot check contained numbers in random builder");
+        }
+
+        @Override
+        public synchronized BankerBuilder removeNumber(int number) {
+            throw new UnsupportedOperationException("Cannot check contained numbers in random builder");
+        }
+
+        @Override
+        public int size() {
+            return selectionSize;
+        }
+
+        @Override
+        public int bankerSize() {
+            return bankersSize;
+        }
+
+        @Override
+        public boolean canAdd() {
+            return false;
+        }
+
+        public synchronized BankerBuilder finishBankers() {
+            throw new UnsupportedOperationException("Cannot check contained numbers in random builder");
+        }
+
+        public int getMinSelectionsNeeded() {
+            throw new UnsupportedOperationException("Cannot check contained numbers in random builder");
+        }
+
+        public List<Integer> getBankers() {
+            throw new UnsupportedOperationException("Cannot check contained numbers in random builder");
+        }
+
+        public boolean inSelectionPhase() {
+            throw new UnsupportedOperationException("Cannot check contained numbers in random builder");
+        }
+
+        @Override
+        public boolean contains(int i) {
+            throw new UnsupportedOperationException("Cannot check contained numbers in random builder");
+        }
+
+        public boolean bankerCompleted() {
+            return true;
+        }
+
+        @Override
+        public boolean completed() {
+            return true;
+        }
+
+        @Override
+        public BetNumbers build() {
+            List<Integer> bankers = ThreadLocalRandom.current().ints(minNumber, maxNumber + 1).distinct().limit(bankersSize).boxed().collect(Collectors.toList());
+            List<Integer> selections = ThreadLocalRandom.current().ints(minNumber, maxNumber + 1).distinct().filter(i -> !bankers.contains(i)).limit(selectionSize).boxed().collect(Collectors.toList());
+            return new BetNumbers(bankers, selections, BetNumbersType.BANKER_RANDOM);
         }
 
     }

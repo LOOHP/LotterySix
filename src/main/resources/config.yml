@@ -247,10 +247,39 @@ GUI:
     Random:
       - "&cRandom Entry"
       - "&7No idea what numbers to pick?"
-      - "&7Let the computer pick 6 random numbers for you!"
-  RandomEntryCount:
-    Title: "&cChoose No. of Random Entry"
-    Value: "&a{Count}"
+      - "&7Let the computer pick random numbers for you!"
+  RandomEntry:
+    Title: "&cChoose Random Entry Bet"
+    BetCountValueSimple:
+      - "&eNumber of Entries: &a{Count}"
+      - "&eNumber of Bets: &a{BetUnits}"
+      - "&eTotal Amount: &a${Price}"
+    BetCountValueComplex:
+      - "&eNumber of Entries: &a{Count}"
+      - "&eNumber of Bets: &a{BetUnits}"
+      - "&eTotal Amount: &a${Price}"
+      - "&ePartial Unit Amount: &a${PricePartial}"
+    IncrementButton:
+      - "&7Left Click: &a+1"
+      - "&7Right Click: &a+10"
+    DecrementButton:
+      - "&7Left Click: &c-1"
+      - "&7Right Click: &c-10"
+    Single:
+      Tab:
+        - "&6Single Entry"
+    Multiple:
+      Tab:
+        - "&fMultiple Entry"
+      SizeValue:
+      - "&eNumber of Selections: &a{Count}"
+    Banker:
+      Tab:
+        - "&eBanker Entry"
+      BankersValue:
+      - "&eNumber of Bankers: &a{Count}"
+      SelectionsValue:
+      - "&eNumber of Selections: &a{Count}"
   NewBet:
     SingleTitle: "&2Pick 6 Numbers"
     MultipleTitle: "&2Pick More Than 7 Numbers"
@@ -262,8 +291,15 @@ GUI:
       - "&7Let the computer pick a random number for you!"
     NotYetFinish:
       - "&7Please choose your numbers!"
-    Finish:
-      - "&eClick to finish selection (${Price})"
+    FinishSimple:
+      - "&eClick to finish selection"
+      - "&eNumber of Bets: &a{BetUnits}"
+      - "&eTotal Amount: &a${Price}"
+    FinishComplex:
+      - "&eClick to finish selection"
+      - "&eNumber of Bets: &a{BetUnits}"
+      - "&eTotal Amount: &a${Price}"
+      - "&ePartial Unit Amount: &a${PricePartial}"
     FinishBankers:
       - "&eClick to finish banker selection"
   ConfirmNewBet:
@@ -273,10 +309,12 @@ GUI:
     BulkRandom:
       - "&cYou are about to purchase"
       - "&e{EntriesTotal} &cRandom Bet Entries"
-    Confirm:
-      - "&aConfirm Unit Investment (${Price})"
-    PartialConfirm:
-      - "&aConfirm Partial Unit Investment (${PricePartial})"
+    UnitInvestmentConfirm:
+      - "&aConfirm Unit Investment &7(${PricePerBet})"
+      - "&eTotal Amount: &a${Price}"
+    PartialInvestmentConfirm:
+      - "&aConfirm Partial Unit Investment &7(${PricePerPartialBet})"
+      - "&eTotal Amount: &a${PricePartial}"
     Cancel:
       - "&cCancel"
   NumberStatistics:
@@ -486,6 +524,25 @@ DiscordSRV:
       LastDrawnField: "Since Last Drawn"
       TimesDrawnField: "Times Drawn"
       ThumbnailURL: "https://resources.loohpjames.com/spigot/plugins/lotterysix/icon.png"
+
+#If you would like to create custom texture for the number selection items
+#This section would be useful to you
+NumberItems:
+  #If you would like to use another item instead of colored wool
+  #Change this to an item type, for example, "BRICK"
+  #Defaults to "DEFAULT", which uses colored wool
+  ItemType: DEFAULT
+  #Whether the stack size should be set to the number it represents
+  SetStackSize: true
+  #For example, if this is set to 1000
+  #The item for the 'select all' will have Custom Model Data of 1000,
+  #The item for number 1 will have Custom Model Data of 1001,
+  #The item for number 2 will have Custom Model Data of 1002, etc.
+  #The item for number 1 when selected will have Custom Model Data of 1101,
+  #The item for number 2 when selected will have Custom Model Data of 1102, etc.
+  #The item for number 1 when selected as banker will have Custom Model Data of 1201,
+  #The item for number 2 when selected as banker will have Custom Model Data of 1202, etc.
+  StartingCustomModelData: 1000
 
 PlaceholderAPI:
   HideResultsWhileGameIsLocked: true

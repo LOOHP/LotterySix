@@ -34,7 +34,7 @@ public class ChatColorUtils {
             GREEN, GREEN, RED, RED, AQUA, AQUA, GREEN, GREEN, RED,
             AQUA, GREEN, GREEN, RED, RED, AQUA, AQUA, GREEN, GREEN,
             AQUA, AQUA, GREEN, GREEN, RED, RED, AQUA, AQUA, GREEN,
-            RED, AQUA, AQUA, GREEN
+            RED, AQUA, AQUA, GREEN, GREEN, RED, RED, AQUA, AQUA
     };
 
     public static String applyNumberColor(int i) {
@@ -42,7 +42,7 @@ public class ChatColorUtils {
     }
 
     public static ChatColor getNumberColor(int i) {
-        return NUMBER_COLOR[i - 1];
+        return NUMBER_COLOR[(i - 1) % NUMBER_COLOR.length];
     }
 
     public static String translateAlternateColorCodes(char code, String text) {

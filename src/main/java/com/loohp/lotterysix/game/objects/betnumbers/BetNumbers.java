@@ -43,7 +43,7 @@ public class BetNumbers implements FormattedString {
     private final BetNumbersType type;
 
     BetNumbers(Collection<Integer> numbers, BetNumbersType type) {
-        if (type.equals(BetNumbersType.BANKER)) {
+        if (type.isBanker()) {
             throw new IllegalArgumentException("type cannot be banker");
         }
         this.bankers = null;
@@ -52,16 +52,19 @@ public class BetNumbers implements FormattedString {
         this.type = type;
     }
 
-    BetNumbers(Collection<Integer> bankers, Collection<Integer> numbers) {
+    BetNumbers(Collection<Integer> bankers, Collection<Integer> numbers, BetNumbersType type) {
+        if (!type.isBanker()) {
+            throw new IllegalArgumentException("type must be banker");
+        }
         this.bankers = Collections.unmodifiableSet(new TreeSet<>(bankers));
         this.numbers = Collections.unmodifiableSet(new TreeSet<>(numbers));
         this.additionalSets = null;
-        this.type = BetNumbersType.BANKER;
+        this.type = type;
     }
 
     BetNumbers(List<Collection<Integer>> numbers, BetNumbersType type) {
-        if (type.equals(BetNumbersType.BANKER) || type.equals(BetNumbersType.MULTIPLE)) {
-            throw new IllegalArgumentException("type cannot be banker or multiple");
+        if (type.isMultipleCombination()) {
+            throw new IllegalArgumentException("type must not be multiple combinations");
         }
         if (numbers.isEmpty()) {
             throw new IllegalArgumentException("numbers cannot be empty");
@@ -197,12 +200,8 @@ public class BetNumbers implements FormattedString {
         return type;
     }
 
-    public boolean isSingle() {
-        return !isCombination() && !isBulk();
-    }
-
     public boolean isCombination() {
-        return type.equals(BetNumbersType.MULTIPLE) || type.equals(BetNumbersType.BANKER);
+        return type.isMultipleCombination();
     }
 
     public boolean isBulk() {

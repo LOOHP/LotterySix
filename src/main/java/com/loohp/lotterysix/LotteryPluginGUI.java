@@ -30,7 +30,7 @@ import com.loohp.lotterysix.game.lottery.PlayableLotterySixGame;
 import com.loohp.lotterysix.game.objects.AddBetResult;
 import com.loohp.lotterysix.game.objects.BetUnitType;
 import com.loohp.lotterysix.game.objects.IntObjectConsumer;
-import com.loohp.lotterysix.game.objects.LotteryPlayer;
+import com.loohp.lotterysix.game.player.LotteryPlayer;
 import com.loohp.lotterysix.game.objects.NumberStatistics;
 import com.loohp.lotterysix.game.objects.PlayerBets;
 import com.loohp.lotterysix.game.objects.PlayerPreferenceKey;
@@ -115,27 +115,61 @@ public class LotteryPluginGUI implements Listener {
         return strings;
     }
 
-    private static ItemStack getNumberItem(int number) {
-        return getNumberItem(number, false);
+    private static ItemStack getNumberItem(int number, NumberSelectedState selectedState) {
+        return getNumberItem(number, false, selectedState);
     }
 
-    private static ItemStack getNumberItem(int number, boolean enchanted) {
+    private static ItemStack getNumberItem(int number, boolean enchanted, NumberSelectedState selectedState) {
         XMaterial material;
-        ChatColor color = ChatColorUtils.getNumberColor(number);
-        if (color.equals(ChatColor.RED)) {
-            material = XMaterial.RED_WOOL;
-        } else if (color.equals(ChatColor.AQUA)) {
-            material = XMaterial.LIGHT_BLUE_WOOL;
-        } else if (color.equals(ChatColor.GREEN)) {
-            material = XMaterial.LIME_WOOL;
+        if (LotterySixPlugin.getInstance().numberItemsType == null) {
+            if (number == 0) {
+                if (selectedState.equals(NumberSelectedState.NOT_SELECTED)) {
+                    material = XMaterial.ORANGE_WOOL;
+                } else {
+                    material = XMaterial.GRAY_WOOL;
+                }
+            } else {
+                switch (selectedState) {
+                    case NOT_SELECTED: {
+                        ChatColor color = ChatColorUtils.getNumberColor(number);
+                        if (color.equals(ChatColor.RED)) {
+                            material = XMaterial.RED_WOOL;
+                        } else if (color.equals(ChatColor.AQUA)) {
+                            material = XMaterial.LIGHT_BLUE_WOOL;
+                        } else if (color.equals(ChatColor.GREEN)) {
+                            material = XMaterial.LIME_WOOL;
+                        } else {
+                            material = XMaterial.RED_WOOL;
+                        }
+                        break;
+                    }
+                    case SELECTED: {
+                        material = XMaterial.LIGHT_GRAY_WOOL;
+                        break;
+                    }
+                    case SELECTED_BANKER: {
+                        material = XMaterial.YELLOW_WOOL;
+                        break;
+                    }
+                    default: {
+                        material = XMaterial.GRAY_WOOL;
+                        break;
+                    }
+                }
+            }
         } else {
-            material = XMaterial.RED_WOOL;
+            material = LotterySixPlugin.getInstance().numberItemsType;
         }
         ItemStack itemStack = material.parseItem();
-        itemStack.setAmount(number);
+        if (selectedState.shouldSetStack() && LotterySixPlugin.getInstance().numberItemsSetStackSize) {
+            itemStack.setAmount(Math.max(1, number));
+        }
         if (enchanted) {
             itemStack = setEnchanted(itemStack);
         }
+        ItemMeta itemMeta = itemStack.getItemMeta();
+        itemMeta.setCustomModelData(LotterySixPlugin.getInstance().numberItemsCustomModelData + selectedState.getCustomModelDataOffset() + number);
+        itemStack.setItemMeta(itemMeta);
         return NBTEditor.set(itemStack, number, "LotterySixNumber");
     }
 
@@ -583,84 +617,235 @@ public class LotteryPluginGUI implements Listener {
             return true;
         }, LotteryUtils.formatPlaceholders(player, instance.guiSelectNewBetTypeBanker, instance)));
         gui.addElement(new StaticGuiElement('e', XMaterial.REDSTONE.parseItem(), click -> {
-            Bukkit.getScheduler().runTaskLater(plugin, () -> getRandomEntryCountChooser((Player) click.getWhoClicked(), game).show(click.getWhoClicked()), 1);
+            Bukkit.getScheduler().runTaskLater(plugin, () -> getRandomEntryChooser((Player) click.getWhoClicked(), game, BetNumbersType.RANDOM).show(click.getWhoClicked()), 1);
             return true;
         }, LotteryUtils.formatPlaceholders(player, instance.guiSelectNewBetTypeRandom, instance)));
         gui.setSilent(true);
         return gui;
     }
 
-    public InventoryGui getRandomEntryCountChooser(Player player, PlayableLotterySixGame game) {
+    public InventoryGui getRandomEntryChooser(Player player, PlayableLotterySixGame game, BetNumbersType selectedType) {
+        BetNumbersType type = selectedType.isRandom() ? selectedType : BetNumbersType.RANDOM;
         String[] guiSetup = {
                 "         ",
-                " bacadae ",
-                " fagahai ",
-                " jakalam ",
+                " abacada ",
+                " efghijk ",
+                " lamanao ",
                 "         "
         };
-        InventoryGui gui = new InventoryGui(plugin, LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryCountTitle, instance), guiSetup);
+        InventoryGui gui = new InventoryGui(plugin, LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryTitle, instance), guiSetup);
         gui.setFiller(XMaterial.RED_STAINED_GLASS_PANE.parseItem());
         gui.addElement(new StaticGuiElement('a', new ItemStack(Material.AIR), ChatColor.LIGHT_PURPLE.toString()));
-        gui.addElement(new StaticGuiElement('b', setItemSize(XMaterial.PAPER.parseItem(), 2), click -> {
-            Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
-            Bukkit.getScheduler().runTaskLater(plugin, () -> getBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.random(1, instance.numberOfChoices, 2).map(each -> each.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2);
+
+        gui.addElement(new StaticGuiElement('b', type.equals(BetNumbersType.RANDOM) ? setEnchanted(XMaterial.BRICK.parseItem()) : XMaterial.BRICK.parseItem(), click -> {
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                getRandomEntryChooser((Player) click.getWhoClicked(), game, BetNumbersType.RANDOM).show(click.getWhoClicked());
+                Bukkit.getScheduler().runTaskLater(plugin, () -> removeSecondLast(player), 2);
+            }, 1);
             return true;
-        }, LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryCountValue.replace("{Count}", "2"), instance)));
-        gui.addElement(new StaticGuiElement('c', setItemSize(XMaterial.PAPER.parseItem(), 5), click -> {
-            Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
-            Bukkit.getScheduler().runTaskLater(plugin, () -> getBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.random(1, instance.numberOfChoices, 5).map(each -> each.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2);
+        }, LotteryUtils.formatPlaceholders(player, instance.guiRandomEntrySingleTab, instance)));
+        gui.addElement(new StaticGuiElement('c', type.equals(BetNumbersType.MULTIPLE_RANDOM) ? setEnchanted(XMaterial.IRON_INGOT.parseItem()) : XMaterial.IRON_INGOT.parseItem(), click -> {
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                getRandomEntryChooser((Player) click.getWhoClicked(), game, BetNumbersType.MULTIPLE_RANDOM).show(click.getWhoClicked());
+                Bukkit.getScheduler().runTaskLater(plugin, () -> removeSecondLast(player), 2);
+            }, 1);
             return true;
-        }, LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryCountValue.replace("{Count}", "5"), instance)));
-        gui.addElement(new StaticGuiElement('d', setItemSize(XMaterial.PAPER.parseItem(), 10), click -> {
-            Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
-            Bukkit.getScheduler().runTaskLater(plugin, () -> getBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.random(1, instance.numberOfChoices, 10).map(each -> each.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2);
+        }, LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryMultipleTab, instance)));
+        gui.addElement(new StaticGuiElement('d', type.equals(BetNumbersType.BANKER_RANDOM) ? setEnchanted(XMaterial.GOLD_INGOT.parseItem()) : XMaterial.GOLD_INGOT.parseItem(), click -> {
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                getRandomEntryChooser((Player) click.getWhoClicked(), game, BetNumbersType.BANKER_RANDOM).show(click.getWhoClicked());
+                Bukkit.getScheduler().runTaskLater(plugin, () -> removeSecondLast(player), 2);
+            }, 1);
             return true;
-        }, LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryCountValue.replace("{Count}", "10"), instance)));
-        gui.addElement(new StaticGuiElement('e', setItemSize(XMaterial.PAPER.parseItem(), 15), click -> {
-            Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
-            Bukkit.getScheduler().runTaskLater(plugin, () -> getBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.random(1, instance.numberOfChoices, 15).map(each -> each.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2);
-            return true;
-        }, LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryCountValue.replace("{Count}", "15"), instance)));
-        gui.addElement(new StaticGuiElement('f', setItemSize(XMaterial.PAPER.parseItem(), 20), click -> {
-            Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
-            Bukkit.getScheduler().runTaskLater(plugin, () -> getBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.random(1, instance.numberOfChoices, 20).map(each -> each.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2);
-            return true;
-        }, LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryCountValue.replace("{Count}", "20"), instance)));
-        gui.addElement(new StaticGuiElement('g', setItemSize(XMaterial.PAPER.parseItem(), 25), click -> {
-            Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
-            Bukkit.getScheduler().runTaskLater(plugin, () -> getBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.random(1, instance.numberOfChoices, 25).map(each -> each.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2);
-            return true;
-        }, LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryCountValue.replace("{Count}", "25"), instance)));
-        gui.addElement(new StaticGuiElement('h', setItemSize(XMaterial.PAPER.parseItem(), 30), click -> {
-            Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
-            Bukkit.getScheduler().runTaskLater(plugin, () -> getBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.random(1, instance.numberOfChoices, 30).map(each -> each.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2);
-            return true;
-        }, LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryCountValue.replace("{Count}", "30"), instance)));
-        gui.addElement(new StaticGuiElement('i', setItemSize(XMaterial.PAPER.parseItem(), 35), click -> {
-            Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
-            Bukkit.getScheduler().runTaskLater(plugin, () -> getBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.random(1, instance.numberOfChoices, 35).map(each -> each.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2);
-            return true;
-        }, LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryCountValue.replace("{Count}", "35"), instance)));
-        gui.addElement(new StaticGuiElement('j', setItemSize(XMaterial.PAPER.parseItem(), 40), click -> {
-            Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
-            Bukkit.getScheduler().runTaskLater(plugin, () -> getBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.random(1, instance.numberOfChoices, 40).map(each -> each.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2);
-            return true;
-        }, LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryCountValue.replace("{Count}", "40"), instance)));
-        gui.addElement(new StaticGuiElement('k', setItemSize(XMaterial.PAPER.parseItem(), 50), click -> {
-            Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
-            Bukkit.getScheduler().runTaskLater(plugin, () -> getBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.random(1, instance.numberOfChoices, 50).map(each -> each.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2);
-            return true;
-        }, LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryCountValue.replace("{Count}", "50"), instance)));
-        gui.addElement(new StaticGuiElement('l', setItemSize(XMaterial.PAPER.parseItem(), 60), click -> {
-            Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
-            Bukkit.getScheduler().runTaskLater(plugin, () -> getBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.random(1, instance.numberOfChoices, 60).map(each -> each.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2);
-            return true;
-        }, LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryCountValue.replace("{Count}", "60"), instance)));
-        gui.addElement(new StaticGuiElement('m', setEnchanted(XMaterial.PAPER.parseItem()), click -> {
-            Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
-            Bukkit.getScheduler().runTaskLater(plugin, () -> getBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.random(1, instance.numberOfChoices, 100).map(each -> each.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2);
-            return true;
-        }, LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryCountValue.replace("{Count}", "100"), instance)));
+        }, LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBankerTab, instance)));
+
+        if (type.equals(BetNumbersType.RANDOM)) {
+            gui.addElement(new StaticGuiElement('f', new ItemStack(Material.AIR), ChatColor.LIGHT_PURPLE.toString()));
+            gui.addElement(new StaticGuiElement('h', new ItemStack(Material.AIR), ChatColor.LIGHT_PURPLE.toString()));
+            gui.addElement(new StaticGuiElement('j', new ItemStack(Material.AIR), ChatColor.LIGHT_PURPLE.toString()));
+
+            gui.addElement(new StaticGuiElement('e', setItemSize(XMaterial.PAPER.parseItem(), 1), click -> {
+                Bukkit.getScheduler().runTaskLater(plugin, () -> getSingleBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.random(1, instance.numberOfChoices, 1).map(each -> each.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2);
+                return true;
+            }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBetCountValueSimple, instance)).map(each -> each.replace("{Count}", "1").replace("{BetUnits}", "1").replace("{Price}", StringUtils.formatComma(instance.pricePerBet))).toArray(String[]::new)));
+            gui.addElement(new StaticGuiElement('g', setItemSize(XMaterial.PAPER.parseItem(), 2), click -> {
+                Bukkit.getScheduler().runTaskLater(plugin, () -> getSingleBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.random(1, instance.numberOfChoices, 2).map(each -> each.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2);
+                return true;
+            }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBetCountValueSimple, instance)).map(each -> each.replace("{Count}", "2").replace("{BetUnits}", "2").replace("{Price}", StringUtils.formatComma(instance.pricePerBet * 2))).toArray(String[]::new)));
+            gui.addElement(new StaticGuiElement('i', setItemSize(XMaterial.PAPER.parseItem(), 5), click -> {
+                Bukkit.getScheduler().runTaskLater(plugin, () -> getSingleBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.random(1, instance.numberOfChoices, 5).map(each -> each.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2);
+                return true;
+            }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBetCountValueSimple, instance)).map(each -> each.replace("{Count}", "5").replace("{BetUnits}", "5").replace("{Price}", StringUtils.formatComma(instance.pricePerBet * 5))).toArray(String[]::new)));
+            gui.addElement(new StaticGuiElement('k', setItemSize(XMaterial.PAPER.parseItem(), 10), click -> {
+                Bukkit.getScheduler().runTaskLater(plugin, () -> getSingleBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.random(1, instance.numberOfChoices, 10).map(each -> each.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2);
+                return true;
+            }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBetCountValueSimple, instance)).map(each -> each.replace("{Count}", "10").replace("{BetUnits}", "10").replace("{Price}", StringUtils.formatComma(instance.pricePerBet * 10))).toArray(String[]::new)));
+            gui.addElement(new StaticGuiElement('l', setItemSize(XMaterial.PAPER.parseItem(), 20), click -> {
+                Bukkit.getScheduler().runTaskLater(plugin, () -> getSingleBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.random(1, instance.numberOfChoices, 20).map(each -> each.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2);
+                return true;
+            }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBetCountValueSimple, instance)).map(each -> each.replace("{Count}", "20").replace("{BetUnits}", "20").replace("{Price}", StringUtils.formatComma(instance.pricePerBet * 20))).toArray(String[]::new)));
+            gui.addElement(new StaticGuiElement('m', setItemSize(XMaterial.PAPER.parseItem(), 40), click -> {
+                Bukkit.getScheduler().runTaskLater(plugin, () -> getSingleBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.random(1, instance.numberOfChoices, 40).map(each -> each.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2);
+                return true;
+            }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBetCountValueSimple, instance)).map(each -> each.replace("{Count}", "40").replace("{BetUnits}", "40").replace("{Price}", StringUtils.formatComma(instance.pricePerBet * 40))).toArray(String[]::new)));
+            gui.addElement(new StaticGuiElement('n', setItemSize(XMaterial.PAPER.parseItem(), 50), click -> {
+                Bukkit.getScheduler().runTaskLater(plugin, () -> getSingleBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.random(1, instance.numberOfChoices, 50).map(each -> each.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2);
+                return true;
+            }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBetCountValueSimple, instance)).map(each -> each.replace("{Count}", "50").replace("{BetUnits}", "50").replace("{Price}", StringUtils.formatComma(instance.pricePerBet * 50))).toArray(String[]::new)));
+            gui.addElement(new StaticGuiElement('o', setEnchanted(XMaterial.PAPER.parseItem()), click -> {
+                Bukkit.getScheduler().runTaskLater(plugin, () -> getSingleBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.random(1, instance.numberOfChoices, 100).map(each -> each.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2);
+                return true;
+            }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBetCountValueSimple, instance)).map(each -> each.replace("{Count}", "100").replace("{BetUnits}", "100").replace("{Price}", StringUtils.formatComma(instance.pricePerBet * 100))).toArray(String[]::new)));
+        } else if (type.equals(BetNumbersType.MULTIPLE_RANDOM)) {
+            gui.addElement(new StaticGuiElement('e', new ItemStack(Material.AIR), ChatColor.LIGHT_PURPLE.toString()));
+            gui.addElement(new StaticGuiElement('f', new ItemStack(Material.AIR), ChatColor.LIGHT_PURPLE.toString()));
+            gui.addElement(new StaticGuiElement('j', new ItemStack(Material.AIR), ChatColor.LIGHT_PURPLE.toString()));
+            gui.addElement(new StaticGuiElement('k', new ItemStack(Material.AIR), ChatColor.LIGHT_PURPLE.toString()));
+
+            AtomicInteger size = new AtomicInteger(7);
+            gui.addElement(new StaticGuiElement('g', XMaterial.ARROW.parseItem(), click -> {
+                int decrement = click.getType().isRightClick() ? 10 : 1;
+                size.updateAndGet(i -> Math.max(7, i - decrement));
+                gui.draw(player);
+                return true;
+            }, LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryDecrementButton, instance)));
+            gui.addElement(new StaticGuiElement('i', XMaterial.ARROW.parseItem(), click -> {
+                int increment = click.getType().isRightClick() ? 10 : 1;
+                size.updateAndGet(i -> Math.min(instance.numberOfChoices, i + increment));
+                gui.draw(player);
+                return true;
+            }, LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryIncrementButton, instance)));
+
+            gui.addElement(new DynamicGuiElement('h', () -> new StaticGuiElement('g', getNumberItem(size.get(), NumberSelectedState.NOT_SELECTED), Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryMultipleSizeValue, instance)).map(each -> each.replace("{Count}", size.get() + "")).toArray(String[]::new))));
+
+            gui.addElement(new DynamicGuiElement('l', () -> {
+                long price = LotteryUtils.calculatePrice(BetNumbersType.MULTIPLE_RANDOM, size.get(), 0, instance.pricePerBet);
+                return new StaticGuiElement('l', setItemSize(XMaterial.PAPER.parseItem(), 1), click -> {
+                    Bukkit.getScheduler().runTaskLater(plugin, () -> getComplexBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.multipleRandom(1, instance.numberOfChoices, size.get(), 1).map(each -> each.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2);
+                    return true;
+                }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBetCountValueComplex, instance)).map(each -> each
+                        .replace("{Count}", "1")
+                        .replace("{BetUnits}", StringUtils.formatComma(price / instance.pricePerBet))
+                        .replace("{Price}", StringUtils.formatComma(price))
+                        .replace("{PricePartial}", StringUtils.formatComma(price / BetUnitType.PARTIAL.getDivisor()))).toArray(String[]::new));
+            }));
+            gui.addElement(new DynamicGuiElement('m', () -> {
+                long price = LotteryUtils.calculatePrice(BetNumbersType.MULTIPLE_RANDOM, size.get(), 0, instance.pricePerBet);
+                return new StaticGuiElement('m', setItemSize(XMaterial.PAPER.parseItem(), 2), click -> {
+                    Bukkit.getScheduler().runTaskLater(plugin, () -> getComplexBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.multipleRandom(1, instance.numberOfChoices, size.get(), 2).map(each -> each.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2);
+                    return true;
+                }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBetCountValueComplex, instance)).map(each -> each
+                        .replace("{Count}", "2")
+                        .replace("{BetUnits}", StringUtils.formatComma(price * 2 / instance.pricePerBet))
+                        .replace("{Price}", StringUtils.formatComma(price * 2))
+                        .replace("{PricePartial}", StringUtils.formatComma(price * 2 / BetUnitType.PARTIAL.getDivisor()))).toArray(String[]::new));
+            }));
+            gui.addElement(new DynamicGuiElement('n', () -> {
+                long price = LotteryUtils.calculatePrice(BetNumbersType.MULTIPLE_RANDOM, size.get(), 0, instance.pricePerBet);
+                return new StaticGuiElement('n', setItemSize(XMaterial.PAPER.parseItem(), 5), click -> {
+                    Bukkit.getScheduler().runTaskLater(plugin, () -> getComplexBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.multipleRandom(1, instance.numberOfChoices, size.get(), 5).map(each -> each.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2);
+                    return true;
+                }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBetCountValueComplex, instance)).map(each -> each
+                        .replace("{Count}", "5")
+                        .replace("{BetUnits}", StringUtils.formatComma(price * 5 / instance.pricePerBet))
+                        .replace("{Price}", StringUtils.formatComma(price * 5))
+                        .replace("{PricePartial}", StringUtils.formatComma(price * 5 / BetUnitType.PARTIAL.getDivisor()))).toArray(String[]::new));
+            }));
+            gui.addElement(new DynamicGuiElement('o', () -> {
+                long price = LotteryUtils.calculatePrice(BetNumbersType.MULTIPLE_RANDOM, size.get(), 0, instance.pricePerBet);
+                return new StaticGuiElement('o', setItemSize(XMaterial.PAPER.parseItem(), 10), click -> {
+                    Bukkit.getScheduler().runTaskLater(plugin, () -> getComplexBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.multipleRandom(1, instance.numberOfChoices, size.get(), 10).map(each -> each.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2);
+                    return true;
+                }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBetCountValueComplex, instance)).map(each -> each
+                        .replace("{Count}", "10")
+                        .replace("{BetUnits}", StringUtils.formatComma(price * 10 / instance.pricePerBet))
+                        .replace("{Price}", StringUtils.formatComma(price * 10))
+                        .replace("{PricePartial}", StringUtils.formatComma(price * 10 / BetUnitType.PARTIAL.getDivisor()))).toArray(String[]::new));
+            }));
+        } else if (type.equals(BetNumbersType.BANKER_RANDOM)) {
+            gui.addElement(new StaticGuiElement('h', new ItemStack(Material.AIR), ChatColor.LIGHT_PURPLE.toString()));
+
+            AtomicInteger bankerSize = new AtomicInteger(1);
+            AtomicInteger selectionSize = new AtomicInteger(6);
+
+            gui.addElement(new StaticGuiElement('e', XMaterial.ARROW.parseItem(), click -> {
+                int decrement = click.getType().isRightClick() ? 10 : 1;
+                bankerSize.updateAndGet(i -> Math.max(1, i - decrement));
+                selectionSize.updateAndGet(i -> Math.max(7 - bankerSize.get(), i));
+                gui.draw(player);
+                return true;
+            }, LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryDecrementButton, instance)));
+            gui.addElement(new StaticGuiElement('g', XMaterial.ARROW.parseItem(), click -> {
+                int increment = click.getType().isRightClick() ? 10 : 1;
+                bankerSize.updateAndGet(i -> Math.min(5, i + increment));
+                selectionSize.updateAndGet(i -> Math.min(instance.numberOfChoices - bankerSize.get(), i));
+                gui.draw(player);
+                return true;
+            }, LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryIncrementButton, instance)));
+
+            gui.addElement(new StaticGuiElement('i', XMaterial.ARROW.parseItem(), click -> {
+                int decrement = click.getType().isRightClick() ? 10 : 1;
+                selectionSize.updateAndGet(i -> Math.max(7 - bankerSize.get(), i - decrement));
+                gui.draw(player);
+                return true;
+            }, LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryDecrementButton, instance)));
+            gui.addElement(new StaticGuiElement('k', XMaterial.ARROW.parseItem(), click -> {
+                int increment = click.getType().isRightClick() ? 10 : 1;
+                selectionSize.updateAndGet(i -> Math.min(instance.numberOfChoices - bankerSize.get(), i + increment));
+                gui.draw(player);
+                return true;
+            }, LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryIncrementButton, instance)));
+
+            gui.addElement(new DynamicGuiElement('f', () -> new StaticGuiElement('f', getNumberItem(bankerSize.get(), NumberSelectedState.NOT_SELECTED), Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBankerBankersValue, instance)).map(each -> each.replace("{Count}", bankerSize.get() + "")).toArray(String[]::new))));
+            gui.addElement(new DynamicGuiElement('j', () -> new StaticGuiElement('j', getNumberItem(selectionSize.get(), NumberSelectedState.NOT_SELECTED), Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBankerSelectionsValue, instance)).map(each -> each.replace("{Count}", selectionSize.get() + "")).toArray(String[]::new))));
+
+
+            gui.addElement(new DynamicGuiElement('l', () -> {
+                long price = LotteryUtils.calculatePrice(BetNumbersType.BANKER_RANDOM, selectionSize.get(), bankerSize.get(), instance.pricePerBet);
+                return new StaticGuiElement('l', setItemSize(XMaterial.PAPER.parseItem(), 1), click -> {
+                    Bukkit.getScheduler().runTaskLater(plugin, () -> getComplexBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.bankerRandom(1, instance.numberOfChoices, bankerSize.get(), selectionSize.get(), 1).map(each -> each.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2);
+                    return true;
+                }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBetCountValueComplex, instance)).map(each -> each
+                        .replace("{Count}", "1")
+                        .replace("{BetUnits}", StringUtils.formatComma(price / instance.pricePerBet))
+                        .replace("{Price}", StringUtils.formatComma(price))
+                        .replace("{PricePartial}", StringUtils.formatComma(price / BetUnitType.PARTIAL.getDivisor()))).toArray(String[]::new));
+            }));
+            gui.addElement(new DynamicGuiElement('m', () -> {
+                long price = LotteryUtils.calculatePrice(BetNumbersType.BANKER_RANDOM, selectionSize.get(), bankerSize.get(), instance.pricePerBet);
+                return new StaticGuiElement('m', setItemSize(XMaterial.PAPER.parseItem(), 2), click -> {
+                    Bukkit.getScheduler().runTaskLater(plugin, () -> getComplexBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.bankerRandom(1, instance.numberOfChoices, bankerSize.get(), selectionSize.get(), 2).map(each -> each.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2);
+                    return true;
+                }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBetCountValueComplex, instance)).map(each -> each
+                        .replace("{Count}", "2")
+                        .replace("{BetUnits}", StringUtils.formatComma(price * 2 / instance.pricePerBet))
+                        .replace("{Price}", StringUtils.formatComma(price * 2))
+                        .replace("{PricePartial}", StringUtils.formatComma(price * 2 / BetUnitType.PARTIAL.getDivisor()))).toArray(String[]::new));
+            }));
+            gui.addElement(new DynamicGuiElement('n', () -> {
+                long price = LotteryUtils.calculatePrice(BetNumbersType.BANKER_RANDOM, selectionSize.get(), bankerSize.get(), instance.pricePerBet);
+                return new StaticGuiElement('n', setItemSize(XMaterial.PAPER.parseItem(), 5), click -> {
+                    Bukkit.getScheduler().runTaskLater(plugin, () -> getComplexBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.bankerRandom(1, instance.numberOfChoices, bankerSize.get(), selectionSize.get(), 5).map(each -> each.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2);
+                    return true;
+                }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBetCountValueComplex, instance)).map(each -> each
+                        .replace("{Count}", "5")
+                        .replace("{BetUnits}", StringUtils.formatComma(price * 5 / instance.pricePerBet))
+                        .replace("{Price}", StringUtils.formatComma(price * 5))
+                        .replace("{PricePartial}", StringUtils.formatComma(price * 5 / BetUnitType.PARTIAL.getDivisor()))).toArray(String[]::new));
+            }));
+            gui.addElement(new DynamicGuiElement('o', () -> {
+                long price = LotteryUtils.calculatePrice(BetNumbersType.BANKER_RANDOM, selectionSize.get(), bankerSize.get(), instance.pricePerBet);
+                return new StaticGuiElement('o', setItemSize(XMaterial.PAPER.parseItem(), 10), click -> {
+                    Bukkit.getScheduler().runTaskLater(plugin, () -> getComplexBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.bankerRandom(1, instance.numberOfChoices, bankerSize.get(), selectionSize.get(), 10).map(each -> each.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2);
+                    return true;
+                }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBetCountValueComplex, instance)).map(each -> each
+                        .replace("{Count}", "10")
+                        .replace("{BetUnits}", StringUtils.formatComma(price * 10 / instance.pricePerBet))
+                        .replace("{Price}", StringUtils.formatComma(price * 10))
+                        .replace("{PricePartial}", StringUtils.formatComma(price * 10 / BetUnitType.PARTIAL.getDivisor()))).toArray(String[]::new));
+            }));
+        }
+
         gui.setSilent(true);
         return gui;
     }
@@ -671,8 +856,7 @@ public class LotteryPluginGUI implements Listener {
         String last = guiSetup[guiSetup.length - 1];
         guiSetup[guiSetup.length - 1] = last.substring(0, last.length() - 2) + "\1\0";
         String title;
-        boolean isBanker = builder.getType().equals(BetNumbersType.BANKER);
-        boolean isFixed = builder.getType().equals(BetNumbersType.SINGLE);
+        boolean isBanker = builder.getType().isBanker();
         switch (builder.getType()) {
             case SINGLE: {
                 title = instance.guiNewBetSingleTitle;
@@ -694,30 +878,20 @@ public class LotteryPluginGUI implements Listener {
         char c = 'a';
         IntObjectConsumer<Player> handleClick = (number, clicker) -> {
             if (builder.completed() || (isBanker && !((BetNumbersBuilder.BankerBuilder) builder).getBankers().isEmpty())) {
-                if (isFixed) {
-                    Bukkit.getScheduler().runTaskLater(plugin, () -> close(clicker, gui, false), 1);
-                    Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                        BetNumbers betNumbers = builder.build();
-                        if (betNumbers.getType().equals(BetNumbersType.SINGLE)) {
-                            getSingleNumberConfirm(clicker, game, betNumbers).show(clicker);
-                        } else {
-                            getComplexNumberConfirm(clicker, game, betNumbers).show(clicker);
-                        }
-                    }, 2);
-                } else if (isBanker && !((BetNumbersBuilder.BankerBuilder) builder).inSelectionPhase() && ((BetNumbersBuilder.BankerBuilder) builder).bankerCompleted()) {
+                if (isBanker && !((BetNumbersBuilder.BankerBuilder) builder).inSelectionPhase() && ((BetNumbersBuilder.BankerBuilder) builder).bankerCompleted()) {
                     ((BetNumbersBuilder.BankerBuilder) builder).finishBankers();
                     gui.removeElement('\0');
                     gui.addElement(new StaticGuiElement('\0', XMaterial.GRAY_DYE.parseItem(), LotteryUtils.formatPlaceholders(player, instance.guiNewBetNotYetFinish, instance, game)));
                     for (int banker : ((BetNumbersBuilder.BankerBuilder) builder).getBankers()) {
                         char bankerC = (char) ('a' + banker - 1);
                         gui.removeElement(bankerC);
-                        gui.addElement(new StaticGuiElement(bankerC, XMaterial.YELLOW_WOOL.parseItem(), ChatColor.YELLOW + "" + banker));
+                        gui.addElement(new StaticGuiElement(bankerC, getNumberItem(banker, NumberSelectedState.SELECTED_BANKER), ChatColor.YELLOW + "" + banker));
                     }
                 } else if (builder.completed() || (isBanker && !((BetNumbersBuilder.BankerBuilder) builder).inSelectionPhase() && !((BetNumbersBuilder.BankerBuilder) builder).getBankers().isEmpty())) {
+                    long price = LotteryUtils.calculatePrice(builder, instance);
                     gui.removeElement('\0');
                     gui.addElement(new StaticGuiElement('\0', isBanker && !((BetNumbersBuilder.BankerBuilder) builder).inSelectionPhase() ? XMaterial.EMERALD.parseItem() : XMaterial.GOLD_INGOT.parseItem(), click -> {
                         if (builder.completed()) {
-                            Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
                             Bukkit.getScheduler().runTaskLater(plugin, () -> {
                                 BetNumbers betNumbers = builder.build();
                                 if (betNumbers.getType().equals(BetNumbersType.SINGLE)) {
@@ -733,13 +907,16 @@ public class LotteryPluginGUI implements Listener {
                             for (int banker : ((BetNumbersBuilder.BankerBuilder) builder).getBankers()) {
                                 char bankerC = (char) ('a' + banker - 1);
                                 gui.removeElement(bankerC);
-                                gui.addElement(new StaticGuiElement(bankerC, XMaterial.YELLOW_WOOL.parseItem(), ChatColor.YELLOW + "" + banker));
+                                gui.addElement(new StaticGuiElement(bankerC, getNumberItem(banker, NumberSelectedState.SELECTED_BANKER), ChatColor.YELLOW + "" + banker));
                             }
                             gui.draw(clicker);
                         }
                         return true;
-                    }, LotteryUtils.formatPlaceholders(player, Arrays.stream(isBanker && !((BetNumbersBuilder.BankerBuilder) builder).inSelectionPhase() ? instance.guiNewBetFinishBankers : instance.guiNewBetFinish)
-                            .map(each -> each.replace("{Price}", StringUtils.formatComma(LotteryUtils.calculatePrice(builder, instance)))).toArray(String[]::new), instance, game)));
+                    }, LotteryUtils.formatPlaceholders(player, Arrays.stream(isBanker && !((BetNumbersBuilder.BankerBuilder) builder).inSelectionPhase() ? instance.guiNewBetFinishBankers : (builder.getType().isMultipleCombination() ? instance.guiNewBetFinishComplex : instance.guiNewBetFinishSimple))
+                            .map(each -> each
+                                    .replace("{BetUnits}", StringUtils.formatComma(price / instance.pricePerBet))
+                                    .replace("{Price}", StringUtils.formatComma(price))
+                                    .replace("{PricePartial}", StringUtils.formatComma(price / BetUnitType.PARTIAL.getDivisor()))).toArray(String[]::new), instance, game)));
                 }
             } else {
                 gui.removeElement('\0');
@@ -751,12 +928,16 @@ public class LotteryPluginGUI implements Listener {
             GuiStateElement element = new GuiStateElement(c++,
                     new GuiStateElement.State(
                             change -> {
-                                builder.addNumber(number);
-                                handleClick.accept(number, (Player) change.getWhoClicked());
+                                if (builder.canAdd()) {
+                                    builder.addNumber(number);
+                                    handleClick.accept(number, (Player) change.getWhoClicked());
+                                } else {
+                                    ((GuiStateElement) change.getElement()).nextState();
+                                }
                                 gui.draw(change.getWhoClicked());
                             },
                             "true",
-                            XMaterial.LIGHT_GRAY_WOOL.parseItem(),
+                            getNumberItem(number, NumberSelectedState.SELECTED),
                             ChatColor.GRAY + "" + number
                     ),
                     new GuiStateElement.State(
@@ -785,12 +966,16 @@ public class LotteryPluginGUI implements Listener {
                                         gui.addElement(new StaticGuiElement('\0', XMaterial.GRAY_DYE.parseItem(), LotteryUtils.formatPlaceholders(player, instance.guiNewBetNotYetFinish, instance, game)));
                                         return;
                                     }
-                                    ((StaticGuiElement) gui.getElement('\0')).setText(LotteryUtils.formatPlaceholders(player, Arrays.stream(isBanker ? instance.guiNewBetFinishBankers : instance.guiNewBetFinish)
-                                            .map(each -> each.replace("{Price}", StringUtils.formatComma(LotteryUtils.calculatePrice(builder, instance)))).toArray(String[]::new), instance, game));
+                                    long price = LotteryUtils.calculatePrice(builder, instance);
+                                    ((StaticGuiElement) gui.getElement('\0')).setText(LotteryUtils.formatPlaceholders(player, Arrays.stream(isBanker ? instance.guiNewBetFinishBankers : (builder.getType().isMultipleCombination() ? instance.guiNewBetFinishComplex : instance.guiNewBetFinishSimple))
+                                            .map(each -> each
+                                                    .replace("{BetUnits}", StringUtils.formatComma(price / instance.pricePerBet))
+                                                    .replace("{Price}", StringUtils.formatComma(price))
+                                                    .replace("{PricePartial}", StringUtils.formatComma(price / BetUnitType.PARTIAL.getDivisor()))).toArray(String[]::new), instance, game));
                                 }
                             },
                             "false",
-                            getNumberItem(number),
+                            getNumberItem(number, NumberSelectedState.NOT_SELECTED),
                             getNumberColor(number) + "" + number
                     )
             );
@@ -803,7 +988,7 @@ public class LotteryPluginGUI implements Listener {
             gui.addElement(new DynamicGuiElement(allChar, viewer -> {
                 if (builder.canAdd()) {
                     if (!isBanker || ((BetNumbersBuilder.BankerBuilder) builder).inSelectionPhase()) {
-                        return new StaticGuiElement(allChar, NBTEditor.set(XMaterial.ORANGE_WOOL.parseItem(), -1, "LotterySixNumber"), click -> {
+                        return new StaticGuiElement(allChar, getNumberItem(0, NumberSelectedState.NOT_SELECTED), click -> {
                             for (int number = 1; number <= num; number++) {
                                 if (!builder.contains(number)) {
                                     builder.addNumber(number);
@@ -819,7 +1004,7 @@ public class LotteryPluginGUI implements Listener {
                         return new StaticGuiElement(allChar, new ItemStack(Material.AIR), ChatColor.LIGHT_PURPLE.toString());
                     }
                 } else {
-                    return new StaticGuiElement(allChar, XMaterial.GRAY_WOOL.parseItem(), ChatColor.DARK_GRAY + instance.guiNewBetSelectAll);
+                    return new StaticGuiElement(allChar, getNumberItem(0, NumberSelectedState.SELECTED), ChatColor.DARK_GRAY + instance.guiNewBetSelectAll);
                 }
             }));
         }
@@ -838,6 +1023,73 @@ public class LotteryPluginGUI implements Listener {
                 return new StaticGuiElement('\1', new ItemStack(Material.AIR), ChatColor.LIGHT_PURPLE.toString());
             }
         }));
+
+        return gui;
+    }
+
+    public InventoryGui getSingleNumberConfirm(Player player, PlayableLotterySixGame game, BetNumbers betNumbers) {
+        String[] guiSetup = {
+                "         ",
+                " abcdefg ",
+                "         ",
+                "  h   i  ",
+                "         "
+        };
+        long price = LotteryUtils.calculatePrice(betNumbers, instance);
+        InventoryGui gui = new InventoryGui(plugin, LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetTitle, instance, game), guiSetup);
+        char c = 'a';
+        for (int i : betNumbers.getNumbers()) {
+            gui.addElement(new StaticGuiElement(c++, getNumberItem(i, NumberSelectedState.NOT_SELECTED), getNumberColor(i) + "" + i));
+        }
+        gui.addElement(new StaticGuiElement('g', XMaterial.DIAMOND.parseItem(), Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetLotteryInfo, instance, game))
+                .map(each -> each.replace("{Price}", StringUtils.formatComma(price))).toArray(String[]::new)));
+        gui.addElement(new StaticGuiElement('h', XMaterial.GOLD_INGOT.parseItem(), click -> {
+            if (game != null && game.isValid()) {
+                if (instance.backendBungeecordMode) {
+                    LotterySixPlugin.getPluginMessageHandler().requestAddBet(player.getName(), player.getUniqueId(), instance.pricePerBet, BetUnitType.FULL, betNumbers);
+                } else {
+                    AddBetResult result = game.addBet(player.getName(), player.getUniqueId(), instance.pricePerBet, BetUnitType.FULL, betNumbers);
+                    switch (result) {
+                        case SUCCESS: {
+                            player.sendMessage(instance.messageBetPlaced.replace("{Price}", StringUtils.formatComma(price)));
+                            break;
+                        }
+                        case GAME_LOCKED: {
+                            player.sendMessage(instance.messageGameLocked.replace("{Price}", StringUtils.formatComma(price)));
+                            break;
+                        }
+                        case NOT_ENOUGH_MONEY: {
+                            player.sendMessage(instance.messageNotEnoughMoney.replace("{Price}", StringUtils.formatComma(price)));
+                            break;
+                        }
+                        case LIMIT_SELF: {
+                            player.sendMessage(instance.messageBetLimitReachedSelf.replace("{Price}", StringUtils.formatComma(price)));
+                            break;
+                        }
+                        case LIMIT_PERMISSION: {
+                            player.sendMessage(instance.messageBetLimitReachedPermission.replace("{Price}", StringUtils.formatComma(price)));
+                            break;
+                        }
+                        case ACCOUNT_SUSPENDED: {
+                            long time = instance.getPlayerPreferenceManager().getLotteryPlayer(player.getUniqueId()).getPreference(PlayerPreferenceKey.SUSPEND_ACCOUNT_UNTIL, long.class);
+                            player.sendMessage(instance.messageBettingAccountSuspended.replace("{Date}", instance.dateFormat.format(new Date(time))).replace("{Price}", StringUtils.formatComma(price)));
+                            break;
+                        }
+                    }
+                    if (result.isSuccess()) {
+                        Bukkit.getScheduler().runTaskLater(plugin, () -> checkReopen(click.getWhoClicked()), 5);
+                    }
+                }
+                Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
+            }
+            return true;
+        }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetUnitInvestmentConfirm, instance, game))
+                .map(each -> each.replace("{Price}", StringUtils.formatComma(price))).toArray(String[]::new)));
+        gui.addElement(new StaticGuiElement('i', XMaterial.BARRIER.parseItem(), click -> {
+            Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
+            Bukkit.getScheduler().runTaskLater(plugin, () -> checkReopen(click.getWhoClicked()), 5);
+            return true;
+        }, LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetCancel, instance, game)));
 
         return gui;
     }
@@ -897,7 +1149,7 @@ public class LotteryPluginGUI implements Listener {
                 Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
             }
             return true;
-        }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetPartialConfirm, instance, game))
+        }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetPartialInvestmentConfirm, instance, game))
                 .map(each -> each.replace("{Price}", StringUtils.formatComma(price)).replace("{PricePartial}", StringUtils.formatComma(partial))).toArray(String[]::new)));
         gui.addElement(new StaticGuiElement('i', XMaterial.GOLD_INGOT.parseItem(), click -> {
             if (game != null && game.isValid()) {
@@ -939,7 +1191,7 @@ public class LotteryPluginGUI implements Listener {
                 Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
             }
             return true;
-        }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetConfirm, instance, game))
+        }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetUnitInvestmentConfirm, instance, game))
                 .map(each -> each.replace("{Price}", StringUtils.formatComma(price)).replace("{PricePartial}", StringUtils.formatComma(partial))).toArray(String[]::new)));
         gui.addElement(new StaticGuiElement('j', XMaterial.BARRIER.parseItem(), click -> {
             Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
@@ -950,74 +1202,7 @@ public class LotteryPluginGUI implements Listener {
         return gui;
     }
 
-    public InventoryGui getSingleNumberConfirm(Player player, PlayableLotterySixGame game, BetNumbers betNumbers) {
-        String[] guiSetup = {
-                "         ",
-                " abcdefg ",
-                "         ",
-                "  h   i  ",
-                "         "
-        };
-        long price = LotteryUtils.calculatePrice(betNumbers, instance);
-        InventoryGui gui = new InventoryGui(plugin, LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetTitle, instance, game), guiSetup);
-        char c = 'a';
-        for (int i : betNumbers.getNumbers()) {
-            gui.addElement(new StaticGuiElement(c++, getNumberItem(i), getNumberColor(i) + "" + i));
-        }
-        gui.addElement(new StaticGuiElement('g', XMaterial.DIAMOND.parseItem(), Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetLotteryInfo, instance, game))
-                .map(each -> each.replace("{Price}", StringUtils.formatComma(price))).toArray(String[]::new)));
-        gui.addElement(new StaticGuiElement('h', XMaterial.GOLD_INGOT.parseItem(), click -> {
-            if (game != null && game.isValid()) {
-                if (instance.backendBungeecordMode) {
-                    LotterySixPlugin.getPluginMessageHandler().requestAddBet(player.getName(), player.getUniqueId(), instance.pricePerBet, BetUnitType.FULL, betNumbers);
-                } else {
-                    AddBetResult result = game.addBet(player.getName(), player.getUniqueId(), instance.pricePerBet, BetUnitType.FULL, betNumbers);
-                    switch (result) {
-                        case SUCCESS: {
-                            player.sendMessage(instance.messageBetPlaced.replace("{Price}", StringUtils.formatComma(price)));
-                            break;
-                        }
-                        case GAME_LOCKED: {
-                            player.sendMessage(instance.messageGameLocked.replace("{Price}", StringUtils.formatComma(price)));
-                            break;
-                        }
-                        case NOT_ENOUGH_MONEY: {
-                            player.sendMessage(instance.messageNotEnoughMoney.replace("{Price}", StringUtils.formatComma(price)));
-                            break;
-                        }
-                        case LIMIT_SELF: {
-                            player.sendMessage(instance.messageBetLimitReachedSelf.replace("{Price}", StringUtils.formatComma(price)));
-                            break;
-                        }
-                        case LIMIT_PERMISSION: {
-                            player.sendMessage(instance.messageBetLimitReachedPermission.replace("{Price}", StringUtils.formatComma(price)));
-                            break;
-                        }
-                        case ACCOUNT_SUSPENDED: {
-                            long time = instance.getPlayerPreferenceManager().getLotteryPlayer(player.getUniqueId()).getPreference(PlayerPreferenceKey.SUSPEND_ACCOUNT_UNTIL, long.class);
-                            player.sendMessage(instance.messageBettingAccountSuspended.replace("{Date}", instance.dateFormat.format(new Date(time))).replace("{Price}", StringUtils.formatComma(price)));
-                            break;
-                        }
-                    }
-                    if (result.isSuccess()) {
-                        Bukkit.getScheduler().runTaskLater(plugin, () -> checkReopen(click.getWhoClicked()), 5);
-                    }
-                }
-                Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
-            }
-            return true;
-        }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetConfirm, instance, game))
-                .map(each -> each.replace("{Price}", StringUtils.formatComma(price))).toArray(String[]::new)));
-        gui.addElement(new StaticGuiElement('i', XMaterial.BARRIER.parseItem(), click -> {
-            Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
-            Bukkit.getScheduler().runTaskLater(plugin, () -> checkReopen(click.getWhoClicked()), 5);
-            return true;
-        }, LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetCancel, instance, game)));
-
-        return gui;
-    }
-
-    public InventoryGui getBulkNumberConfirm(Player player, PlayableLotterySixGame game, Collection<BetNumbers> betNumbers) {
+    public InventoryGui getSingleBulkNumberConfirm(Player player, PlayableLotterySixGame game, Collection<BetNumbers> betNumbers) {
         String[] guiSetup = {
                 "         ",
                 "   a g   ",
@@ -1072,9 +1257,118 @@ public class LotteryPluginGUI implements Listener {
                 Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
             }
             return true;
-        }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetConfirm, instance, game))
+        }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetUnitInvestmentConfirm, instance, game))
                 .map(each -> each.replace("{Price}", StringUtils.formatComma(price))).toArray(String[]::new)));
         gui.addElement(new StaticGuiElement('i', XMaterial.BARRIER.parseItem(), click -> {
+            Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
+            Bukkit.getScheduler().runTaskLater(plugin, () -> checkReopen(click.getWhoClicked()), 5);
+            return true;
+        }, LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetCancel, instance, game)));
+
+        return gui;
+    }
+
+    public InventoryGui getComplexBulkNumberConfirm(Player player, PlayableLotterySixGame game, Collection<BetNumbers> betNumbers) {
+        String[] guiSetup = {
+                "         ",
+                "   a g   ",
+                "         ",
+                "  h i j  ",
+                "         "
+        };
+        long price = betNumbers.stream().mapToLong(each -> LotteryUtils.calculatePrice(each, instance)).sum();
+        long partial = price / BetUnitType.PARTIAL.getDivisor();
+        int entriesTotal = betNumbers.stream().mapToInt(each -> each.getSetsSize()).sum();
+        InventoryGui gui = new InventoryGui(plugin, LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetTitle, instance, game), guiSetup);
+        gui.addElement(new StaticGuiElement('a', setItemSize(XMaterial.PAPER.parseItem(), betNumbers.size()), Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetBulkRandom, instance, game))
+                .map(each -> each.replace("{EntriesTotal}", entriesTotal + "")).toArray(String[]::new)));
+        gui.addElement(new StaticGuiElement('g', XMaterial.DIAMOND.parseItem(), Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetLotteryInfo, instance, game))
+                .map(each -> each.replace("{Price}", StringUtils.formatComma(price))).toArray(String[]::new)));
+        gui.addElement(new StaticGuiElement('h', XMaterial.GOLD_NUGGET.parseItem(), click -> {
+            if (game != null && game.isValid()) {
+                if (instance.backendBungeecordMode) {
+                    LotterySixPlugin.getPluginMessageHandler().requestAddBet(player.getName(), player.getUniqueId(), partial / betNumbers.size(), BetUnitType.PARTIAL, betNumbers);
+                } else {
+                    AddBetResult result = game.addBet(player.getName(), player.getUniqueId(), partial / betNumbers.size(), BetUnitType.PARTIAL, betNumbers);
+                    switch (result) {
+                        case SUCCESS: {
+                            player.sendMessage(instance.messageBetPlaced.replace("{Price}", StringUtils.formatComma(partial)));
+                            break;
+                        }
+                        case GAME_LOCKED: {
+                            player.sendMessage(instance.messageGameLocked.replace("{Price}", StringUtils.formatComma(partial)));
+                            break;
+                        }
+                        case NOT_ENOUGH_MONEY: {
+                            player.sendMessage(instance.messageNotEnoughMoney.replace("{Price}", StringUtils.formatComma(partial)));
+                            break;
+                        }
+                        case LIMIT_SELF: {
+                            player.sendMessage(instance.messageBetLimitReachedSelf.replace("{Price}", StringUtils.formatComma(partial)));
+                            break;
+                        }
+                        case LIMIT_PERMISSION: {
+                            player.sendMessage(instance.messageBetLimitReachedPermission.replace("{Price}", StringUtils.formatComma(partial)));
+                            break;
+                        }
+                        case ACCOUNT_SUSPENDED: {
+                            long time = instance.getPlayerPreferenceManager().getLotteryPlayer(player.getUniqueId()).getPreference(PlayerPreferenceKey.SUSPEND_ACCOUNT_UNTIL, long.class);
+                            player.sendMessage(instance.messageBettingAccountSuspended.replace("{Date}", instance.dateFormat.format(new Date(time))).replace("{Price}", StringUtils.formatComma(partial)));
+                            break;
+                        }
+                    }
+                    if (result.isSuccess()) {
+                        Bukkit.getScheduler().runTaskLater(plugin, () -> checkReopen(click.getWhoClicked()), 5);
+                    }
+                }
+                Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
+            }
+            return true;
+        }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetPartialInvestmentConfirm, instance, game))
+                .map(each -> each.replace("{Price}", StringUtils.formatComma(price)).replace("{PricePartial}", StringUtils.formatComma(partial))).toArray(String[]::new)));
+        gui.addElement(new StaticGuiElement('i', XMaterial.GOLD_INGOT.parseItem(), click -> {
+            if (game != null && game.isValid()) {
+                if (instance.backendBungeecordMode) {
+                    LotterySixPlugin.getPluginMessageHandler().requestAddBet(player.getName(), player.getUniqueId(), price / betNumbers.size(), BetUnitType.FULL, betNumbers);
+                } else {
+                    AddBetResult result = game.addBet(player.getName(), player.getUniqueId(), price / betNumbers.size(), BetUnitType.FULL, betNumbers);
+                    switch (result) {
+                        case SUCCESS: {
+                            player.sendMessage(instance.messageBetPlaced.replace("{Price}", StringUtils.formatComma(price)));
+                            break;
+                        }
+                        case GAME_LOCKED: {
+                            player.sendMessage(instance.messageGameLocked.replace("{Price}", StringUtils.formatComma(price)));
+                            break;
+                        }
+                        case NOT_ENOUGH_MONEY: {
+                            player.sendMessage(instance.messageNotEnoughMoney.replace("{Price}", StringUtils.formatComma(price)));
+                            break;
+                        }
+                        case LIMIT_SELF: {
+                            player.sendMessage(instance.messageBetLimitReachedSelf.replace("{Price}", StringUtils.formatComma(price)));
+                            break;
+                        }
+                        case LIMIT_PERMISSION: {
+                            player.sendMessage(instance.messageBetLimitReachedPermission.replace("{Price}", StringUtils.formatComma(price)));
+                            break;
+                        }
+                        case ACCOUNT_SUSPENDED: {
+                            long time = instance.getPlayerPreferenceManager().getLotteryPlayer(player.getUniqueId()).getPreference(PlayerPreferenceKey.SUSPEND_ACCOUNT_UNTIL, long.class);
+                            player.sendMessage(instance.messageBettingAccountSuspended.replace("{Date}", instance.dateFormat.format(new Date(time))).replace("{Price}", StringUtils.formatComma(price)));
+                            break;
+                        }
+                    }
+                    if (result.isSuccess()) {
+                        Bukkit.getScheduler().runTaskLater(plugin, () -> checkReopen(click.getWhoClicked()), 5);
+                    }
+                }
+                Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
+            }
+            return true;
+        }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetUnitInvestmentConfirm, instance, game))
+                .map(each -> each.replace("{Price}", StringUtils.formatComma(price)).replace("{PricePartial}", StringUtils.formatComma(partial))).toArray(String[]::new)));
+        gui.addElement(new StaticGuiElement('j', XMaterial.BARRIER.parseItem(), click -> {
             Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
             Bukkit.getScheduler().runTaskLater(plugin, () -> checkReopen(click.getWhoClicked()), 5);
             return true;
@@ -1088,7 +1382,9 @@ public class LotteryPluginGUI implements Listener {
         if (game == null) {
             String[] guiSetup = {
                     "         ",
+                    "         ",
                     "    a    ",
+                    "         ",
                     "         "
             };
             gui = new InventoryGui(plugin, LotteryUtils.formatPlaceholders(player, instance.guiLastResultsTitle, instance), guiSetup);
@@ -1104,10 +1400,10 @@ public class LotteryPluginGUI implements Listener {
             gui = new InventoryGui(plugin, LotteryUtils.formatPlaceholders(player, instance.guiLastResultsTitle, instance, game), guiSetup);
             char c = 'a';
             for (int i : game.getDrawResult().getNumbersOrdered()) {
-                gui.addElement(new StaticGuiElement(c++, getNumberItem(i), getNumberColor(i) + "" + i));
+                gui.addElement(new StaticGuiElement(c++, getNumberItem(i, NumberSelectedState.NOT_SELECTED), getNumberColor(i) + "" + i));
             }
             int specialNumber = game.getDrawResult().getSpecialNumber();
-            gui.addElement(new StaticGuiElement(c, getNumberItem(specialNumber, true), getNumberColor(specialNumber) + "" + specialNumber));
+            gui.addElement(new StaticGuiElement(c, getNumberItem(specialNumber, true, NumberSelectedState.NOT_SELECTED), getNumberColor(specialNumber) + "" + specialNumber));
             gui.addElement(new StaticGuiElement('h', XMaterial.CLOCK.parseItem(), LotteryUtils.formatPlaceholders(player, instance.guiLastResultsLotteryInfo, instance, game)));
 
             gui.addElement(new StaticGuiElement('i', XMaterial.GOLD_INGOT.parseItem(), click -> {
@@ -1298,10 +1594,10 @@ public class LotteryPluginGUI implements Listener {
             }
             WinningNumbers winningNumbers = gameIndex.getDrawResult();
             for (int i : winningNumbers.getNumbersOrdered()) {
-                gui.addElement(new StaticGuiElement(c++, getNumberItem(i), getNumberColor(i) + "" + i));
+                gui.addElement(new StaticGuiElement(c++, getNumberItem(i, NumberSelectedState.NOT_SELECTED), getNumberColor(i) + "" + i));
             }
             int specialNumber = winningNumbers.getSpecialNumber();
-            gui.addElement(new StaticGuiElement(c++, getNumberItem(specialNumber, true), getNumberColor(specialNumber) + "" + specialNumber));
+            gui.addElement(new StaticGuiElement(c++, getNumberItem(specialNumber, true, NumberSelectedState.NOT_SELECTED), getNumberColor(specialNumber) + "" + specialNumber));
         }
         while (c <= lastChar) {
             gui.addElement(new StaticGuiElement(c++, new ItemStack(Material.AIR), ChatColor.LIGHT_PURPLE.toString()));
@@ -1354,7 +1650,7 @@ public class LotteryPluginGUI implements Listener {
         for (int i = 0; i < num; i++) {
             int number = i + 1;
             NumberStatistics stats = game == null ? NumberStatistics.NOT_EVER_DRAWN : game.getNumberStatistics(number);
-            gui.addElement(new StaticGuiElement(c++, getNumberItem(number, stats.getLastDrawn() == 0),
+            gui.addElement(new StaticGuiElement(c++, getNumberItem(number, stats.getLastDrawn() == 0, NumberSelectedState.NOT_SELECTED),
                     getNumberColor(number) + "" + number,
                     LotteryUtils.formatPlaceholders(player, instance.guiNumberStatisticsLastDrawn.replace("{Number}", number + ""), instance, game),
                     LotteryUtils.formatPlaceholders(player, instance.guiNumberStatisticsTimesDrawn.replace("{Number}", number + ""), instance, game)
@@ -1363,6 +1659,29 @@ public class LotteryPluginGUI implements Listener {
         gui.addElement(new StaticGuiElement('\0', XMaterial.OAK_SIGN.parseItem(), LotteryUtils.formatPlaceholders(player, instance.guiNumberStatisticsNote, instance, game)));
 
         return gui;
+    }
+
+    public enum NumberSelectedState {
+
+        NOT_SELECTED(0, true),
+        SELECTED(100, false),
+        SELECTED_BANKER(200, false);
+
+        private final int customModelDataOffset;
+        private final boolean shouldSetStack;
+
+        NumberSelectedState(int customModelDataOffset, boolean shouldSetStack) {
+            this.customModelDataOffset = customModelDataOffset;
+            this.shouldSetStack = shouldSetStack;
+        }
+
+        public int getCustomModelDataOffset() {
+            return customModelDataOffset;
+        }
+
+        public boolean shouldSetStack() {
+            return shouldSetStack;
+        }
     }
 
 }

@@ -26,13 +26,7 @@ import java.util.function.BooleanSupplier;
 public class SyncUtils {
 
     public static void blockUntilTrue(BooleanSupplier condition) {
-        while (!condition.getAsBoolean()) {
-            try {
-                TimeUnit.NANOSECONDS.sleep(1);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-        }
+        blockUntilTrue(condition, Long.MAX_VALUE);
     }
 
     public static void blockUntilTrue(BooleanSupplier condition, long maxTime) {

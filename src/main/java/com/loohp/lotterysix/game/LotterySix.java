@@ -21,6 +21,7 @@
 package com.loohp.lotterysix.game;
 
 import com.cronutils.model.Cron;
+import com.cryptomorin.xseries.XMaterial;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
@@ -35,7 +36,7 @@ import com.loohp.lotterysix.game.lottery.PlayableLotterySixGame;
 import com.loohp.lotterysix.game.objects.BetResultConsumer;
 import com.loohp.lotterysix.game.objects.BossBarInfo;
 import com.loohp.lotterysix.game.objects.CarryOverMode;
-import com.loohp.lotterysix.game.objects.LotteryPlayer;
+import com.loohp.lotterysix.game.player.LotteryPlayer;
 import com.loohp.lotterysix.game.objects.LotterySixAction;
 import com.loohp.lotterysix.game.objects.MessageConsumer;
 import com.loohp.lotterysix.game.objects.PlayerBets;
@@ -180,15 +181,25 @@ public class LotterySix implements AutoCloseable {
     public String guiNewBetSelectAll;
     public String[] guiNewBetAddRandom;
     public String[] guiNewBetNotYetFinish;
-    public String[] guiNewBetFinish;
+    public String[] guiNewBetFinishSimple;
+    public String[] guiNewBetFinishComplex;
     public String[] guiNewBetFinishBankers;
-    public String guiRandomEntryCountTitle;
-    public String guiRandomEntryCountValue;
+    public String guiRandomEntryTitle;
+    public String[] guiRandomEntryBetCountValueSimple;
+    public String[] guiRandomEntryBetCountValueComplex;
+    public String[] guiRandomEntryIncrementButton;
+    public String[] guiRandomEntryDecrementButton;
+    public String[] guiRandomEntrySingleTab;
+    public String[] guiRandomEntryMultipleTab;
+    public String[] guiRandomEntryMultipleSizeValue;
+    public String[] guiRandomEntryBankerTab;
+    public String[] guiRandomEntryBankerBankersValue;
+    public String[] guiRandomEntryBankerSelectionsValue;
     public String guiConfirmNewBetTitle;
     public String[] guiConfirmNewBetLotteryInfo;
     public String[] guiConfirmNewBetBulkRandom;
-    public String[] guiConfirmNewBetConfirm;
-    public String[] guiConfirmNewBetPartialConfirm;
+    public String[] guiConfirmNewBetUnitInvestmentConfirm;
+    public String[] guiConfirmNewBetPartialInvestmentConfirm;
     public String[] guiConfirmNewBetCancel;
     public String guiNumberStatisticsTitle;
     public String guiNumberStatisticsLastDrawn;
@@ -264,6 +275,10 @@ public class LotterySix implements AutoCloseable {
     public boolean allowLoans;
     public Map<String, Long> playerBetLimit;
     public UUID lotteriesFundAccount;
+
+    public XMaterial numberItemsType;
+    public boolean numberItemsSetStackSize;
+    public int numberItemsCustomModelData;
 
     private final ExecutorService saveDataService;
     private final AtomicLong lastSaveBegin;
@@ -824,15 +839,25 @@ public class LotterySix implements AutoCloseable {
         guiNewBetSelectAll = config.getConfiguration().getString("GUI.NewBet.SelectAll");
         guiNewBetAddRandom = config.getConfiguration().getStringList("GUI.NewBet.AddRandom").toArray(new String[0]);
         guiNewBetNotYetFinish = config.getConfiguration().getStringList("GUI.NewBet.NotYetFinish").toArray(new String[0]);
-        guiNewBetFinish = config.getConfiguration().getStringList("GUI.NewBet.Finish").toArray(new String[0]);
+        guiNewBetFinishSimple = config.getConfiguration().getStringList("GUI.NewBet.FinishSimple").toArray(new String[0]);
+        guiNewBetFinishComplex = config.getConfiguration().getStringList("GUI.NewBet.FinishComplex").toArray(new String[0]);
         guiNewBetFinishBankers = config.getConfiguration().getStringList("GUI.NewBet.FinishBankers").toArray(new String[0]);
-        guiRandomEntryCountTitle = config.getConfiguration().getString("GUI.RandomEntryCount.Title");
-        guiRandomEntryCountValue = config.getConfiguration().getString("GUI.RandomEntryCount.Value");
+        guiRandomEntryTitle = config.getConfiguration().getString("GUI.RandomEntry.Title");
+        guiRandomEntryBetCountValueSimple = config.getConfiguration().getStringList("GUI.RandomEntry.BetCountValueSimple").toArray(new String[0]);
+        guiRandomEntryBetCountValueComplex = config.getConfiguration().getStringList("GUI.RandomEntry.BetCountValueComplex").toArray(new String[0]);
+        guiRandomEntryIncrementButton = config.getConfiguration().getStringList("GUI.RandomEntry.IncrementButton").toArray(new String[0]);
+        guiRandomEntryDecrementButton = config.getConfiguration().getStringList("GUI.RandomEntry.DecrementButton").toArray(new String[0]);
+        guiRandomEntrySingleTab = config.getConfiguration().getStringList("GUI.RandomEntry.Single.Tab").toArray(new String[0]);
+        guiRandomEntryMultipleTab = config.getConfiguration().getStringList("GUI.RandomEntry.Multiple.Tab").toArray(new String[0]);
+        guiRandomEntryMultipleSizeValue = config.getConfiguration().getStringList("GUI.RandomEntry.Multiple.SizeValue").toArray(new String[0]);
+        guiRandomEntryBankerTab = config.getConfiguration().getStringList("GUI.RandomEntry.Banker.Tab").toArray(new String[0]);
+        guiRandomEntryBankerBankersValue = config.getConfiguration().getStringList("GUI.RandomEntry.Banker.BankersValue").toArray(new String[0]);
+        guiRandomEntryBankerSelectionsValue = config.getConfiguration().getStringList("GUI.RandomEntry.Banker.SelectionsValue").toArray(new String[0]);
         guiConfirmNewBetTitle = config.getConfiguration().getString("GUI.ConfirmNewBet.Title");
         guiConfirmNewBetLotteryInfo = config.getConfiguration().getStringList("GUI.ConfirmNewBet.LotteryInfo").toArray(new String[0]);
         guiConfirmNewBetBulkRandom = config.getConfiguration().getStringList("GUI.ConfirmNewBet.BulkRandom").toArray(new String[0]);
-        guiConfirmNewBetConfirm = config.getConfiguration().getStringList("GUI.ConfirmNewBet.Confirm").toArray(new String[0]);
-        guiConfirmNewBetPartialConfirm = config.getConfiguration().getStringList("GUI.ConfirmNewBet.PartialConfirm").toArray(new String[0]);
+        guiConfirmNewBetUnitInvestmentConfirm = config.getConfiguration().getStringList("GUI.ConfirmNewBet.UnitInvestmentConfirm").toArray(new String[0]);
+        guiConfirmNewBetPartialInvestmentConfirm = config.getConfiguration().getStringList("GUI.ConfirmNewBet.PartialInvestmentConfirm").toArray(new String[0]);
         guiConfirmNewBetCancel = config.getConfiguration().getStringList("GUI.ConfirmNewBet.Cancel").toArray(new String[0]);
         guiNumberStatisticsTitle = config.getConfiguration().getString("GUI.NumberStatistics.Title");
         guiNumberStatisticsLastDrawn = config.getConfiguration().getString("GUI.NumberStatistics.LastDrawn");
@@ -917,6 +942,11 @@ public class LotterySix implements AutoCloseable {
         } catch (IllegalArgumentException e) {
             lotteriesFundAccount = null;
         }
+
+        String typeStr = config.getConfiguration().getString("NumberItems.ItemType");
+        numberItemsType = typeStr.equalsIgnoreCase("DEFAULT") ? null : XMaterial.valueOf(typeStr.toUpperCase());
+        numberItemsSetStackSize = config.getConfiguration().getBoolean("NumberItems.SetStackSize");
+        numberItemsCustomModelData = config.getConfiguration().getInt("NumberItems.StartingCustomModelData");
 
         int seventhTierMultiplier = config.getConfiguration().getInt("LotterySix.PrizeTierSettings.SEVENTH.FixedPrizeMultiplier");
         int sixthTierMultiplier = config.getConfiguration().getInt("LotterySix.PrizeTierSettings.SIXTH.MultiplierFromLast");

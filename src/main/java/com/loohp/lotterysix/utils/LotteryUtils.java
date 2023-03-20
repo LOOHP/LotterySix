@@ -21,6 +21,7 @@
 package com.loohp.lotterysix.utils;
 
 import com.loohp.lotterysix.game.lottery.CompletedLotterySixGameIndex;
+import com.loohp.lotterysix.game.objects.BetUnitType;
 import com.loohp.lotterysix.game.objects.LazyReplaceString;
 import com.loohp.lotterysix.game.LotterySix;
 import com.loohp.lotterysix.game.lottery.CompletedLotterySixGame;
@@ -72,7 +73,10 @@ public class LotteryUtils {
     }
 
     public static long calculatePrice(BetNumbersBuilder builder, LotterySix lotterySix) {
-        return calculatePrice(builder.getType(), builder.size(), builder.getType().equals(BetNumbersType.BANKER) ? ((BetNumbersBuilder.BankerBuilder) builder).bankerSize() : 0, lotterySix.pricePerBet) * builder.setsSize();
+        if (!builder.completed()) {
+            return 0;
+        }
+        return calculatePrice(builder.getType(), builder.size(), builder.bankerSize(), lotterySix.pricePerBet) * builder.setsSize();
     }
 
     public static long calculatePrice(BetNumbersType type, int size, int bankerSize, long pricePerBet) {
@@ -83,11 +87,13 @@ public class LotteryUtils {
                 permutations = 1;
                 break;
             }
-            case MULTIPLE: {
+            case MULTIPLE:
+            case MULTIPLE_RANDOM: {
                 permutations = factorial(size).divide((factorial(size - 6).multiply(SIX_FACTORIAL))).longValue();
                 break;
             }
-            case BANKER: {
+            case BANKER:
+            case BANKER_RANDOM: {
                 permutations = factorial(size).divide(factorial(size - (6 - bankerSize)).multiply(factorial(6 - bankerSize))).longValue();
                 break;
             }
@@ -108,6 +114,7 @@ public class LotteryUtils {
                 .replace("{Now}", () -> lotterySix.dateFormat.format(new Date()))
                 .replaceAll("\\{Now_(.*?)}", result -> dateFormat(lotterySix, result.group(1)).format(new Date()))
                 .replace("{PricePerBet}", () -> StringUtils.formatComma(lotterySix.pricePerBet))
+                .replace("{PricePerPartialBet}", () -> StringUtils.formatComma(lotterySix.pricePerBet / BetUnitType.PARTIAL.getDivisor()))
                 .replace("{Date}", () -> "-")
                 .replace("{GameNumberRaw}", () -> "-")
                 .replace("{GameNumber}", () -> "-")
@@ -148,6 +155,7 @@ public class LotteryUtils {
                     .replace("{SpecialName}", "")
                     .replace("{NumberOfChoices}", () -> lotterySix.numberOfChoices + "")
                     .replace("{PricePerBet}", () -> StringUtils.formatComma(lotterySix.pricePerBet))
+                    .replace("{PricePerPartialBet}", () -> StringUtils.formatComma(lotterySix.pricePerBet / BetUnitType.PARTIAL.getDivisor()))
                     .replace("{TotalBets}", "-")
                     .replace("{CarryOverFund}", "-")
                     .replace("{PrizePool}", "-")
@@ -173,6 +181,7 @@ public class LotteryUtils {
                     .replace("{SpecialName}", () -> game.hasSpecialName() ? game.getSpecialName() : "")
                     .replace("{NumberOfChoices}", () -> lotterySix.numberOfChoices + "")
                     .replace("{PricePerBet}", () -> StringUtils.formatComma(lotterySix.pricePerBet))
+                    .replace("{PricePerPartialBet}", () -> StringUtils.formatComma(lotterySix.pricePerBet / BetUnitType.PARTIAL.getDivisor()))
                     .replace("{TotalBets}", () -> StringUtils.formatComma(game.getTotalBets()))
                     .replace("{CarryOverFund}", () -> StringUtils.formatComma(game.getCarryOverFund(lotterySix.estimationRoundToNearest)))
                     .replace("{PrizePool}", () -> StringUtils.formatComma(game.estimatedPrizePool(lotterySix.maxTopPlacesPrize, lotterySix.taxPercentage, lotterySix.estimationRoundToNearest)))
@@ -212,7 +221,8 @@ public class LotteryUtils {
                     .replace("{GameNumber}", "-")
                     .replace("{SpecialName}", "")
                     .replace("{NumberOfChoices}", () -> lotterySix.numberOfChoices + "")
-                    .replace("{PricePerBet}", () -> StringUtils.formatComma(lotterySix.pricePerBet));
+                    .replace("{PricePerBet}", () -> StringUtils.formatComma(lotterySix.pricePerBet))
+                    .replace("{PricePerPartialBet}", () -> StringUtils.formatComma(lotterySix.pricePerBet / BetUnitType.PARTIAL.getDivisor()));
             for (PrizeTier prizeTier : PrizeTier.values()) {
                 str = str.replace("{" + prizeTier.name() + "Odds}", () -> {
                     double odds = calculateOddsOneOver(lotterySix.numberOfChoices, prizeTier);
@@ -229,7 +239,8 @@ public class LotteryUtils {
                     .replace("{GameNumber}", () -> game.getGameNumber() + (game.hasSpecialName() ? " " + game.getSpecialName() : ""))
                     .replace("{SpecialName}", () -> game.hasSpecialName() ? game.getSpecialName() : "")
                     .replace("{NumberOfChoices}", () -> lotterySix.numberOfChoices + "")
-                    .replace("{PricePerBet}", () -> StringUtils.formatComma(lotterySix.pricePerBet));
+                    .replace("{PricePerBet}", () -> StringUtils.formatComma(lotterySix.pricePerBet))
+                    .replace("{PricePerPartialBet}", () -> StringUtils.formatComma(lotterySix.pricePerBet / BetUnitType.PARTIAL.getDivisor()));
             for (PrizeTier prizeTier : PrizeTier.values()) {
                 str = str.replace("{" + prizeTier.name() + "Odds}", () -> {
                     double odds = calculateOddsOneOver(lotterySix.numberOfChoices, prizeTier);
@@ -261,6 +272,7 @@ public class LotteryUtils {
                     .replace("{SpecialName}", "")
                     .replace("{NumberOfChoices}", () -> lotterySix.numberOfChoices + "")
                     .replace("{PricePerBet}", () -> StringUtils.formatComma(lotterySix.pricePerBet))
+                    .replace("{PricePerPartialBet}", () -> StringUtils.formatComma(lotterySix.pricePerBet / BetUnitType.PARTIAL.getDivisor()))
                     .replace("{TotalBets}", () -> "-")
                     .replace("{TotalPrizes}", () -> "-")
                     .replace("{LotteriesFundsRaised}", () -> "-")
@@ -304,6 +316,7 @@ public class LotteryUtils {
                     .replace("{SpecialName}", () -> game.hasSpecialName() ? game.getSpecialName() : "")
                     .replace("{NumberOfChoices}", () -> lotterySix.numberOfChoices + "")
                     .replace("{PricePerBet}", () -> StringUtils.formatComma(lotterySix.pricePerBet))
+                    .replace("{PricePerPartialBet}", () -> StringUtils.formatComma(lotterySix.pricePerBet / BetUnitType.PARTIAL.getDivisor()))
                     .replace("{TotalBets}", () -> StringUtils.formatComma(game.getTotalBets()))
                     .replace("{TotalPrizes}", () -> StringUtils.formatComma(game.getTotalPrizes()))
                     .replace("{LotteriesFundsRaised}", () -> StringUtils.formatComma(game.getLotteriesFunds()))
