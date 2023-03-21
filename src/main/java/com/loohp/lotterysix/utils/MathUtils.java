@@ -100,16 +100,20 @@ public class MathUtils {
     }
 
     public static long combinationsCount(int size, int bankerSize) {
-        if (size < 6) {
-            return 0;
-        } else if (bankerSize <= 0) {
-            if (size == 6) {
+        if (bankerSize <= 0) {
+            if (size < 6) {
+                return 0;
+            } else if (size == 6) {
                 return 1;
             } else {
                 return factorial(size).divide((factorial(size - 6).multiply(SIX_FACTORIAL))).longValue();
             }
         } else {
-            return factorial(size).divide(factorial(size - (6 - bankerSize)).multiply(factorial(6 - bankerSize))).longValue();
+            if (size + bankerSize < 7) {
+                return 0;
+            } else {
+                return factorial(size).divide(factorial(size - (6 - bankerSize)).multiply(factorial(6 - bankerSize))).longValue();
+            }
         }
     }
 
