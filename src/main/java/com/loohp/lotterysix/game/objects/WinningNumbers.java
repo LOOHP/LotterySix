@@ -36,6 +36,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 public class WinningNumbers implements FormattedString {
 
@@ -103,36 +104,17 @@ public class WinningNumbers implements FormattedString {
         return specialNumber;
     }
 
-    public List<Pair<PrizeTier, WinningCombination>> checkWinning(BetNumbers betNumbers) {
+    public Stream<Pair<PrizeTier, WinningCombination>> checkWinning(BetNumbers betNumbers) {
         return betNumbers.combinations().map(numbers -> {
-            int matches = 0;
-            for (int num : numbers) {
-                if (this.numbers.contains(num)) {
-                    matches++;
-                    if (matches >= 6) {
-                        break;
-                    }
-                }
-            }
+            int matches = (int) numbers.stream().filter(i -> this.numbers.contains(i)).limit(6).count();
             boolean matchSpecial = numbers.contains(specialNumber);
-            switch (matches) {
-                case 6: {
-                    return Pair.of(PrizeTier.FIRST, new WinningCombination(numbers));
-                }
-                case 5: {
-                    return Pair.of(matchSpecial ? PrizeTier.SECOND : PrizeTier.THIRD, new WinningCombination(numbers));
-                }
-                case 4: {
-                    return Pair.of(matchSpecial ? PrizeTier.FOURTH : PrizeTier.FIFTH, new WinningCombination(numbers));
-                }
-                case 3: {
-                    return Pair.of(matchSpecial ? PrizeTier.SIXTH : PrizeTier.SEVENTH, new WinningCombination(numbers));
-                }
-                default: {
-                    return null;
+            for (PrizeTier prizeTier : PrizeTier.values()) {
+                if (prizeTier.getWinningCriteria().satisfies(matches, matchSpecial)) {
+                    return Pair.of(prizeTier, new WinningCombination(numbers));
                 }
             }
-        }).filter(each -> each != null).collect(Collectors.toList());
+            return null;
+        }).filter(each -> each != null);
     }
 
     public Iterator<Integer> iterator() {

@@ -20,9 +20,10 @@
 
 package com.loohp.lotterysix.events;
 
+import com.loohp.lotterysix.game.objects.AddBetResult;
 import com.loohp.lotterysix.game.objects.betnumbers.BetNumbers;
+import com.loohp.lotterysix.game.player.LotteryPlayer;
 import org.bukkit.Bukkit;
-import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 
@@ -34,21 +35,33 @@ public class PlayerBetEvent extends Event {
         return HANDLERS;
     }
 
-    private final Player player;
+    private final LotteryPlayer player;
     private final BetNumbers numbers;
+    private final long price;
+    private final AddBetResult result;
 
-    public PlayerBetEvent(Player player, BetNumbers numbers) {
+    public PlayerBetEvent(LotteryPlayer player, BetNumbers numbers, long price, AddBetResult result) {
         super(!Bukkit.isPrimaryThread());
         this.player = player;
         this.numbers = numbers;
+        this.price = price;
+        this.result = result;
     }
 
-    public Player getPlayer() {
+    public LotteryPlayer getPlayer() {
         return player;
     }
 
     public BetNumbers getNumbers() {
         return numbers;
+    }
+
+    public long getPrice() {
+        return price;
+    }
+
+    public AddBetResult getResult() {
+        return result;
     }
 
     @Override

@@ -29,15 +29,18 @@ import com.loohp.lotterysix.game.objects.PlayerStatsKey;
 import com.loohp.lotterysix.game.objects.PlayerWinnings;
 import com.loohp.lotterysix.game.objects.PrizeTier;
 import com.loohp.lotterysix.game.objects.WinningNumbers;
+import com.loohp.lotterysix.game.player.LotteryPlayerManager;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -178,6 +181,10 @@ public class CompletedLotterySixGame implements IDedGame {
         return bets.values().stream().mapToLong(each -> each.getBet()).sum();
     }
 
+    public boolean hasPlayerWinnings(UUID player) {
+        return winners.stream().anyMatch(each -> each.getPlayer().equals(player));
+    }
+
     public List<PlayerWinnings> getPlayerWinnings(UUID player) {
         return Collections.unmodifiableList(winners.stream().filter(each -> each.getPlayer().equals(player)).collect(Collectors.toList()));
     }
@@ -222,21 +229,32 @@ public class CompletedLotterySixGame implements IDedGame {
 
     public void givePrizesAndUpdateStats(LotterySix instance) {
         new Thread(() -> {
-            instance.givePrizes(winners);
+            LotteryPlayerManager lotteryPlayerManager = instance.getLotteryPlayerManager();
             Map<UUID, Long> transactions = new HashMap<>();
             Map<UUID, PrizeTier> prizeTiers = new HashMap<>();
+            Set<UUID> affected = new HashSet<>();
             for (PlayerWinnings winning : winners) {
+                LotteryPlayer lotteryPlayer = lotteryPlayerManager.getLotteryPlayer(winning.getPlayer());
+                lotteryPlayer.updateStats(PlayerStatsKey.ACCOUNT_BALANCE, long.class, i -> i + winning.getWinnings());
+                lotteryPlayer.updateStats(PlayerStatsKey.NOTIFY_BALANCE_CHANGE, long.class, i -> i + winning.getWinnings());
                 transactions.merge(winning.getPlayer(), winning.getWinnings(), (a, b) -> a + b);
                 prizeTiers.merge(winning.getPlayer(), winning.getTier(), (a, b) -> a.ordinal() < b.ordinal() ? a : b);
+                affected.add(winning.getPlayer());
             }
             for (Map.Entry<UUID, Long> entry : transactions.entrySet()) {
-                LotteryPlayer lotteryPlayer = instance.getPlayerPreferenceManager().getLotteryPlayer(entry.getKey());
+                LotteryPlayer lotteryPlayer = instance.getLotteryPlayerManager().getLotteryPlayer(entry.getKey());
                 PrizeTier prizeTier = prizeTiers.get(entry.getKey());
                 lotteryPlayer.updateStats(PlayerStatsKey.TOTAL_WINNINGS, long.class, i -> i + entry.getValue());
                 lotteryPlayer.updateStats(PlayerStatsKey.HIGHEST_WON_TIER, PrizeTier.class, t -> t == null || prizeTier.ordinal() < t.ordinal(), prizeTier);
             }
             if (instance.lotteriesFundAccount != null) {
-                instance.giveMoney(instance.lotteriesFundAccount, lotteriesFunds);
+                LotteryPlayer lotteryPlayer = lotteryPlayerManager.getLotteryPlayer(instance.lotteriesFundAccount);
+                lotteryPlayer.updateStats(PlayerStatsKey.ACCOUNT_BALANCE, long.class, i -> i + lotteriesFunds);
+                lotteryPlayer.updateStats(PlayerStatsKey.NOTIFY_BALANCE_CHANGE, long.class, i -> i + lotteriesFunds);
+                affected.add(instance.lotteriesFundAccount);
+            }
+            for (UUID player : affected) {
+                instance.notifyBalanceChangeConsumer(player);
             }
         }).start();
     }

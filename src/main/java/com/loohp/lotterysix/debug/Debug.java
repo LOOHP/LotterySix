@@ -55,7 +55,7 @@ public class Debug implements Listener {
         sender.sendMessage("");
         sender.sendMessage(ChatColor.GREEN + "Bet Limit By Permission: " + LotterySixPlugin.getInstance().getPlayerBetLimit(player.getUniqueId()));
         sender.sendMessage("");
-        LotteryPlayer lotteryPlayer = LotterySixPlugin.getInstance().getPlayerPreferenceManager().getLotteryPlayer(player.getUniqueId());
+        LotteryPlayer lotteryPlayer = LotterySixPlugin.getInstance().getLotteryPlayerManager().getLotteryPlayer(player.getUniqueId());
         sender.sendMessage(ChatColor.AQUA + "Preferences ----");
         for (PlayerPreferenceKey key : PlayerPreferenceKey.values()) {
             sender.sendMessage(ChatColor.GREEN + key.name() + ": " + lotteryPlayer.getPreference(key, key.getValueTypeClass()));

@@ -28,6 +28,7 @@ import com.loohp.lotterysix.game.lottery.PlayableLotterySixGame;
 import com.loohp.lotterysix.game.objects.AddBetResult;
 import com.loohp.lotterysix.game.objects.BetUnitType;
 import com.loohp.lotterysix.game.objects.BossBarInfo;
+import com.loohp.lotterysix.game.objects.PlayerStatsKey;
 import com.loohp.lotterysix.game.player.LotteryPlayer;
 import com.loohp.lotterysix.game.objects.LotterySixAction;
 import com.loohp.lotterysix.game.objects.PlayerPreferenceKey;
@@ -166,7 +167,7 @@ public class PluginMessageBungee implements Listener {
                             UUID player = DataTypeIO.readUUID(in);
                             PlayerPreferenceKey key = PlayerPreferenceKey.values()[in.readInt()];
                             Object value = key.getReader(DataTypeIO.readString(in, StandardCharsets.UTF_8));
-                            LotteryPlayer lotteryPlayer = instance.getPlayerPreferenceManager().getLotteryPlayer(player);
+                            LotteryPlayer lotteryPlayer = instance.getLotteryPlayerManager().getLotteryPlayer(player);
                             lotteryPlayer.setPreference(key, value);
                             syncPlayerData(lotteryPlayer);
                             break;
@@ -174,8 +175,17 @@ public class PluginMessageBungee implements Listener {
                         case 0x04: { //Reset Player Preference
                             UUID player = DataTypeIO.readUUID(in);
                             PlayerPreferenceKey key = PlayerPreferenceKey.values()[in.readInt()];
-                            LotteryPlayer lotteryPlayer = instance.getPlayerPreferenceManager().getLotteryPlayer(player);
+                            LotteryPlayer lotteryPlayer = instance.getLotteryPlayerManager().getLotteryPlayer(player);
                             lotteryPlayer.resetPreference(key);
+                            syncPlayerData(lotteryPlayer);
+                            break;
+                        }
+                        case 0x05: { //Update Player Stats
+                            UUID player = DataTypeIO.readUUID(in);
+                            PlayerStatsKey key = PlayerStatsKey.values()[in.readInt()];
+                            Object value = GSON.fromJson(DataTypeIO.readString(in, StandardCharsets.UTF_8), key.getValueTypeClass());
+                            LotteryPlayer lotteryPlayer = instance.getLotteryPlayerManager().getLotteryPlayer(player);
+                            lotteryPlayer.setStats(key, value);
                             syncPlayerData(lotteryPlayer);
                             break;
                         }
@@ -363,11 +373,13 @@ public class PluginMessageBungee implements Listener {
         }
     }
 
-    public void callPlayerBetEvent(ProxiedPlayer player, BetNumbers numbers) {
+    public void callPlayerBetEvent(ProxiedPlayer player, BetNumbers numbers, long price, AddBetResult result) {
         try {
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             DataOutputStream out = new DataOutputStream(outputStream);
             DataTypeIO.writeUUID(out, player.getUniqueId());
+            out.writeLong(price);
+            out.writeInt(result.ordinal());
             DataTypeIO.writeString(out, GSON.toJson(numbers), StandardCharsets.UTF_8);
             sendData(player.getServer().getInfo(), 0x08, outputStream.toByteArray());
         } catch (IOException e) {
@@ -422,10 +434,20 @@ public class PluginMessageBungee implements Listener {
     }
 
     public void openPlayMenu(ProxiedPlayer player) {
+        openPlayMenu(player, null);
+    }
+
+    public void openPlayMenu(ProxiedPlayer player, String input) {
         try {
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             DataOutputStream out = new DataOutputStream(outputStream);
             DataTypeIO.writeUUID(out, player.getUniqueId());
+            if (input == null) {
+                out.writeBoolean(false);
+            } else {
+                out.writeBoolean(true);
+                DataTypeIO.writeString(out, input, StandardCharsets.UTF_8);
+            }
             sendData(player.getServer().getInfo(), 0x0D, outputStream.toByteArray());
         } catch (IOException e) {
             e.printStackTrace();

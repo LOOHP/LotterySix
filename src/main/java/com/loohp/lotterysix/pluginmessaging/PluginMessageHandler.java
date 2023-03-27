@@ -35,6 +35,9 @@ import com.loohp.lotterysix.game.lottery.IDedGame;
 import com.loohp.lotterysix.game.lottery.PlayableLotterySixGame;
 import com.loohp.lotterysix.game.objects.AddBetResult;
 import com.loohp.lotterysix.game.objects.BetUnitType;
+import com.loohp.lotterysix.game.objects.Pair;
+import com.loohp.lotterysix.game.objects.betnumbers.BetNumbersBuilder;
+import com.loohp.lotterysix.game.objects.betnumbers.BetNumbersType;
 import com.loohp.lotterysix.game.player.LotteryPlayer;
 import com.loohp.lotterysix.game.objects.LotterySixAction;
 import com.loohp.lotterysix.game.objects.PlayerPreferenceKey;
@@ -75,7 +78,10 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class PluginMessageHandler implements PluginMessageListener {
 
@@ -238,10 +244,12 @@ public class PluginMessageHandler implements PluginMessageListener {
                         }
                         case 0x08: { // Call Player Bet Event
                             UUID uuid = DataTypeIO.readUUID(in);
-                            Player player = Bukkit.getPlayer(uuid);
+                            LotteryPlayer player = instance.getLotteryPlayerManager().getLotteryPlayer(uuid);
                             if (player != null) {
+                                long price = in.readLong();
+                                AddBetResult result = AddBetResult.values()[in.readInt()];
                                 BetNumbers numbers = GSON.fromJson(DataTypeIO.readString(in, StandardCharsets.UTF_8), BetNumbers.class);
-                                Bukkit.getPluginManager().callEvent(new PlayerBetEvent(player, numbers));
+                                Bukkit.getPluginManager().callEvent(new PlayerBetEvent(player, numbers, price, result));
                             }
                             break;
                         }
@@ -293,10 +301,25 @@ public class PluginMessageHandler implements PluginMessageListener {
                         }
                         case 0x0D: { // Open Main Menu
                             UUID uuid = DataTypeIO.readUUID(in);
+                            String input = in.readBoolean() ? DataTypeIO.readString(in, StandardCharsets.UTF_8) : null;
                             Bukkit.getScheduler().runTask(LotterySixPlugin.plugin, () -> {
                                 Player player = Bukkit.getPlayer(uuid);
                                 if (player != null) {
-                                    LotterySixPlugin.getGuiProvider().getMainMenu(player).show(player);
+                                    if (input == null) {
+                                        LotterySixPlugin.getGuiProvider().getMainMenu(player).show(player);
+                                    } else {
+                                        PlayableLotterySixGame game = instance.getCurrentGame();
+                                        if (game != null) {
+                                            Pair<Stream<? extends BetNumbersBuilder>, BetNumbersType> pair = BetNumbersBuilder.fromString(1, instance.numberOfChoices, input);
+                                            if (pair == null) {
+                                                player.sendMessage(instance.messageInvalidBetNumbers);
+                                            } else {
+                                                LotterySixPlugin.getGuiProvider().getNumberConfirm(player, game, pair.getFirst().map(e -> e.build()).collect(Collectors.toList()), pair.getSecond()).show(player);
+                                            }
+                                        } else {
+                                            player.sendMessage(LotterySixPlugin.getInstance().messageNoGameRunning);
+                                        }
+                                    }
                                 }
                             });
                             break;
@@ -334,7 +357,7 @@ public class PluginMessageHandler implements PluginMessageListener {
                                             break;
                                         }
                                         case ACCOUNT_SUSPENDED: {
-                                            long time = instance.getPlayerPreferenceManager().getLotteryPlayer(player.getUniqueId()).getPreference(PlayerPreferenceKey.SUSPEND_ACCOUNT_UNTIL, long.class);
+                                            long time = instance.getLotteryPlayerManager().getLotteryPlayer(player.getUniqueId()).getPreference(PlayerPreferenceKey.SUSPEND_ACCOUNT_UNTIL, long.class);
                                             player.sendMessage(instance.messageBettingAccountSuspended.replace("{Date}", instance.dateFormat.format(new Date(time))).replace("{Price}", StringUtils.formatComma(price)));
                                             break;
                                         }
@@ -348,7 +371,7 @@ public class PluginMessageHandler implements PluginMessageListener {
                         }
                         case 0x0F: { // Update Player Preference & Stats
                             UUID uuid = DataTypeIO.readUUID(in);
-                            LotteryPlayer lotteryPlayer = instance.getPlayerPreferenceManager().getLotteryPlayer(uuid);
+                            LotteryPlayer lotteryPlayer = instance.getLotteryPlayerManager().getLotteryPlayer(uuid);
 
                             JsonObject json = GSON.fromJson(DataTypeIO.readString(in, StandardCharsets.UTF_8), JsonObject.class);
 
@@ -524,6 +547,19 @@ public class PluginMessageHandler implements PluginMessageListener {
             DataTypeIO.writeUUID(out, player.getPlayer());
             out.writeInt(key.ordinal());
             sendData(0x04, outputStream.toByteArray());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void updatePlayerStats(LotteryPlayer player, PlayerStatsKey key, Object value) {
+        try {
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            DataOutputStream out = new DataOutputStream(outputStream);
+            DataTypeIO.writeUUID(out, player.getPlayer());
+            out.writeInt(key.ordinal());
+            DataTypeIO.writeString(out, GSON.toJson(value, key.getValueTypeClass()), StandardCharsets.UTF_8);
+            sendData(0x05, outputStream.toByteArray());
         } catch (IOException e) {
             e.printStackTrace();
         }

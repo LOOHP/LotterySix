@@ -36,12 +36,12 @@ import com.loohp.lotterysix.game.lottery.PlayableLotterySixGame;
 import com.loohp.lotterysix.game.objects.BetResultConsumer;
 import com.loohp.lotterysix.game.objects.BossBarInfo;
 import com.loohp.lotterysix.game.objects.CarryOverMode;
+import com.loohp.lotterysix.game.objects.betnumbers.BetNumbersType;
 import com.loohp.lotterysix.game.player.LotteryPlayer;
 import com.loohp.lotterysix.game.objects.LotterySixAction;
 import com.loohp.lotterysix.game.objects.MessageConsumer;
 import com.loohp.lotterysix.game.objects.PlayerBets;
 import com.loohp.lotterysix.game.objects.PlayerPreferenceKey;
-import com.loohp.lotterysix.game.objects.PlayerWinnings;
 import com.loohp.lotterysix.game.objects.PrizeCalculationMode;
 import com.loohp.lotterysix.game.objects.PrizeTier;
 import com.loohp.lotterysix.game.objects.WinningNumbers;
@@ -65,6 +65,7 @@ import java.time.ZonedDateTime;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -111,11 +112,17 @@ public class LotterySix implements AutoCloseable {
     public String messageBetLimitReachedSelf;
     public String messageBetLimitReachedPermission;
     public String messagePlayerNotFound;
-    public String messagePendingUnclaimed;
+    public String messageNotifyBalanceChange;
     public String messagePendingClaimed;
     public String messageGameNumberNotFound;
     public String messageBettingAccountSuspended;
     public String messageBetLimitMaximumChancePerSelection;
+    public String messageWithdrawSuccess;
+    public String messageDepositSuccess;
+    public String messageWithdrawFailed;
+    public String messageInvalidNumber;
+    public String messageInvalidBetNumbers;
+    public String messagePlayerBalance;
 
     public String explanationMessage;
     public String explanationURL;
@@ -131,6 +138,8 @@ public class LotterySix implements AutoCloseable {
     public String multipleWinningsDescription;
     public String bulkWinningsDescription;
     public String combinationWinningsDescription;
+    public String randomEntryName;
+    public Map<BetNumbersType, String> betNumbersTypeNames;
 
     public boolean updaterEnabled;
 
@@ -154,8 +163,8 @@ public class LotterySix implements AutoCloseable {
     public String[] guiMainMenuCheckOwnBets;
     public String[] guiMainMenuPlaceNewBets;
     public String[] guiMainMenuStatistics;
-    public String[] guiMainMenuPendingTransactions;
     public String[] guiMainMenuBettingAccount;
+    public String[] guiMainMenuAccountFundTransfer;
     public String guiLastResultsTitle;
     public String[] guiLastResultsLotteryInfo;
     public String[] guiLastResultsYourBets;
@@ -215,6 +224,16 @@ public class LotterySix implements AutoCloseable {
     public String[] guiBettingAccountSetBetLimitPerRound;
     public String guiBettingAccountSetBetLimitPerRoundTitle;
     public String[] guiBettingAccountSuspendAccountForAWeek;
+    public String guiAccountFundTransferTitle;
+    public String[] guiAccountFundTransferCurrentBalance;
+    public String[] guiAccountFundTransferDeposit;
+    public String[] guiAccountFundTransferWithdraw;
+    public String[] guiAccountFundTransferWithdrawAll;
+    public String guiAccountFundTransferWithdrawInputTitle;
+    public String guiAccountFundTransferDepositInputTitle;
+    public String guiAccountFundTransferPlacingBetTitle;
+    public String[] guiAccountFundTransferPlacingBetConfirm;
+    public String[] guiAccountFundTransferPlacingBetCancel;
 
     public String announcerPeriodicMessageMessage;
     public String announcerPeriodicMessageHover;
@@ -249,8 +268,22 @@ public class LotterySix implements AutoCloseable {
     public String discordSRVDrawResultAnnouncementDescription;
     public String discordSRVDrawResultAnnouncementThumbnailURL;
     public String discordSRVSlashCommandsGlobalMessagesNotLinked;
+    public String discordSRVSlashCommandsGlobalMessagesNoOneOnline;
     public String discordSRVSlashCommandsGlobalLabelsGameNumberName;
     public String discordSRVSlashCommandsGlobalLabelsGameNumberDescription;
+    public String discordSRVSlashCommandsGlobalLabelsBetNumbersName;
+    public String discordSRVSlashCommandsGlobalLabelsBetNumbersDescription;
+    public boolean discordSRVSlashCommandsBetAccountEnabled;
+    public String discordSRVSlashCommandsBetAccountDescription;
+    public String discordSRVSlashCommandsBetAccountTitle;
+    public String[] discordSRVSlashCommandsBetAccountSubTitle;
+    public String discordSRVSlashCommandsBetAccountThumbnailURL;
+    public boolean discordSRVSlashCommandsPlaceBetEnabled;
+    public String discordSRVSlashCommandsPlaceBetDescription;
+    public String discordSRVSlashCommandsPlaceBetNoGame;
+    public String discordSRVSlashCommandsPlaceBetTitle;
+    public String[] discordSRVSlashCommandsPlaceBetSubTitle;
+    public String discordSRVSlashCommandsPlaceBetThumbnailURL;
     public boolean discordSRVSlashCommandsViewPastDrawEnabled;
     public String discordSRVSlashCommandsViewPastDrawDescription;
     public String discordSRVSlashCommandsViewPastDrawNoResults;
@@ -285,7 +318,7 @@ public class LotterySix implements AutoCloseable {
     private final ExecutorService saveDataService;
     private final AtomicLong lastSaveBegin;
     private final Queue<Future<?>> saveTasks;
-    private final LotteryPlayerManager playerPreferenceManager;
+    private final LotteryPlayerManager lotteryPlayerManager;
 
     private volatile PlayableLotterySixGame currentGame;
     private volatile boolean gameLocked;
@@ -293,10 +326,9 @@ public class LotterySix implements AutoCloseable {
     private final LazyCompletedLotterySixGameList completedGames;
     private final AtomicInteger requestSave;
 
-    private final Consumer<Collection<PlayerWinnings>> givePrizesConsumer;
-    private final Consumer<Collection<PlayerBets>> refundBetsConsumer;
     private final BiPredicate<UUID, Long> takeMoneyConsumer;
     private final BiPredicate<UUID, Long> giveMoneyConsumer;
+    private final Consumer<UUID> notifyBalanceChangeConsumer;
     private final BiPredicate<UUID, String> hasPermissionPredicate;
     private final Consumer<Boolean> lockRunnable;
     private final Supplier<Collection<UUID>> onlinePlayersSupplier;
@@ -309,13 +341,12 @@ public class LotterySix implements AutoCloseable {
     private final Consumer<String> consoleMessageConsumer;
     private final BiConsumer<BossBarInfo, IDedGame> bossBarUpdater;
 
-    public LotterySix(boolean isBackend, File dataFolder, String configId, Consumer<Collection<PlayerWinnings>> givePrizesConsumer, Consumer<Collection<PlayerBets>> refundBetsConsumer, BiPredicate<UUID, Long> takeMoneyConsumer, BiPredicate<UUID, Long> giveMoneyConsumer, BiPredicate<UUID, String> hasPermissionPredicate, Consumer<Boolean> lockRunnable, Supplier<Collection<UUID>> onlinePlayersSupplier, MessageConsumer messageSendingConsumer, MessageConsumer titleSendingConsumer, BetResultConsumer playerBetListener, Consumer<Collection<PlayerBets>> playerBetsInvalidateListener, Consumer<LotterySixAction> actionListener, Consumer<LotteryPlayer> lotteryPlayerUpdateListener, Consumer<String> consoleMessageConsumer, BiConsumer<BossBarInfo, IDedGame> bossBarUpdater) {
+    public LotterySix(boolean isBackend, File dataFolder, String configId, BiPredicate<UUID, Long> takeMoneyConsumer, BiPredicate<UUID, Long> giveMoneyConsumer, Consumer<UUID> notifyBalanceChangeConsumer, BiPredicate<UUID, String> hasPermissionPredicate, Consumer<Boolean> lockRunnable, Supplier<Collection<UUID>> onlinePlayersSupplier, MessageConsumer messageSendingConsumer, MessageConsumer titleSendingConsumer, BetResultConsumer playerBetListener, Consumer<Collection<PlayerBets>> playerBetsInvalidateListener, Consumer<LotterySixAction> actionListener, Consumer<LotteryPlayer> lotteryPlayerUpdateListener, Consumer<String> consoleMessageConsumer, BiConsumer<BossBarInfo, IDedGame> bossBarUpdater) {
         this.dataFolder = dataFolder;
         this.configId = configId;
-        this.givePrizesConsumer = givePrizesConsumer;
-        this.refundBetsConsumer = refundBetsConsumer;
         this.takeMoneyConsumer = takeMoneyConsumer;
         this.giveMoneyConsumer = giveMoneyConsumer;
+        this.notifyBalanceChangeConsumer = notifyBalanceChangeConsumer;
         this.hasPermissionPredicate = hasPermissionPredicate;
         this.lockRunnable = lockRunnable;
         this.onlinePlayersSupplier = onlinePlayersSupplier;
@@ -345,7 +376,7 @@ public class LotterySix implements AutoCloseable {
 
         backendBungeecordMode = isBackend && Config.getConfig(configId).getConfiguration().getBoolean("Bungeecord");
 
-        this.playerPreferenceManager = new LotteryPlayerManager(this);
+        this.lotteryPlayerManager = new LotteryPlayerManager(this);
 
         new Timer().scheduleAtFixedRate(lotteryTask = new TimerTask() {
             private int counter = 0;
@@ -399,7 +430,7 @@ public class LotterySix implements AutoCloseable {
                             }
                             if (announce) {
                                 for (UUID uuid : onlinePlayersSupplier.get()) {
-                                    if (!playerPreferenceManager.getLotteryPlayer(uuid).getPreference(PlayerPreferenceKey.HIDE_PERIODIC_ANNOUNCEMENTS, boolean.class)) {
+                                    if (!lotteryPlayerManager.getLotteryPlayer(uuid).getPreference(PlayerPreferenceKey.HIDE_PERIODIC_ANNOUNCEMENTS, boolean.class)) {
                                         messageSendingConsumer.accept(uuid, announcerPeriodicMessageMessage, announcerPeriodicMessageHover, currentGame);
                                     }
                                 }
@@ -458,8 +489,8 @@ public class LotterySix implements AutoCloseable {
         return configId;
     }
 
-    public LotteryPlayerManager getPlayerPreferenceManager() {
-        return playerPreferenceManager;
+    public LotteryPlayerManager getLotteryPlayerManager() {
+        return lotteryPlayerManager;
     }
 
     public IDedGame getGame(UUID uuid) {
@@ -579,7 +610,7 @@ public class LotterySix implements AutoCloseable {
                             for (UUID uuid : onlinePlayersSupplier.get()) {
                                 messageSendingConsumer.accept(uuid, message, completed);
                                 if (liveDrawAnnouncerSendMessagesTitle) {
-                                    if (!playerPreferenceManager.getLotteryPlayer(uuid).getPreference(PlayerPreferenceKey.HIDE_TITLES, boolean.class)) {
+                                    if (!lotteryPlayerManager.getLotteryPlayer(uuid).getPreference(PlayerPreferenceKey.HIDE_TITLES, boolean.class)) {
                                         titleSendingConsumer.accept(uuid, message, completed);
                                     }
                                 }
@@ -653,20 +684,16 @@ public class LotterySix implements AutoCloseable {
         return completedGames;
     }
 
-    public void givePrizes(Collection<PlayerWinnings> winnings) {
-        givePrizesConsumer.accept(winnings);
-    }
-
-    public void refundBets(Collection<PlayerBets> bets) {
-        refundBetsConsumer.accept(bets);
-    }
-
     public boolean takeMoney(UUID player, long amount) {
         return takeMoneyConsumer.test(player, amount);
     }
 
     public boolean giveMoney(UUID player, long amount) {
         return giveMoneyConsumer.test(player, amount);
+    }
+
+    public void notifyBalanceChangeConsumer(UUID player) {
+        notifyBalanceChangeConsumer.accept(player);
     }
 
     public boolean isGameLocked() {
@@ -754,11 +781,17 @@ public class LotterySix implements AutoCloseable {
         messageBetLimitReachedSelf = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Messages.BetLimitReachedSelf"));
         messageBetLimitReachedPermission = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Messages.BetLimitReachedPermission"));
         messagePlayerNotFound = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Messages.PlayerNotFound"));
-        messagePendingUnclaimed = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Messages.PendingUnclaimed"));
+        messageNotifyBalanceChange = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Messages.NotifyBalanceChange"));
         messagePendingClaimed = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Messages.PendingClaimed"));
         messageGameNumberNotFound = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Messages.GameNumberNotFound"));
         messageBettingAccountSuspended = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Messages.BettingAccountSuspended"));
         messageBetLimitMaximumChancePerSelection = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Messages.BetLimitMaximumChancePerSelection"));
+        messageWithdrawSuccess = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Messages.WithdrawSuccess"));
+        messageDepositSuccess = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Messages.DepositSuccess"));
+        messageWithdrawFailed = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Messages.WithdrawFailed"));
+        messageInvalidNumber = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Messages.InvalidNumber"));
+        messageInvalidBetNumbers = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Messages.InvalidBetNumbers"));
+        messagePlayerBalance = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Messages.PlayerBalance"));
 
         explanationMessage = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Explanation.Message"));
         explanationURL = config.getConfiguration().getString("Explanation.URL");
@@ -779,7 +812,7 @@ public class LotterySix implements AutoCloseable {
         trueFormat = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Formatting.Booleans.T"));
         falseFormat = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Formatting.Booleans.F"));
 
-        tierNames = new HashMap<>();
+        tierNames = new EnumMap<>(PrizeTier.class);
         for (PrizeTier prizeTier : PrizeTier.values()) {
             tierNames.put(prizeTier, ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Formatting.PrizeTiers." + prizeTier.name())));
         }
@@ -789,6 +822,11 @@ public class LotterySix implements AutoCloseable {
         multipleWinningsDescription = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Formatting.MultipleWinningsDescription"));
         bulkWinningsDescription = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Formatting.BulkWinningsDescription"));
         combinationWinningsDescription = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Formatting.CombinationWinningsDescription"));
+        randomEntryName = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Formatting.RandomEntry"));
+        betNumbersTypeNames = new EnumMap<>(BetNumbersType.class);
+        for (BetNumbersType betNumbersType : BetNumbersType.values()) {
+            betNumbersTypeNames.put(betNumbersType,  ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Formatting.BetNumbersTypes." + betNumbersType.name())));
+        }
 
         updaterEnabled = config.getConfiguration().getBoolean("Options.Updater");
 
@@ -814,8 +852,8 @@ public class LotterySix implements AutoCloseable {
         guiMainMenuCheckOwnBets = config.getConfiguration().getStringList("GUI.MainMenu.CheckOwnBets").toArray(new String[0]);
         guiMainMenuPlaceNewBets = config.getConfiguration().getStringList("GUI.MainMenu.PlaceNewBets").toArray(new String[0]);
         guiMainMenuStatistics = config.getConfiguration().getStringList("GUI.MainMenu.Statistics").toArray(new String[0]);
-        guiMainMenuPendingTransactions = config.getConfiguration().getStringList("GUI.MainMenu.PendingTransactions").toArray(new String[0]);
         guiMainMenuBettingAccount = config.getConfiguration().getStringList("GUI.MainMenu.BettingAccount").toArray(new String[0]);
+        guiMainMenuAccountFundTransfer = config.getConfiguration().getStringList("GUI.MainMenu.AccountFundTransfer").toArray(new String[0]);
         guiLastResultsTitle = config.getConfiguration().getString("GUI.LastResults.Title");
         guiLastResultsLotteryInfo = config.getConfiguration().getStringList("GUI.LastResults.LotteryInfo").toArray(new String[0]);
         guiLastResultsYourBets = config.getConfiguration().getStringList("GUI.LastResults.YourBets").toArray(new String[0]);
@@ -875,6 +913,16 @@ public class LotterySix implements AutoCloseable {
         guiBettingAccountSetBetLimitPerRound = config.getConfiguration().getStringList("GUI.BettingAccount.SetBetLimitPerRound").toArray(new String[0]);
         guiBettingAccountSetBetLimitPerRoundTitle = config.getConfiguration().getString("GUI.BettingAccount.SetBetLimitPerRoundTitle");
         guiBettingAccountSuspendAccountForAWeek = config.getConfiguration().getStringList("GUI.BettingAccount.SuspendAccountForAWeek").toArray(new String[0]);
+        guiAccountFundTransferTitle = config.getConfiguration().getString("GUI.AccountFundTransfer.Title");
+        guiAccountFundTransferCurrentBalance = config.getConfiguration().getStringList("GUI.AccountFundTransfer.CurrentBalance").toArray(new String[0]);
+        guiAccountFundTransferDeposit = config.getConfiguration().getStringList("GUI.AccountFundTransfer.Deposit").toArray(new String[0]);
+        guiAccountFundTransferWithdraw = config.getConfiguration().getStringList("GUI.AccountFundTransfer.Withdraw").toArray(new String[0]);
+        guiAccountFundTransferWithdrawAll = config.getConfiguration().getStringList("GUI.AccountFundTransfer.WithdrawAll").toArray(new String[0]);
+        guiAccountFundTransferWithdrawInputTitle = config.getConfiguration().getString("GUI.AccountFundTransfer.WithdrawInputTitle");
+        guiAccountFundTransferDepositInputTitle = config.getConfiguration().getString("GUI.AccountFundTransfer.DepositInputTitle");
+        guiAccountFundTransferPlacingBetTitle = config.getConfiguration().getString("GUI.AccountFundTransferPlacingBet.Title");
+        guiAccountFundTransferPlacingBetConfirm = config.getConfiguration().getStringList("GUI.AccountFundTransferPlacingBet.Confirm").toArray(new String[0]);
+        guiAccountFundTransferPlacingBetCancel = config.getConfiguration().getStringList("GUI.AccountFundTransferPlacingBet.Cancel").toArray(new String[0]);
 
         announcerPeriodicMessageMessage = config.getConfiguration().getString("Announcer.PeriodicMessage.Message");
         announcerPeriodicMessageHover = config.getConfiguration().getString("Announcer.PeriodicMessage.Hover");
@@ -909,8 +957,22 @@ public class LotterySix implements AutoCloseable {
         discordSRVDrawResultAnnouncementDescription = String.join("\n", config.getConfiguration().getStringList("DiscordSRV.DrawResultAnnouncement.Description"));
         discordSRVDrawResultAnnouncementThumbnailURL = config.getConfiguration().getString("DiscordSRV.DrawResultAnnouncement.ThumbnailURL");
         discordSRVSlashCommandsGlobalMessagesNotLinked = config.getConfiguration().getString("DiscordSRV.SlashCommands.Global.Messages.NotLinked");
+        discordSRVSlashCommandsGlobalMessagesNoOneOnline = config.getConfiguration().getString("DiscordSRV.SlashCommands.Global.Messages.NoOneOnline");
         discordSRVSlashCommandsGlobalLabelsGameNumberName = config.getConfiguration().getString("DiscordSRV.SlashCommands.Global.Labels.GameNumber.Name");
         discordSRVSlashCommandsGlobalLabelsGameNumberDescription = config.getConfiguration().getString("DiscordSRV.SlashCommands.Global.Labels.GameNumber.Description");
+        discordSRVSlashCommandsGlobalLabelsBetNumbersName = config.getConfiguration().getString("DiscordSRV.SlashCommands.Global.Labels.BetNumbers.Name");
+        discordSRVSlashCommandsGlobalLabelsBetNumbersDescription = config.getConfiguration().getString("DiscordSRV.SlashCommands.Global.Labels.BetNumbers.Description");
+        discordSRVSlashCommandsBetAccountEnabled = config.getConfiguration().getBoolean("DiscordSRV.SlashCommands.BetAccount.Enabled");
+        discordSRVSlashCommandsBetAccountDescription = config.getConfiguration().getString("DiscordSRV.SlashCommands.BetAccount.Description");
+        discordSRVSlashCommandsBetAccountTitle = config.getConfiguration().getString("DiscordSRV.SlashCommands.BetAccount.Title");
+        discordSRVSlashCommandsBetAccountSubTitle = config.getConfiguration().getStringList("DiscordSRV.SlashCommands.BetAccount.SubTitle").toArray(new String[0]);
+        discordSRVSlashCommandsBetAccountThumbnailURL = config.getConfiguration().getString("DiscordSRV.SlashCommands.BetAccount.ThumbnailURL");
+        discordSRVSlashCommandsPlaceBetEnabled = config.getConfiguration().getBoolean("DiscordSRV.SlashCommands.PlaceBet.Enabled");
+        discordSRVSlashCommandsPlaceBetDescription = config.getConfiguration().getString("DiscordSRV.SlashCommands.PlaceBet.Description");
+        discordSRVSlashCommandsPlaceBetNoGame = config.getConfiguration().getString("DiscordSRV.SlashCommands.PlaceBet.NoGame");
+        discordSRVSlashCommandsPlaceBetTitle = config.getConfiguration().getString("DiscordSRV.SlashCommands.PlaceBet.Title");
+        discordSRVSlashCommandsPlaceBetSubTitle = config.getConfiguration().getStringList("DiscordSRV.SlashCommands.PlaceBet.SubTitle").toArray(new String[0]);
+        discordSRVSlashCommandsPlaceBetThumbnailURL = config.getConfiguration().getString("DiscordSRV.SlashCommands.PlaceBet.ThumbnailURL");
         discordSRVSlashCommandsViewPastDrawEnabled = config.getConfiguration().getBoolean("DiscordSRV.SlashCommands.ViewPastDraw.Enabled");
         discordSRVSlashCommandsViewPastDrawDescription = config.getConfiguration().getString("DiscordSRV.SlashCommands.ViewPastDraw.Description");
         discordSRVSlashCommandsViewPastDrawNoResults = config.getConfiguration().getString("DiscordSRV.SlashCommands.ViewPastDraw.NoResults");

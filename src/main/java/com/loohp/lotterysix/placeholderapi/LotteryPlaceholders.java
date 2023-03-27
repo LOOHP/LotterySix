@@ -99,14 +99,14 @@ public class LotteryPlaceholders extends PlaceholderExpansion {
             if (key == null) {
                 return "";
             } else {
-                return asString(LotterySixPlugin.getInstance().getPlayerPreferenceManager().getLotteryPlayer(offlineplayer.getUniqueId()).getPreference(key), key.isMonetaryValue());
+                return asString(LotterySixPlugin.getInstance().getLotteryPlayerManager().getLotteryPlayer(offlineplayer.getUniqueId()).getPreference(key), key.isMonetaryValue());
             }
         } else if (identifier.startsWith("stats_")) {
             PlayerStatsKey key = PlayerStatsKey.fromKey(identifier.substring("stats_".length()));
             if (key == null) {
                 return "";
             } else {
-                return asString(LotterySixPlugin.getInstance().getPlayerPreferenceManager().getLotteryPlayer(offlineplayer.getUniqueId()).getStats(key), key.isMonetaryValue());
+                return asString(LotterySixPlugin.getInstance().getLotteryPlayerManager().getLotteryPlayer(offlineplayer.getUniqueId()).getStats(key), key.isMonetaryValue());
             }
         } else if (identifier.startsWith("scheduler_")) {
             Cron cron = LotterySixPlugin.getInstance().runInterval;

@@ -37,6 +37,7 @@ import com.loohp.lotterysix.game.objects.PrizeTier;
 import com.loohp.lotterysix.game.objects.WinningCombination;
 import com.loohp.lotterysix.game.objects.WinningNumbers;
 import com.loohp.lotterysix.game.objects.betnumbers.BetNumbers;
+import com.loohp.lotterysix.game.player.LotteryPlayerManager;
 import com.loohp.lotterysix.utils.MathUtils;
 import com.loohp.lotterysix.utils.StringUtils;
 
@@ -213,13 +214,21 @@ public class PlayableLotterySixGame implements IDedGame {
         this.valid = false;
         if (instance != null && !instance.backendBungeecordMode) {
             getBetsReadWriteLock().readLock().lock();
+            Set<UUID> affected = new HashSet<>();
             try {
-                instance.refundBets(bets.values());
+                LotteryPlayerManager lotteryPlayerManager = instance.getLotteryPlayerManager();
                 for (PlayerBets bet : bets.values()) {
-                    instance.getPlayerPreferenceManager().getLotteryPlayer(bet.getPlayer()).updateStats(PlayerStatsKey.TOTAL_BETS_PLACED, long.class, i -> i - bet.getBet());
+                    LotteryPlayer lotteryPlayer = lotteryPlayerManager.getLotteryPlayer(bet.getPlayer());
+                    lotteryPlayer.updateStats(PlayerStatsKey.TOTAL_BETS_PLACED, long.class, i -> i - bet.getBet());
+                    lotteryPlayer.updateStats(PlayerStatsKey.ACCOUNT_BALANCE, long.class, i -> i + bet.getBet());
+                    lotteryPlayer.updateStats(PlayerStatsKey.NOTIFY_BALANCE_CHANGE, long.class, i -> i + bet.getBet());
+                    affected.add(bet.getPlayer());
                 }
             } finally {
                 getBetsReadWriteLock().readLock().unlock();
+            }
+            for (UUID player : affected) {
+                instance.notifyBalanceChangeConsumer(player);
             }
         }
     }
@@ -242,9 +251,17 @@ public class PlayableLotterySixGame implements IDedGame {
         }
         if (instance != null && !instance.backendBungeecordMode) {
             instance.requestSave(true);
-            instance.refundBets(removedBets);
+            LotteryPlayerManager lotteryPlayerManager = instance.getLotteryPlayerManager();
+            Set<UUID> affected = new HashSet<>();
             for (PlayerBets bet : removedBets) {
-                instance.getPlayerPreferenceManager().getLotteryPlayer(bet.getPlayer()).updateStats(PlayerStatsKey.TOTAL_BETS_PLACED, long.class, i -> i - bet.getBet());
+                LotteryPlayer lotteryPlayer = lotteryPlayerManager.getLotteryPlayer(bet.getPlayer());
+                lotteryPlayer.updateStats(PlayerStatsKey.TOTAL_BETS_PLACED, long.class, i -> i - bet.getBet());
+                lotteryPlayer.updateStats(PlayerStatsKey.ACCOUNT_BALANCE, long.class, i -> i + bet.getBet());
+                lotteryPlayer.updateStats(PlayerStatsKey.NOTIFY_BALANCE_CHANGE, long.class, i -> i + bet.getBet());
+                affected.add(bet.getPlayer());
+            }
+            for (UUID player : affected) {
+                instance.notifyBalanceChangeConsumer(player);
             }
             instance.getPlayerBetsInvalidateListener().accept(removedBets);
         }
@@ -290,7 +307,7 @@ public class PlayableLotterySixGame implements IDedGame {
             return betResult0(player, price, bets, AddBetResult.GAME_LOCKED);
         }
         if (instance != null && !instance.backendBungeecordMode) {
-            LotteryPlayer lotteryPlayer = instance.getPlayerPreferenceManager().getLotteryPlayer(player);
+            LotteryPlayer lotteryPlayer = instance.getLotteryPlayerManager().getLotteryPlayer(player);
             long totalBets = getPlayerBets(player).stream().mapToLong(each -> each.getBet()).sum() + price;
             long playerLimit = lotteryPlayer.getPreference(PlayerPreferenceKey.BET_LIMIT_PER_ROUND, long.class);
             if (playerLimit >= 0 && playerLimit < totalBets) {
@@ -306,12 +323,13 @@ public class PlayableLotterySixGame implements IDedGame {
                     return betResult0(player, price, bets, AddBetResult.LIMIT_CHANCE_PER_SELECTION);
                 }
             }
-            if (!instance.takeMoney(player, price)) {
+            if (price > lotteryPlayer.getStats(PlayerStatsKey.ACCOUNT_BALANCE, long.class)) {
                 return betResult0(player, price, bets, AddBetResult.NOT_ENOUGH_MONEY);
             }
             if (System.currentTimeMillis() < lotteryPlayer.getPreference(PlayerPreferenceKey.SUSPEND_ACCOUNT_UNTIL, long.class)) {
                 return betResult0(player, price, bets, AddBetResult.ACCOUNT_SUSPENDED);
             }
+            lotteryPlayer.updateStats(PlayerStatsKey.ACCOUNT_BALANCE, long.class, i -> i - price);
             lotteryPlayer.updateStats(PlayerStatsKey.TOTAL_BETS_PLACED, long.class, i -> i + price);
         }
         getBetsReadWriteLock().writeLock().lock();
@@ -421,8 +439,8 @@ public class PlayableLotterySixGame implements IDedGame {
         try {
             for (PlayerBets playerBets : bets.values()) {
                 participants.add(playerBets.getPlayer());
-                List<Pair<PrizeTier, WinningCombination>> prizeTiersPairs = winningNumbers.checkWinning(playerBets.getChosenNumbers());
-                for (Pair<PrizeTier, WinningCombination> prizeTiersPair : prizeTiersPairs) {
+                for (Iterator<Pair<PrizeTier, WinningCombination>> itr = winningNumbers.checkWinning(playerBets.getChosenNumbers()).iterator(); itr.hasNext();) {
+                    Pair<PrizeTier, WinningCombination> prizeTiersPair = itr.next();
                     tiers.get(prizeTiersPair.getFirst()).add(Pair.of(playerBets, prizeTiersPair.getSecond()));
                 }
             }
@@ -432,7 +450,7 @@ public class PlayableLotterySixGame implements IDedGame {
         if (instance != null) {
             new Thread(() -> {
                 for (UUID player : participants) {
-                    instance.getPlayerPreferenceManager().getLotteryPlayer(player).updateStats(PlayerStatsKey.TOTAL_ROUNDS_PARTICIPATED, long.class, i -> i + 1);
+                    instance.getLotteryPlayerManager().getLotteryPlayer(player).updateStats(PlayerStatsKey.TOTAL_ROUNDS_PARTICIPATED, long.class, i -> i + 1);
                 }
             }).start();
         }

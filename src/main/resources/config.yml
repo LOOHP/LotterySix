@@ -14,11 +14,17 @@ Messages:
   BetLimitReachedSelf: "&cYou have reached your bet limit, edit player preferences to change this limit. Please bet responsibly."
   BetLimitReachedPermission: "&cYou have reached your bet limit. Please bet responsibly."
   PlayerNotFound: "&cThat player cannot be found"
-  PendingUnclaimed: "&b&lYou have unclaimed balance from LotterySix, click to receive!"
+  NotifyBalanceChange: "&b&lA balance of ${Amount} was added to your betting account!"
   PendingClaimed: "&aPending balance of ${Money} claimed!"
   GameNumberNotFound: "&cNo game with that game number can be found"
   BettingAccountSuspended: "&cYou have suspended yourself from placing any bets until {Date}"
   BetLimitMaximumChancePerSelection: "&cThe total bet units exceed limit for a selection!"
+  WithdrawSuccess: "&aSuccessfully withdrew ${Amount} from your betting account"
+  DepositSuccess: "&aSuccessfully deposited ${Amount} into your betting account"
+  WithdrawFailed: "&cFailed to withdraw from your betting account"
+  InvalidNumber: "&cThat is not a valid number"
+  InvalidBetNumbers: "&cInvalid bet numbers, for more info, please visit: https://github.com/LOOHP/LotterySix/wiki/Placing-Bets-Through-Discord"
+  PlayerBalance: "&a{Player} now has ${Balance} in their Betting Account."
 
 Explanation:
   Message: "&aFor the explanation on how LotterySix works, please visit: &bhttps://github.com/LOOHP/LotterySix/wiki/LotterySix-Draw-&-Prizes-Explanation"
@@ -50,6 +56,13 @@ Formatting:
   MultipleWinningsDescription: "&6{Tier} ${Winnings} &7x{Times}"
   BulkWinningsDescription: "&6{HighestTier}+ ${Winnings} (${UnitPrice})"
   CombinationWinningsDescription: "&6{HighestTier}+ ${Winnings} (${UnitPrice})"
+  BetNumbersTypes:
+    SINGLE: "&6Single Entry"
+    MULTIPLE: "&fMultiple Entry"
+    BANKER: "&eBanker Entry"
+    RANDOM: "&6Single Entry &c(Random)"
+    MULTIPLE_RANDOM: "&fMultiple Entry &c(Random)"
+    BANKER_RANDOM: "&eBanker Entry &c(Random)"
 
 #This option is only used on backend servers
 Bungeecord: false
@@ -122,7 +135,7 @@ LotterySix:
       FixedPrizeMultiplier: 4
 
 Restrictions:
-  #Allow players to still place bets even if their balance is going to be negative
+  #Allow players to still deposit money into their betting account if their game balance is going to be negative
   #This setting is only effective if your economy allows negative balances
   #Defaults to false as LotterySix aims to not make players go in debt due to playing the game
   AllowLoans: false
@@ -170,12 +183,13 @@ GUI:
     Statistics:
       - "&aView Number Statistics"
       - "&7Want some inspiration of what numbers to pick?"
-    PendingTransactions:
-      - '&aYou have unclaimed balance!'
-      - '&aClick me and chat message to receive!'
     BettingAccount:
       - "&e%player_name%'s Betting Account"
       - "&7View details of your betting account"
+    AccountFundTransfer:
+      - "&6Transfer Funds"
+      - "&7Your betting account holds the funds in which"
+      - "&7you use to place bets as well as win prizes"
   LastResults:
     Title: "&2Last Results"
     LotteryInfo:
@@ -337,7 +351,8 @@ GUI:
       - "&e%player_name%'s Betting Account"
       - "&bHighest Won Tier: &a%lotterysix_stats_highest_won_tier%"
       - "&bTotal Winnings: &a$%lotterysix_stats_total_winnings%"
-      - "&bAccount Balance: &a$%vault_eco_balance_commas%"
+      - "&bGame Account Balance: &a$%vault_eco_balance_commas%"
+      - "&bBetting Account Balance: &a$%lotterysix_stats_account_balance%"
     ToggleHideTitles:
       - "&bToggle Hide Titles"
       - "&7Whether to hide title messages during the LotterySix draw"
@@ -361,6 +376,27 @@ GUI:
       - "&7Stop yourself from placing any bets in the next 7 days"
       - "&7Left Click to Add 1 Week/Right Click to Lift Suspension"
       - "&7Current Suspension Until: &c{Value}"
+  AccountFundTransfer:
+    Title: "&5Account Fund Transfer"
+    CurrentBalance:
+      - "&eCurrent Balance: &a${Amount}"
+      - "&7This is the balance used when placing new bets,"
+      - "&7As well as given out to you when you win bets!"
+    Deposit:
+      - "&aClick to Deposit"
+    Withdraw:
+      - "&cClick to Withdraw"
+    WithdrawAll:
+      - "&cClick to Withdraw ALL available balance"
+    WithdrawInputTitle: "&2Input Withdraw Amount"
+    DepositInputTitle: "&2Input Deposit Amount"
+  AccountFundTransferPlacingBet:
+    Title: "&5Insufficient Balance"
+    Confirm:
+      - "&aDeposit remaining ${Amount} to Betting Account"
+      - '&7You only have $%lotterysix_stats_account_balance% in your betting account'
+    Cancel:
+      - "&cCancel"
 
 Announcer:
   PeriodicMessage:
@@ -497,10 +533,38 @@ DiscordSRV:
     Global:
       Messages:
         NotLinked: "Minecraft account must be linked to use this command."
+        NoOneOnline: "A player must be online on the local server for this command to function."
       Labels:
         GameNumber:
           Name: "game-number"
           Description: "Game number of the LotterySix game to look up (e.g. '23/001')"
+        BetNumbers:
+          Name: "bet-numbers"
+          Description: "Numbers you would like to bet on"
+    #SlashCommand /betaccount
+    BetAccount:
+      Enabled: true
+      Description: "View your betting account"
+      Title: "%player_name%'s Betting Account"
+      SubTitle:
+        - "Highest Won Tier: %lotterysix_stats_highest_won_tier%"
+        - "Total Winnings: $%lotterysix_stats_total_winnings%"
+        - "Game Account Balance: $%vault_eco_balance_commas%"
+        - "Betting Account Balance: $%lotterysix_stats_account_balance%"
+      ThumbnailURL: "https://resources.loohpjames.com/spigot/plugins/lotterysix/icon.png"
+    #SlashCommand /placebet
+    PlaceBet:
+      Enabled: true
+      Description: "Place a new bet"
+      NoGame: "There are no LotterySix games scheduled"
+      Title: "Place Bet"
+      SubTitle:
+        - "Game Number: {GameNumber}"
+        - "Draw Date: {Date}"
+        - ""
+        - "**Betting Account Balance: $%lotterysix_stats_account_balance%**"
+        - "**Entry Type: {BetNumbersType}**"
+      ThumbnailURL: "https://resources.loohpjames.com/spigot/plugins/lotterysix/icon.png"
     #SlashCommand /pastdraw
     ViewPastDraw:
       Enabled: true

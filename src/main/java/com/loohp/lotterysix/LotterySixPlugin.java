@@ -29,10 +29,9 @@ import com.loohp.lotterysix.events.PlayerBetEvent;
 import com.loohp.lotterysix.game.LotterySix;
 import com.loohp.lotterysix.game.lottery.CompletedLotterySixGame;
 import com.loohp.lotterysix.game.lottery.PlayableLotterySixGame;
-import com.loohp.lotterysix.game.player.LotteryPlayer;
 import com.loohp.lotterysix.game.objects.PlayerBets;
 import com.loohp.lotterysix.game.objects.PlayerStatsKey;
-import com.loohp.lotterysix.game.objects.PlayerWinnings;
+import com.loohp.lotterysix.game.player.LotteryPlayer;
 import com.loohp.lotterysix.metrics.Charts;
 import com.loohp.lotterysix.metrics.Metrics;
 import com.loohp.lotterysix.placeholderapi.LotteryPlaceholders;
@@ -41,11 +40,11 @@ import com.loohp.lotterysix.updater.Updater;
 import com.loohp.lotterysix.utils.ChatColorUtils;
 import com.loohp.lotterysix.utils.LotteryUtils;
 import com.loohp.lotterysix.utils.MCVersion;
+import com.loohp.lotterysix.utils.StringUtils;
 import com.loohp.lotterysix.utils.TitleUtils;
 import me.clip.placeholderapi.PlaceholderAPI;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.chat.BaseComponent;
-import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.TextComponent;
 import net.milkbowl.vault.economy.Economy;
@@ -64,9 +63,6 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 
 public class LotterySixPlugin extends JavaPlugin implements Listener {
@@ -132,7 +128,7 @@ public class LotterySixPlugin extends JavaPlugin implements Listener {
 
         getCommand("lotterysix").setExecutor(new Commands());
 
-        instance = new LotterySix(true, getDataFolder(), CONFIG_ID, c -> givePrizes(c), c -> refundBets(c), (p, a) -> takeMoneyOnline(p, a), (p, a) -> giveMoney(p, a), (uuid, permission) -> {
+        instance = new LotterySix(true, getDataFolder(), CONFIG_ID, (p, a) -> takeMoneyOnline(p, a), (p, a) -> giveMoneyNow(p, a), p -> notifyOfflineBalanceChange(p), (uuid, permission) -> {
             OfflinePlayer player = Bukkit.getOfflinePlayer(uuid);
             if (player.isOnline()) {
                 return player.getPlayer().hasPermission(permission);
@@ -175,7 +171,7 @@ public class LotterySixPlugin extends JavaPlugin implements Listener {
             }
         }, (uuid, result, price, bets) -> {
             for (PlayerBets bet : bets) {
-                Bukkit.getPluginManager().callEvent(new PlayerBetEvent(Bukkit.getPlayer(uuid), bet.getChosenNumbers()));
+                Bukkit.getPluginManager().callEvent(new PlayerBetEvent(instance.getLotteryPlayerManager().getLotteryPlayer(uuid), bet.getChosenNumbers(), price, result));
             }
         }, playerBets -> {
 
@@ -271,37 +267,6 @@ public class LotterySixPlugin extends JavaPlugin implements Listener {
         return perms;
     }
 
-    public static void givePrizes(Collection<PlayerWinnings> winnings) {
-        Map<UUID, Long> transactions = new HashMap<>();
-        for (PlayerWinnings winning : winnings) {
-            transactions.merge(winning.getPlayer(), winning.getWinnings(), (a, b) -> a + b);
-        }
-        for (Map.Entry<UUID, Long> entry : transactions.entrySet()) {
-            LotteryPlayer lotteryPlayer = instance.getPlayerPreferenceManager().getLotteryPlayer(entry.getKey());
-            lotteryPlayer.updateStats(PlayerStatsKey.PENDING_TRANSACTION, long.class, i -> i + entry.getValue());
-            notifyPendingTransactions(lotteryPlayer);
-        }
-    }
-
-    public static void refundBets(Collection<PlayerBets> bets) {
-        Map<UUID, Long> transactions = new HashMap<>();
-        for (PlayerBets bet : bets) {
-            transactions.merge(bet.getPlayer(), bet.getBet(), (a, b) -> a + b);
-        }
-        for (Map.Entry<UUID, Long> entry : transactions.entrySet()) {
-            LotteryPlayer lotteryPlayer = instance.getPlayerPreferenceManager().getLotteryPlayer(entry.getKey());
-            lotteryPlayer.updateStats(PlayerStatsKey.PENDING_TRANSACTION, long.class, i -> i + entry.getValue());
-            notifyPendingTransactions(lotteryPlayer);
-        }
-    }
-
-    public static boolean giveMoney(UUID uuid, long amount) {
-        LotteryPlayer lotteryPlayer = instance.getPlayerPreferenceManager().getLotteryPlayer(uuid);
-        lotteryPlayer.updateStats(PlayerStatsKey.PENDING_TRANSACTION, long.class, i -> i + amount);
-        notifyPendingTransactions(lotteryPlayer);
-        return true;
-    }
-
     public static boolean giveMoneyNow(UUID uuid, long amount) {
         return econ.depositPlayer(Bukkit.getOfflinePlayer(uuid), amount).transactionSuccess();
     }
@@ -336,14 +301,24 @@ public class LotterySixPlugin extends JavaPlugin implements Listener {
         }
     }
 
-    public static void notifyPendingTransactions(LotteryPlayer lotteryPlayer) {
+    public static void notifyOfflineBalanceChange(UUID uuid) {
+        notifyOfflineBalanceChange(instance.getLotteryPlayerManager().getLotteryPlayer(uuid));
+    }
+
+    public static void notifyOfflineBalanceChange(LotteryPlayer lotteryPlayer) {
         Player player = Bukkit.getPlayer(lotteryPlayer.getPlayer());
         if (player != null) {
             Long money = lotteryPlayer.getStats(PlayerStatsKey.PENDING_TRANSACTION, long.class);
+            boolean notifyAnyway = false;
             if (money != null && money > 0) {
-                TextComponent textComponent = new TextComponent(instance.messagePendingUnclaimed);
-                textComponent.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/lotterysix pendingtransaction"));
-                player.spigot().sendMessage(textComponent);
+                lotteryPlayer.setStats(PlayerStatsKey.PENDING_TRANSACTION, 0L);
+                lotteryPlayer.updateStats(PlayerStatsKey.ACCOUNT_BALANCE, long.class, i -> i + money);
+                notifyAnyway = true;
+            }
+            long changed = lotteryPlayer.getStats(PlayerStatsKey.NOTIFY_BALANCE_CHANGE, long.class);
+            if (notifyAnyway || changed != 0) {
+                lotteryPlayer.setStats(PlayerStatsKey.NOTIFY_BALANCE_CHANGE, 0L);
+                player.sendMessage(instance.messageNotifyBalanceChange.replace("{Amount}", StringUtils.formatComma(changed)));
             }
         }
     }
@@ -354,9 +329,9 @@ public class LotterySixPlugin extends JavaPlugin implements Listener {
             activeBossBar.addPlayer(event.getPlayer());
         }
         Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
-            LotteryPlayer lotteryPlayer = instance.getPlayerPreferenceManager().loadLotteryPlayer(event.getPlayer().getUniqueId(), true);
+            LotteryPlayer lotteryPlayer = instance.getLotteryPlayerManager().loadLotteryPlayer(event.getPlayer().getUniqueId(), true);
             if (!instance.backendBungeecordMode) {
-                Bukkit.getScheduler().runTaskLaterAsynchronously(this, () -> notifyPendingTransactions(lotteryPlayer), 20);
+                Bukkit.getScheduler().runTaskLaterAsynchronously(this, () -> notifyOfflineBalanceChange(lotteryPlayer), 20);
             }
         });
     }
@@ -366,6 +341,6 @@ public class LotterySixPlugin extends JavaPlugin implements Listener {
         if (activeBossBar != null) {
             activeBossBar.removePlayer(event.getPlayer());
         }
-        Bukkit.getScheduler().runTaskAsynchronously(this, () -> instance.getPlayerPreferenceManager().unloadLotteryPlayer(event.getPlayer().getUniqueId(), true));
+        Bukkit.getScheduler().runTaskAsynchronously(this, () -> instance.getLotteryPlayerManager().unloadLotteryPlayer(event.getPlayer().getUniqueId(), true));
     }
 }

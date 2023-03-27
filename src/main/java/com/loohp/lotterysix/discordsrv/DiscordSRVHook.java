@@ -22,15 +22,22 @@ package com.loohp.lotterysix.discordsrv;
 
 import com.loohp.lotterysix.LotterySixPlugin;
 import com.loohp.lotterysix.events.LotterySixEvent;
+import com.loohp.lotterysix.events.PlayerBetEvent;
 import com.loohp.lotterysix.game.LotterySix;
 import com.loohp.lotterysix.game.lottery.CompletedLotterySixGame;
 import com.loohp.lotterysix.game.lottery.GameNumber;
 import com.loohp.lotterysix.game.lottery.PlayableLotterySixGame;
+import com.loohp.lotterysix.game.objects.AddBetResult;
+import com.loohp.lotterysix.game.objects.BetUnitType;
 import com.loohp.lotterysix.game.objects.LotterySixAction;
+import com.loohp.lotterysix.game.objects.Pair;
 import com.loohp.lotterysix.game.objects.PlayerBets;
+import com.loohp.lotterysix.game.objects.PlayerPreferenceKey;
 import com.loohp.lotterysix.game.objects.PlayerWinnings;
 import com.loohp.lotterysix.game.objects.PrizeTier;
 import com.loohp.lotterysix.game.objects.betnumbers.BetNumbers;
+import com.loohp.lotterysix.game.objects.betnumbers.BetNumbersBuilder;
+import com.loohp.lotterysix.game.objects.betnumbers.BetNumbersType;
 import com.loohp.lotterysix.utils.LotteryUtils;
 import com.loohp.lotterysix.utils.StringUtils;
 import com.loohp.lotterysix.utils.SyncUtils;
@@ -43,9 +50,15 @@ import github.scarsz.discordsrv.api.events.DiscordReadyEvent;
 import github.scarsz.discordsrv.dependencies.jda.api.EmbedBuilder;
 import github.scarsz.discordsrv.dependencies.jda.api.entities.Guild;
 import github.scarsz.discordsrv.dependencies.jda.api.entities.TextChannel;
+import github.scarsz.discordsrv.dependencies.jda.api.events.interaction.ButtonClickEvent;
 import github.scarsz.discordsrv.dependencies.jda.api.events.interaction.SlashCommandEvent;
+import github.scarsz.discordsrv.dependencies.jda.api.hooks.ListenerAdapter;
+import github.scarsz.discordsrv.dependencies.jda.api.interactions.InteractionHook;
 import github.scarsz.discordsrv.dependencies.jda.api.interactions.commands.OptionType;
 import github.scarsz.discordsrv.dependencies.jda.api.interactions.commands.build.CommandData;
+import github.scarsz.discordsrv.dependencies.jda.api.interactions.components.ActionRow;
+import github.scarsz.discordsrv.dependencies.jda.api.interactions.components.Button;
+import github.scarsz.discordsrv.dependencies.jda.api.requests.restaction.interactions.ReplyAction;
 import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
@@ -54,27 +67,43 @@ import org.bukkit.event.Listener;
 
 import java.awt.Color;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-public class DiscordSRVHook implements Listener, SlashCommandProvider {
+public class DiscordSRVHook extends ListenerAdapter implements Listener, SlashCommandProvider {
 
+    public static final String BET_ACCOUNT_LABEL = "betaccount";
+    public static final String PLACE_BET_LABEL = "placebet";
     public static final String PAST_DRAW_LABEL = "pastdraw";
     public static final String MY_BETS_LABEL = "mybets";
     public static final String NUMBER_STATS_LABEL = "numberstats";
 
+    public static final String PLACE_BET_CONFIRM_ID = "placebet_{Number}_{Unit}";
+    public static final Pattern PLACE_BET_CONFIRM_ID_PATTERN = Pattern.compile("^placebet_([^_]+)_(.+)$");
+
+    private final Map<UUID, InteractionHook> bungeecordPendingAddBet;
+
     private boolean init;
 
     public DiscordSRVHook() {
+        this.bungeecordPendingAddBet = new ConcurrentHashMap<>();
         DiscordSRV.api.subscribe(this);
         if (DiscordSRV.isReady) {
             this.init = true;
             DiscordSRV.api.addSlashCommandProvider(this);
+            DiscordSRV.getPlugin().getJda().addEventListener(new JDAEvents());
             reload();
         } else {
             this.init = false;
@@ -89,6 +118,7 @@ public class DiscordSRVHook implements Listener, SlashCommandProvider {
     public void onDiscordReady(DiscordReadyEvent event) {
         if (!init) {
             DiscordSRV.api.addSlashCommandProvider(this);
+            DiscordSRV.getPlugin().getJda().addEventListener(new JDAEvents());
             reload();
             this.init = true;
         }
@@ -111,12 +141,70 @@ public class DiscordSRVHook implements Listener, SlashCommandProvider {
         }
     }
 
+    @EventHandler
+    public void onPlaceBet(PlayerBetEvent event) {
+        LotterySix lotterySix = LotterySixPlugin.getInstance();
+        if (lotterySix.backendBungeecordMode) {
+            UUID uuid = event.getPlayer().getPlayer();
+            InteractionHook hook = bungeecordPendingAddBet.remove(uuid);
+            if (hook != null) {
+                PlayableLotterySixGame game = lotterySix.getCurrentGame();
+                if (game == null) {
+                    hook.setEphemeral(true).editOriginal(lotterySix.discordSRVSlashCommandsPlaceBetNoGame).queue();
+                    return;
+                }
+                OfflinePlayer player = Bukkit.getOfflinePlayer(uuid);
+                String message = "";
+                long price = event.getPrice();
+                switch (event.getResult()) {
+                    case SUCCESS: {
+                        message = lotterySix.messageBetPlaced.replace("{Price}", StringUtils.formatComma(price));
+                        break;
+                    }
+                    case GAME_LOCKED: {
+                        message = lotterySix.messageGameLocked.replace("{Price}", StringUtils.formatComma(price));
+                        break;
+                    }
+                    case NOT_ENOUGH_MONEY: {
+                        message = lotterySix.messageNotEnoughMoney.replace("{Price}", StringUtils.formatComma(price));
+                        break;
+                    }
+                    case LIMIT_SELF: {
+                        message = lotterySix.messageBetLimitReachedSelf.replace("{Price}", StringUtils.formatComma(price));
+                        break;
+                    }
+                    case LIMIT_PERMISSION: {
+                        message = lotterySix.messageBetLimitReachedPermission.replace("{Price}", StringUtils.formatComma(price));
+                        break;
+                    }
+                    case LIMIT_CHANCE_PER_SELECTION: {
+                        message = lotterySix.messageBetLimitMaximumChancePerSelection.replace("{Price}", StringUtils.formatComma(price));
+                        break;
+                    }
+                    case ACCOUNT_SUSPENDED: {
+                        long time = lotterySix.getLotteryPlayerManager().getLotteryPlayer(player.getUniqueId()).getPreference(PlayerPreferenceKey.SUSPEND_ACCOUNT_UNTIL, long.class);
+                        message = lotterySix.messageBettingAccountSuspended.replace("{Date}", lotterySix.dateFormat.format(new Date(time))).replace("{Price}", StringUtils.formatComma(price));
+                        break;
+                    }
+                }
+                hook.setEphemeral(true).editOriginal(message).setActionRows().setEmbeds().queue();
+            }
+        }
+    }
+
     @Override
     public Set<PluginSlashCommand> getSlashCommands() {
         Set<PluginSlashCommand> commands = new HashSet<>();
 
         Guild guild = DiscordSRV.getPlugin().getMainGuild();
 
+        if (LotterySixPlugin.getInstance().discordSRVSlashCommandsBetAccountEnabled) {
+            commands.add(new PluginSlashCommand(LotterySixPlugin.plugin, new CommandData(BET_ACCOUNT_LABEL, LotterySixPlugin.getInstance().discordSRVSlashCommandsBetAccountDescription), guild.getId()));
+        }
+        if (LotterySixPlugin.getInstance().discordSRVSlashCommandsPlaceBetEnabled) {
+            commands.add(new PluginSlashCommand(LotterySixPlugin.plugin, new CommandData(PLACE_BET_LABEL, LotterySixPlugin.getInstance().discordSRVSlashCommandsPlaceBetDescription)
+                    .addOption(OptionType.STRING, LotterySixPlugin.getInstance().discordSRVSlashCommandsGlobalLabelsBetNumbersName, LotterySixPlugin.getInstance().discordSRVSlashCommandsGlobalLabelsBetNumbersDescription, true), guild.getId()));
+        }
         if (LotterySixPlugin.getInstance().discordSRVSlashCommandsViewPastDrawEnabled) {
             commands.add(new PluginSlashCommand(LotterySixPlugin.plugin, new CommandData(PAST_DRAW_LABEL, LotterySixPlugin.getInstance().discordSRVSlashCommandsViewPastDrawDescription)
                     .addOption(OptionType.STRING, LotterySixPlugin.getInstance().discordSRVSlashCommandsGlobalLabelsGameNumberName, LotterySixPlugin.getInstance().discordSRVSlashCommandsGlobalLabelsGameNumberDescription, false), guild.getId()));
@@ -142,7 +230,101 @@ public class DiscordSRVHook implements Listener, SlashCommandProvider {
         }
         LotterySix lotterySix = LotterySixPlugin.getInstance();
         String label = event.getName();
-        if (LotterySixPlugin.getInstance().discordSRVSlashCommandsViewPastDrawEnabled && label.equalsIgnoreCase(PAST_DRAW_LABEL)) {
+        if (LotterySixPlugin.getInstance().discordSRVSlashCommandsBetAccountEnabled && label.equalsIgnoreCase(BET_ACCOUNT_LABEL)) {
+            String discordUserId = event.getUser().getId();
+            UUID uuid = DiscordSRV.getPlugin().getAccountLinkManager().getUuid(discordUserId);
+            if (uuid == null) {
+                event.reply(lotterySix.discordSRVSlashCommandsGlobalMessagesNotLinked).setEphemeral(true).queue();
+                return;
+            }
+            event.deferReply(true).queue();
+            OfflinePlayer player = Bukkit.getOfflinePlayer(uuid);
+            StringBuilder sb = new StringBuilder();
+            for (String line : lotterySix.discordSRVSlashCommandsBetAccountSubTitle) {
+                sb.append(ChatColor.stripColor(LotteryUtils.formatPlaceholders(player, line, lotterySix))).append("\n");
+            }
+            if (sb.length() > 0) {
+                sb.append("\n");
+            }
+            String description = sb.charAt(sb.length() - 1) == '\n' ? sb.substring(0, sb.length() - 1) : sb.toString();
+
+            EmbedBuilder builder = new EmbedBuilder()
+                    .setColor(Color.RED)
+                    .setTitle(ChatColor.stripColor(LotteryUtils.formatPlaceholders(player, lotterySix.discordSRVSlashCommandsBetAccountTitle, lotterySix)))
+                    .setDescription(description)
+                    .setThumbnail(lotterySix.discordSRVSlashCommandsBetAccountThumbnailURL);
+            event.getHook().setEphemeral(true).editOriginalEmbeds(builder.build()).queue();
+            return;
+        } else if (LotterySixPlugin.getInstance().discordSRVSlashCommandsPlaceBetEnabled && label.equalsIgnoreCase(PLACE_BET_LABEL)) {
+            String input = event.getOptions().get(0).getAsString();
+            Pair<Stream<? extends BetNumbersBuilder>, BetNumbersType> pair = BetNumbersBuilder.fromString(1, lotterySix.numberOfChoices, input);
+            if (pair == null) {
+                event.reply(ChatColor.stripColor(lotterySix.messageInvalidBetNumbers)).queue();
+            } else {
+                String discordUserId = event.getUser().getId();
+                UUID uuid = DiscordSRV.getPlugin().getAccountLinkManager().getUuid(discordUserId);
+                if (uuid == null) {
+                    event.reply(lotterySix.discordSRVSlashCommandsGlobalMessagesNotLinked).setEphemeral(true).queue();
+                    return;
+                }
+                if (lotterySix.backendBungeecordMode && Bukkit.getOnlinePlayers().isEmpty()) {
+                    event.reply(lotterySix.discordSRVSlashCommandsGlobalMessagesNoOneOnline).setEphemeral(true).queue();
+                    return;
+                }
+
+                PlayableLotterySixGame game = lotterySix.getCurrentGame();
+                if (game == null) {
+                    event.reply(lotterySix.discordSRVSlashCommandsPlaceBetNoGame).setEphemeral(true).queue();
+                } else {
+                    List<BetNumbersBuilder> betNumbers = pair.getFirst().collect(Collectors.toList());
+                    BetNumbersType type = pair.getSecond();
+                    long price = betNumbers.stream().mapToLong(each -> LotteryUtils.calculatePrice(each, lotterySix)).sum();
+                    long partial = price / BetUnitType.PARTIAL.getDivisor();
+
+                    OfflinePlayer player = Bukkit.getOfflinePlayer(uuid);
+                    StringBuilder sb = new StringBuilder();
+                    for (String line : lotterySix.discordSRVSlashCommandsPlaceBetSubTitle) {
+                        sb.append(ChatColor.stripColor(LotteryUtils.formatPlaceholders(player, line.replace("{BetNumbersType}", lotterySix.betNumbersTypeNames.get(type)), lotterySix, game))).append("\n");
+                    }
+                    if (sb.length() > 0) {
+                        sb.append("\n");
+                    }
+                    if (type.isRandom()) {
+                        int entriesTotal = betNumbers.stream().mapToInt(each -> each.build().getSetsSize()).sum();
+                        sb.append("**").append(ChatColor.stripColor(Arrays.stream(LotteryUtils.formatPlaceholders(player, lotterySix.guiConfirmNewBetBulkRandom, lotterySix, game))
+                                .map(each -> each.replace("{EntriesTotal}", entriesTotal + "")).collect(Collectors.joining("**\n**")))).append("**");
+                    } else {
+                        sb.append("**").append(betNumbers.iterator().next().build().toString()).append("**");
+                    }
+                    String description = sb.charAt(sb.length() - 1) == '\n' ? sb.substring(0, sb.length() - 1) : sb.toString();
+
+                    EmbedBuilder builder = new EmbedBuilder()
+                            .setColor(Color.RED)
+                            .setTitle(ChatColor.stripColor(LotteryUtils.formatPlaceholders(player, lotterySix.discordSRVSlashCommandsPlaceBetTitle, lotterySix, game)))
+                            .setDescription(description)
+                            .setThumbnail(lotterySix.discordSRVSlashCommandsPlaceBetThumbnailURL);
+
+                    String id = PLACE_BET_CONFIRM_ID.replace("{Number}", input);
+                    ReplyAction action = event.replyEmbeds(builder.build()).setEphemeral(true);
+                    if (type.isMultipleCombination()) {
+                        action = action.addActionRow(
+                                Button.secondary(id.replace("{Unit}", BetUnitType.PARTIAL.name()),
+                                        Arrays.stream(LotteryUtils.formatPlaceholders(player, lotterySix.guiConfirmNewBetPartialInvestmentConfirm, lotterySix, game))
+                                                .map(each -> ChatColor.stripColor(each.replace("{Price}", StringUtils.formatComma(price)).replace("{PricePartial}", StringUtils.formatComma(partial)))).collect(Collectors.joining("\n"))),
+                                Button.primary(id.replace("{Unit}", BetUnitType.FULL.name()),
+                                        Arrays.stream(LotteryUtils.formatPlaceholders(player, lotterySix.guiConfirmNewBetUnitInvestmentConfirm, lotterySix, game))
+                                                .map(each -> ChatColor.stripColor(each.replace("{Price}", StringUtils.formatComma(price)).replace("{PricePartial}", StringUtils.formatComma(partial)))).collect(Collectors.joining("\n"))));
+                    } else {
+                        action = action.addActionRow(
+                                Button.primary(id.replace("{Unit}", BetUnitType.FULL.name()),
+                                        Arrays.stream(LotteryUtils.formatPlaceholders(player, lotterySix.guiConfirmNewBetUnitInvestmentConfirm, lotterySix, game))
+                                                .map(each -> ChatColor.stripColor(each.replace("{Price}", StringUtils.formatComma(price)).replace("{PricePartial}", StringUtils.formatComma(partial)))).collect(Collectors.joining("\n"))));
+                    }
+                    action.queue();
+                }
+            }
+            return;
+        } else if (LotterySixPlugin.getInstance().discordSRVSlashCommandsViewPastDrawEnabled && label.equalsIgnoreCase(PAST_DRAW_LABEL)) {
             String discordUserId = event.getUser().getId();
             UUID uuid = DiscordSRV.getPlugin().getAccountLinkManager().getUuid(discordUserId);
             if (uuid == null) {
@@ -350,5 +532,94 @@ public class DiscordSRVHook implements Listener, SlashCommandProvider {
         }
     }
 
+    public class JDAEvents extends ListenerAdapter {
+
+        @Override
+        public void onButtonClick(ButtonClickEvent event) {
+            LotterySix lotterySix = LotterySixPlugin.getInstance();
+            Button button = event.getButton();
+            if (button == null) {
+                return;
+            }
+            String buttonId = button.getId();
+            if (buttonId == null) {
+                return;
+            }
+            try {
+                String discordUserId = event.getUser().getId();
+                UUID uuid = DiscordSRV.getPlugin().getAccountLinkManager().getUuid(discordUserId);
+                if (uuid == null) {
+                    throw new RuntimeException();
+                }
+                OfflinePlayer player = Bukkit.getOfflinePlayer(uuid);
+                Matcher matcher = PLACE_BET_CONFIRM_ID_PATTERN.matcher(buttonId);
+                if (matcher.find()) {
+                    event.editComponents(ActionRow.of(event.getMessage().getButtons().stream().map(b -> b.asDisabled()).collect(Collectors.toList()))).queue();
+                    PlayableLotterySixGame game = lotterySix.getCurrentGame();
+                    if (game == null) {
+                        event.getHook().setEphemeral(true).editOriginal(lotterySix.discordSRVSlashCommandsPlaceBetNoGame).setActionRows().setEmbeds().queue();
+                        return;
+                    }
+                    if (lotterySix.backendBungeecordMode && Bukkit.getOnlinePlayers().isEmpty()) {
+                        event.getHook().setEphemeral(true).editOriginal(lotterySix.discordSRVSlashCommandsGlobalMessagesNoOneOnline).setActionRows().setEmbeds().queue();
+                        return;
+                    }
+                    Pair<Stream<? extends BetNumbersBuilder>, BetNumbersType> pair = BetNumbersBuilder.fromString(1, lotterySix.numberOfChoices, matcher.group(1));
+                    if (pair == null) {
+                        throw new RuntimeException();
+                    }
+                    Collection<BetNumbers> betNumbers = pair.getFirst().map(each -> each.build()).collect(Collectors.toList());
+                    BetUnitType unitType = BetUnitType.valueOf(matcher.group(2).toUpperCase());
+                    if (betNumbers.isEmpty()) {
+                        throw new RuntimeException();
+                    }
+                    long price = betNumbers.stream().mapToLong(each -> LotteryUtils.calculatePrice(each, lotterySix)).sum() / unitType.getDivisor();
+                    if (lotterySix.backendBungeecordMode) {
+                        LotterySixPlugin.getPluginMessageHandler().requestAddBet(player.getName(), player.getUniqueId(), price / betNumbers.size(), unitType, betNumbers);
+                        bungeecordPendingAddBet.put(uuid, event.getHook());
+                    } else {
+                        String message = "";
+                        AddBetResult result = game.addBet(player.getName(), player.getUniqueId(), price / betNumbers.size(), unitType, betNumbers);
+                        switch (result) {
+                            case SUCCESS: {
+                                message = lotterySix.messageBetPlaced.replace("{Price}", StringUtils.formatComma(price));
+                                break;
+                            }
+                            case GAME_LOCKED: {
+                                message = lotterySix.messageGameLocked.replace("{Price}", StringUtils.formatComma(price));
+                                break;
+                            }
+                            case NOT_ENOUGH_MONEY: {
+                                message = lotterySix.messageNotEnoughMoney.replace("{Price}", StringUtils.formatComma(price));
+                                break;
+                            }
+                            case LIMIT_SELF: {
+                                message = lotterySix.messageBetLimitReachedSelf.replace("{Price}", StringUtils.formatComma(price));
+                                break;
+                            }
+                            case LIMIT_PERMISSION: {
+                                message = lotterySix.messageBetLimitReachedPermission.replace("{Price}", StringUtils.formatComma(price));
+                                break;
+                            }
+                            case LIMIT_CHANCE_PER_SELECTION: {
+                                message = lotterySix.messageBetLimitMaximumChancePerSelection.replace("{Price}", StringUtils.formatComma(price));
+                                break;
+                            }
+                            case ACCOUNT_SUSPENDED: {
+                                long time = lotterySix.getLotteryPlayerManager().getLotteryPlayer(player.getUniqueId()).getPreference(PlayerPreferenceKey.SUSPEND_ACCOUNT_UNTIL, long.class);
+                                message = lotterySix.messageBettingAccountSuspended.replace("{Date}", lotterySix.dateFormat.format(new Date(time))).replace("{Price}", StringUtils.formatComma(price));
+                                break;
+                            }
+                        }
+                        event.getHook().setEphemeral(true).editOriginal(ChatColor.stripColor(message)).setActionRows().setEmbeds().queue();
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                event.reply("-1").queue();
+            }
+        }
+
+    }
 
 }

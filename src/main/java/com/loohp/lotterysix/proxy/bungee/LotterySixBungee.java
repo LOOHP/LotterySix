@@ -24,17 +24,16 @@ import com.google.common.collect.Collections2;
 import com.loohp.lotterysix.config.Config;
 import com.loohp.lotterysix.game.LotterySix;
 import com.loohp.lotterysix.game.lottery.IDedGame;
+import com.loohp.lotterysix.game.objects.AddBetResult;
 import com.loohp.lotterysix.game.objects.BossBarInfo;
-import com.loohp.lotterysix.game.player.LotteryPlayer;
 import com.loohp.lotterysix.game.objects.LotterySixAction;
 import com.loohp.lotterysix.game.objects.PlayerBets;
 import com.loohp.lotterysix.game.objects.PlayerStatsKey;
-import com.loohp.lotterysix.game.objects.PlayerWinnings;
 import com.loohp.lotterysix.game.objects.betnumbers.BetNumbers;
+import com.loohp.lotterysix.game.player.LotteryPlayer;
+import com.loohp.lotterysix.utils.StringUtils;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.ProxyServer;
-import net.md_5.bungee.api.chat.ClickEvent;
-import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.event.PlayerDisconnectEvent;
 import net.md_5.bungee.api.event.PostLoginEvent;
@@ -45,9 +44,6 @@ import net.md_5.bungee.event.EventHandler;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.UUID;
@@ -92,7 +88,7 @@ public class LotterySixBungee extends Plugin implements Listener {
         getProxy().getPluginManager().registerListener(this, pluginMessageBungee = new PluginMessageBungee(null));
         getProxy().registerChannel("lotterysix:main");
 
-        instance = new LotterySix(false, getDataFolder(), CONFIG_ID, c -> givePrizes(c), c -> refundBets(c), (p, a) -> takeMoney(p, a), (p, a) -> giveMoney(p, a), (uuid, permission) -> {
+        instance = new LotterySix(false, getDataFolder(), CONFIG_ID, (p, a) -> takeMoneyOnline(p, a), (p, a) -> giveMoneyNow(p, a), p -> notifyOfflineBalanceChange(p), (uuid, permission) -> {
             ProxiedPlayer player = getProxy().getPlayer(uuid);
             if (player != null) {
                 return player.hasPermission(permission);
@@ -114,7 +110,7 @@ public class LotterySixBungee extends Plugin implements Listener {
             ProxiedPlayer player = getProxy().getPlayer(uuid);
             pluginMessageBungee.addBetResult(player, result, price);
             for (PlayerBets bet : bets) {
-                callPlayerBetEvent(player, bet.getChosenNumbers());
+                callPlayerBetEvent(player, bet.getChosenNumbers(), price, result);
             }
         }, playerBets -> {
             pluginMessageBungee.updateCurrentGameData();
@@ -166,9 +162,9 @@ public class LotterySixBungee extends Plugin implements Listener {
         pluginMessageBungee.callLotterySixEvent(action);
     }
 
-    public static void callPlayerBetEvent(ProxiedPlayer player, BetNumbers numbers) {
+    public static void callPlayerBetEvent(ProxiedPlayer player, BetNumbers numbers, long price, AddBetResult result) {
         pluginMessageBungee.updateCurrentGameData();
-        pluginMessageBungee.callPlayerBetEvent(player, numbers);
+        pluginMessageBungee.callPlayerBetEvent(player, numbers, price, result);
     }
 
     public static void sendFormattedTitle(ProxiedPlayer player, IDedGame game, String title, int fadeIn, int stay, int fadeOut) {
@@ -179,41 +175,16 @@ public class LotterySixBungee extends Plugin implements Listener {
         pluginMessageBungee.sendFormattedMessage(player, game, message, hover);
     }
 
-    public static void givePrizes(Collection<PlayerWinnings> winnings) {
-        Map<UUID, Long> transactions = new HashMap<>();
-        for (PlayerWinnings winning : winnings) {
-            transactions.merge(winning.getPlayer(), winning.getWinnings(), (a, b) -> a + b);
+    public static boolean giveMoneyNow(UUID uuid, long amount) {
+        ProxiedPlayer player = ProxyServer.getInstance().getPlayer(uuid);
+        if (player == null) {
+            return false;
         }
-        for (Map.Entry<UUID, Long> entry : transactions.entrySet()) {
-            LotteryPlayer lotteryPlayer = instance.getPlayerPreferenceManager().getLotteryPlayer(entry.getKey());
-            lotteryPlayer.updateStats(PlayerStatsKey.PENDING_TRANSACTION, long.class, i -> i + entry.getValue());
-            pluginMessageBungee.syncPlayerData(lotteryPlayer);
-            notifyPendingTransactions(lotteryPlayer);
-        }
-    }
-
-    public static void refundBets(Collection<PlayerBets> bets) {
-        Map<UUID, Long> transactions = new HashMap<>();
-        for (PlayerBets bet : bets) {
-            transactions.merge(bet.getPlayer(), bet.getBet(), (a, b) -> a + b);
-        }
-        for (Map.Entry<UUID, Long> entry : transactions.entrySet()) {
-            LotteryPlayer lotteryPlayer = instance.getPlayerPreferenceManager().getLotteryPlayer(entry.getKey());
-            lotteryPlayer.updateStats(PlayerStatsKey.PENDING_TRANSACTION, long.class, i -> i + entry.getValue());
-            pluginMessageBungee.syncPlayerData(lotteryPlayer);
-            notifyPendingTransactions(lotteryPlayer);
-        }
-    }
-
-    public static boolean giveMoney(UUID uuid, long amount) {
-        LotteryPlayer lotteryPlayer = instance.getPlayerPreferenceManager().getLotteryPlayer(uuid);
-        lotteryPlayer.updateStats(PlayerStatsKey.PENDING_TRANSACTION, long.class, i -> i + amount);
-        pluginMessageBungee.syncPlayerData(lotteryPlayer);
-        notifyPendingTransactions(lotteryPlayer);
+        pluginMessageBungee.giveMoney(player, amount);
         return true;
     }
 
-    public static boolean takeMoney(UUID uuid, long amount) {
+    public static boolean takeMoneyOnline(UUID uuid, long amount) {
         ProxiedPlayer player = ProxyServer.getInstance().getPlayer(uuid);
         if (player == null) {
             return false;
@@ -231,14 +202,25 @@ public class LotterySixBungee extends Plugin implements Listener {
         pluginMessageBungee.forceCloseAllGui();
     }
 
-    public static void notifyPendingTransactions(LotteryPlayer lotteryPlayer) {
+    public static void notifyOfflineBalanceChange(UUID uuid) {
+        notifyOfflineBalanceChange(instance.getLotteryPlayerManager().getLotteryPlayer(uuid));
+    }
+
+    public static void notifyOfflineBalanceChange(LotteryPlayer lotteryPlayer) {
         ProxiedPlayer player = ProxyServer.getInstance().getPlayer(lotteryPlayer.getPlayer());
         if (player != null) {
             Long money = lotteryPlayer.getStats(PlayerStatsKey.PENDING_TRANSACTION, long.class);
+            boolean notifyAnyway = false;
             if (money != null && money > 0) {
-                TextComponent textComponent = new TextComponent(instance.messagePendingUnclaimed);
-                textComponent.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/lotterysix pendingtransaction"));
-                player.sendMessage(textComponent);
+                lotteryPlayer.setStats(PlayerStatsKey.PENDING_TRANSACTION, 0L);
+                lotteryPlayer.updateStats(PlayerStatsKey.ACCOUNT_BALANCE, long.class, i -> i + money);
+                notifyAnyway = true;
+            }
+            long changed = lotteryPlayer.getStats(PlayerStatsKey.NOTIFY_BALANCE_CHANGE, long.class);
+            if (notifyAnyway || changed != 0) {
+                lotteryPlayer.setStats(PlayerStatsKey.NOTIFY_BALANCE_CHANGE, 0L);
+                pluginMessageBungee.syncPlayerData(lotteryPlayer);
+                player.sendMessage(instance.messageNotifyBalanceChange.replace("{Amount}", StringUtils.formatComma(changed)));
             }
         }
     }
@@ -246,7 +228,7 @@ public class LotterySixBungee extends Plugin implements Listener {
     @EventHandler
     public void onJoin(PostLoginEvent event) {
         ProxiedPlayer player = event.getPlayer();
-        getProxy().getScheduler().runAsync(this, () -> instance.getPlayerPreferenceManager().loadLotteryPlayer(player.getUniqueId(), true));
+        getProxy().getScheduler().runAsync(this, () -> instance.getLotteryPlayerManager().loadLotteryPlayer(player.getUniqueId(), true));
     }
 
     @EventHandler
@@ -256,8 +238,8 @@ public class LotterySixBungee extends Plugin implements Listener {
             @Override
             public void run() {
                 if (player.getServer() != null) {
-                    LotteryPlayer lotteryPlayer = instance.getPlayerPreferenceManager().getLotteryPlayer(player.getUniqueId());
-                    notifyPendingTransactions(lotteryPlayer);
+                    LotteryPlayer lotteryPlayer = instance.getLotteryPlayerManager().getLotteryPlayer(player.getUniqueId());
+                    notifyOfflineBalanceChange(lotteryPlayer);
                     pluginMessageBungee.updateCurrentGameData(event.getServer().getInfo());
                     pluginMessageBungee.requestPastGameSyncCheck(event.getServer().getInfo());
                     pluginMessageBungee.syncPlayerData(lotteryPlayer);
@@ -270,7 +252,7 @@ public class LotterySixBungee extends Plugin implements Listener {
 
     @EventHandler
     public void onQuit(PlayerDisconnectEvent event) {
-        getProxy().getScheduler().runAsync(this, () -> instance.getPlayerPreferenceManager().unloadLotteryPlayer(event.getPlayer().getUniqueId(), true));
+        getProxy().getScheduler().runAsync(this, () -> instance.getLotteryPlayerManager().unloadLotteryPlayer(event.getPlayer().getUniqueId(), true));
     }
 
 }

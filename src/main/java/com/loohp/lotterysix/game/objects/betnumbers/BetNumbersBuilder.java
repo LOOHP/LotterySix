@@ -20,6 +20,8 @@
 
 package com.loohp.lotterysix.game.objects.betnumbers;
 
+import com.loohp.lotterysix.game.objects.Pair;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -27,69 +29,132 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public abstract class BetNumbersBuilder {
 
-    public static BetNumbersBuilder fromString(int minNumber, int maxNumber, String input) {
-        String[] sections = input.split(" ");
-        Set<Integer> bankers = null;
-        Set<Integer> numbers = new LinkedHashSet<>();
-        for (String section : sections) {
-            if (!section.isEmpty()) {
-                if (section.equals(">")) {
-                    if (numbers.isEmpty() || numbers.size() > 5) {
-                        return null;
-                    } else {
-                        bankers = numbers;
-                        numbers = new LinkedHashSet<>();
-                    }
-                } else {
-                    try {
-                        int number = Integer.parseInt(section);
-                        if (number < minNumber || number > maxNumber) {
-                            return null;
-                        }
-                        if (!numbers.add(number)) {
-                            return null;
-                        }
-                    } catch (NumberFormatException e) {
-                        return null;
-                    }
-                }
-            }
-        }
-        if (bankers == null) {
-            BetNumbersBuilder builder;
-            if (numbers.size() < 6) {
-                return null;
-            } else if (numbers.size() == 6) {
-                builder = new SingleBuilder(minNumber, maxNumber);
-            } else {
-                builder = new MultipleBuilder(minNumber, maxNumber);
-            }
-            for (int number : numbers) {
-                builder.addNumber(number);
-            }
-            return builder;
-        } else {
-            if (numbers.isEmpty() || bankers.size() + numbers.size() < 7) {
+    public static final Pattern RANDOM_REP_PATTERN = Pattern.compile("^RAN/([0-9]+)(?:/([0-9]+))?(?:/([0-9]+))?$");
+
+    public static Pair<Stream<? extends BetNumbersBuilder>, BetNumbersType> fromString(int minNumber, int maxNumber, String input) {
+        Matcher matcher = RANDOM_REP_PATTERN.matcher(input);
+        if (matcher.find()) {
+            String group1 = matcher.group(1);
+            if (group1 == null) {
                 return null;
             }
-            BankerBuilder builder = new BankerBuilder(minNumber, maxNumber);
-            for (int number : bankers) {
-                builder.addNumber(number);
+            int count;
+            try {
+                count = Integer.parseInt(group1);
+            } catch (NumberFormatException e) {
+                return null;
             }
-            builder.finishBankers();
-            for (int number : numbers) {
-                if (builder.contains(number)) {
+            if (count <= 0) {
+                return null;
+            }
+            String group2 = matcher.group(2);
+            if (group2 == null) {
+                try {
+                    return Pair.of(random(minNumber, maxNumber, count), BetNumbersType.RANDOM);
+                } catch (IllegalArgumentException e) {
                     return null;
                 }
-                builder.addNumber(number);
             }
-            return builder;
+            int size;
+            try {
+                size = Integer.parseInt(group2);
+            } catch (NumberFormatException e) {
+                return null;
+            }
+            String group3 = matcher.group(3);
+            if (group3 == null) {
+                if (size < 7) {
+                    return null;
+                }
+                try {
+                    return Pair.of(multipleRandom(minNumber, maxNumber, size, count), BetNumbersType.MULTIPLE_RANDOM);
+                } catch (IllegalArgumentException e) {
+                    return null;
+                }
+            }
+            int selection;
+            try {
+                selection = Integer.parseInt(group3);
+            } catch (NumberFormatException e) {
+                return null;
+            }
+            if (size > 5) {
+                return null;
+            }
+            if (selection + size < 7) {
+                return null;
+            }
+            try {
+                return Pair.of(bankerRandom(minNumber, maxNumber, size, selection, count), BetNumbersType.BANKER_RANDOM);
+            } catch (IllegalArgumentException e) {
+                return null;
+            }
+        } else {
+            String[] sections = input.split(" ");
+            Set<Integer> bankers = null;
+            Set<Integer> numbers = new LinkedHashSet<>();
+            for (String section : sections) {
+                if (!section.isEmpty()) {
+                    if (section.equals(">")) {
+                        if (numbers.isEmpty() || numbers.size() > 5) {
+                            return null;
+                        } else {
+                            bankers = numbers;
+                            numbers = new LinkedHashSet<>();
+                        }
+                    } else {
+                        try {
+                            int number = Integer.parseInt(section);
+                            if (number < minNumber || number > maxNumber) {
+                                return null;
+                            }
+                            if (!numbers.add(number)) {
+                                return null;
+                            }
+                        } catch (NumberFormatException e) {
+                            return null;
+                        }
+                    }
+                }
+            }
+            if (bankers == null) {
+                BetNumbersBuilder builder;
+                if (numbers.size() < 6) {
+                    return null;
+                } else if (numbers.size() == 6) {
+                    builder = new SingleBuilder(minNumber, maxNumber);
+                } else {
+                    builder = new MultipleBuilder(minNumber, maxNumber);
+                }
+                for (int number : numbers) {
+                    builder.addNumber(number);
+                }
+                return Pair.of(Stream.of(builder), builder.getType());
+            } else {
+                if (numbers.isEmpty() || bankers.size() + numbers.size() < 7) {
+                    return null;
+                }
+                BankerBuilder builder = new BankerBuilder(minNumber, maxNumber);
+                for (int number : bankers) {
+                    builder.addNumber(number);
+                }
+                builder.finishBankers();
+                for (int number : numbers) {
+                    if (builder.contains(number)) {
+                        return null;
+                    }
+                    builder.addNumber(number);
+                }
+                return Pair.of(Stream.of(builder), builder.getType());
+            }
         }
     }
 
@@ -112,14 +177,13 @@ public abstract class BetNumbersBuilder {
     public static Stream<RandomBuilder> random(int minNumber, int maxNumber, int count) {
         if (count <= 0) {
             throw new IllegalArgumentException("count cannot be 0 or negative");
-        } else if (count % 10 == 0) {
-            return IntStream.range(0, count / 10).mapToObj(i -> new BetNumbersBuilder.RandomBuilder(minNumber, maxNumber, 10));
-        } else if (count % 5 == 0) {
-            return IntStream.range(0, count / 5).mapToObj(i -> new BetNumbersBuilder.RandomBuilder(minNumber, maxNumber, 5));
-        } else if (count % 2 == 0) {
-            return IntStream.range(0, count / 2).mapToObj(i -> new BetNumbersBuilder.RandomBuilder(minNumber, maxNumber, 2));
         } else {
-            return IntStream.range(0, count).mapToObj(i -> new BetNumbersBuilder.RandomBuilder(minNumber, maxNumber, 1));
+            int perTicket = IntStream.iterate(10, i -> i - 1).limit(10).filter(i -> count % i == 0 && count / i > 0).findFirst().orElse(1);
+            int tickets = count / perTicket;
+            if (tickets > 10) {
+                throw new IllegalArgumentException("invalid count value, as it would result in more than 10 tickets");
+            }
+            return IntStream.range(0, tickets).mapToObj(i -> new BetNumbersBuilder.RandomBuilder(minNumber, maxNumber, perTicket));
         }
     }
 
@@ -131,6 +195,9 @@ public abstract class BetNumbersBuilder {
         if (count <= 0) {
             throw new IllegalArgumentException("count cannot be 0 or negative");
         } else {
+            if (count > 10) {
+                throw new IllegalArgumentException("invalid count value, as it would result in more than 10 tickets");
+            }
             return IntStream.range(0, count).mapToObj(i -> new BetNumbersBuilder.MultipleRandomBuilder(minNumber, maxNumber, size));
         }
     }
@@ -143,6 +210,9 @@ public abstract class BetNumbersBuilder {
         if (count <= 0) {
             throw new IllegalArgumentException("count cannot be 0 or negative");
         } else {
+            if (count > 10) {
+                throw new IllegalArgumentException("invalid count value, as it would result in more than 10 tickets");
+            }
             return IntStream.range(0, count).mapToObj(i -> new BetNumbersBuilder.BankerRandomBuilder(minNumber, maxNumber, bankerSize, selectionSize));
         }
     }

@@ -30,7 +30,6 @@ import com.loohp.lotterysix.game.lottery.PlayableLotterySixGame;
 import com.loohp.lotterysix.game.objects.AddBetResult;
 import com.loohp.lotterysix.game.objects.BetUnitType;
 import com.loohp.lotterysix.game.objects.IntObjectConsumer;
-import com.loohp.lotterysix.game.player.LotteryPlayer;
 import com.loohp.lotterysix.game.objects.NumberStatistics;
 import com.loohp.lotterysix.game.objects.PlayerBets;
 import com.loohp.lotterysix.game.objects.PlayerPreferenceKey;
@@ -41,6 +40,7 @@ import com.loohp.lotterysix.game.objects.WinningNumbers;
 import com.loohp.lotterysix.game.objects.betnumbers.BetNumbers;
 import com.loohp.lotterysix.game.objects.betnumbers.BetNumbersBuilder;
 import com.loohp.lotterysix.game.objects.betnumbers.BetNumbersType;
+import com.loohp.lotterysix.game.player.LotteryPlayer;
 import com.loohp.lotterysix.utils.BookUtils;
 import com.loohp.lotterysix.utils.ChatColorUtils;
 import com.loohp.lotterysix.utils.LotteryUtils;
@@ -296,7 +296,7 @@ public class LotteryPluginGUI implements Listener {
     }
 
     public void checkReopen(HumanEntity player) {
-        if (instance.getPlayerPreferenceManager().getLotteryPlayer(player.getUniqueId()).getPreference(PlayerPreferenceKey.REOPEN_MENU_ON_PURCHASE, boolean.class)) {
+        if (instance.getLotteryPlayerManager().getLotteryPlayer(player.getUniqueId()).getPreference(PlayerPreferenceKey.REOPEN_MENU_ON_PURCHASE, boolean.class)) {
             if (InventoryGui.getHistory(player).isEmpty()) {
                 getMainMenu((Player) player).show(player);
             }
@@ -307,7 +307,7 @@ public class LotteryPluginGUI implements Listener {
         String[] guiSetup = {
                 "         ",
                 "fyaaaaaaa",
-                "aybacadae",
+                "$ybacadae",
                 "zyaaaaaaa",
                 "         "
         };
@@ -315,9 +315,11 @@ public class LotteryPluginGUI implements Listener {
         gui.setFiller(XMaterial.YELLOW_STAINED_GLASS_PANE.parseItem());
         gui.addElement(new StaticGuiElement('a', new ItemStack(Material.AIR), ChatColor.LIGHT_PURPLE.toString()));
         gui.addElement(new StaticGuiElement('y', XMaterial.ORANGE_STAINED_GLASS_PANE.parseItem(), ChatColor.LIGHT_PURPLE.toString()));
-        gui.addElement(new StaticGuiElement('b', XMaterial.CLOCK.parseItem(), click -> {
+
+        CompletedLotterySixGame completedGame = instance.getCompletedGames().isEmpty() ? null : instance.getCompletedGames().get(0);
+        gui.addElement(new StaticGuiElement('b', completedGame.hasPlayerWinnings(player.getUniqueId()) ? setEnchanted(XMaterial.CLOCK.parseItem()) : XMaterial.CLOCK.parseItem(), click -> {
             Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), gui, false), 1);
-            Bukkit.getScheduler().runTaskLater(plugin, () -> getPastResults((Player) click.getWhoClicked(), instance.getCompletedGames().isEmpty() ? null : instance.getCompletedGames().get(0)).show(click.getWhoClicked()), 2);
+            Bukkit.getScheduler().runTaskLater(plugin, () -> getPastResults((Player) click.getWhoClicked(), completedGame).show(click.getWhoClicked()), 2);
             return true;
         }, LotteryUtils.formatPlaceholders(player, instance.guiMainMenuCheckPastResults, instance)));
         gui.addElement(new DynamicGuiElement('c', viewer -> {
@@ -339,26 +341,14 @@ public class LotteryPluginGUI implements Listener {
             }
         }));
         gui.addElement(new DynamicGuiElement('d', viewer -> {
-            LotteryPlayer lotteryPlayer = instance.getPlayerPreferenceManager().getLotteryPlayer(player.getUniqueId());
-            Long money = lotteryPlayer.getStats(PlayerStatsKey.PENDING_TRANSACTION, long.class);
-            if (money != null && money > 0) {
-                return new StaticGuiElement('d', XMaterial.EMERALD.parseItem(), click -> {
-                    Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                        close(click.getWhoClicked(), click.getGui(), false);
-                        LotterySixPlugin.notifyPendingTransactions(lotteryPlayer);
-                    }, 1);
-                    return true;
-                }, LotteryUtils.formatPlaceholders(player, instance.guiMainMenuPendingTransactions, instance));
+            PlayableLotterySixGame currentGame = instance.getCurrentGame();
+            if (currentGame == null) {
+                return new StaticGuiElement('d', XMaterial.RED_WOOL.parseItem(), LotteryUtils.formatPlaceholders(player, instance.guiMainMenuNoLotteryGamesScheduled, instance));
             } else {
-                PlayableLotterySixGame currentGame = instance.getCurrentGame();
-                if (currentGame == null) {
-                    return new StaticGuiElement('d', XMaterial.RED_WOOL.parseItem(), LotteryUtils.formatPlaceholders(player, instance.guiMainMenuNoLotteryGamesScheduled, instance));
-                } else {
-                    return new StaticGuiElement('d', XMaterial.GOLD_INGOT.parseItem(), click -> {
-                        Bukkit.getScheduler().runTaskLater(plugin, () -> getBetTypeChooser((Player) click.getWhoClicked(), instance.getCurrentGame()).show(click.getWhoClicked()), 1);
-                        return true;
-                    }, LotteryUtils.formatPlaceholders(player, instance.guiMainMenuPlaceNewBets, instance, currentGame));
-                }
+                return new StaticGuiElement('d', XMaterial.GOLD_INGOT.parseItem(), click -> {
+                    Bukkit.getScheduler().runTaskLater(plugin, () -> getBetTypeChooser((Player) click.getWhoClicked(), instance.getCurrentGame()).show(click.getWhoClicked()), 1);
+                    return true;
+                }, LotteryUtils.formatPlaceholders(player, instance.guiMainMenuPlaceNewBets, instance, currentGame));
             }
         }));
         gui.addElement(new StaticGuiElement('e', XMaterial.OAK_SIGN.parseItem(), click -> {
@@ -376,6 +366,10 @@ public class LotteryPluginGUI implements Listener {
             Bukkit.getScheduler().runTaskLater(plugin, () -> getBettingAccount((Player) click.getWhoClicked()).show(click.getWhoClicked()), 1);
             return true;
         }, LotteryUtils.formatPlaceholders(player, instance.guiMainMenuBettingAccount, instance)));
+        gui.addElement(new StaticGuiElement('$', XMaterial.EMERALD.parseItem(), click -> {
+            Bukkit.getScheduler().runTaskLater(plugin, () -> getTransactionMenu((Player) click.getWhoClicked()).show(click.getWhoClicked()), 1);
+            return true;
+        }, LotteryUtils.formatPlaceholders(player, instance.guiMainMenuAccountFundTransfer, instance)));
         gui.setCloseAction(close -> false);
         Set<GuiElement> elements = Collections.singleton(gui.getElement('c'));
         new BukkitRunnable() {
@@ -399,7 +393,7 @@ public class LotteryPluginGUI implements Listener {
         String[] guiSetup = {
                 "         ",
                 "bzacadaea",
-                "azaaaaaaa",
+                "$zaaaaaaa",
                 "azaafagaa",
                 "         "
         };
@@ -409,7 +403,7 @@ public class LotteryPluginGUI implements Listener {
         gui.addElement(new StaticGuiElement('z', XMaterial.LIGHT_BLUE_STAINED_GLASS_PANE.parseItem(), ChatColor.LIGHT_PURPLE.toString()));
         gui.addElement(new StaticGuiElement('b', SkinUtils.getSkull(player.getUniqueId()), LotteryUtils.formatPlaceholders(player, instance.guiBettingAccountProfile, instance)));
 
-        LotteryPlayer lotteryPlayer = instance.getPlayerPreferenceManager().getLotteryPlayer(player.getUniqueId());
+        LotteryPlayer lotteryPlayer = instance.getLotteryPlayerManager().getLotteryPlayer(player.getUniqueId());
         gui.addElement(new DynamicGuiElement('c', () -> {
             boolean value = lotteryPlayer.getPreference(PlayerPreferenceKey.HIDE_TITLES, boolean.class);
             String display = value ? instance.trueFormat : instance.falseFormat;
@@ -544,6 +538,10 @@ public class LotteryPluginGUI implements Listener {
                 return true;
             }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiBettingAccountSuspendAccountForAWeek, instance)).map(s -> s.replace("{Value}", value)).toArray(String[]::new));
         }));
+        gui.addElement(new StaticGuiElement('$', XMaterial.EMERALD.parseItem(), click -> {
+            Bukkit.getScheduler().runTaskLater(plugin, () -> getTransactionMenu((Player) click.getWhoClicked()).show(click.getWhoClicked()), 1);
+            return true;
+        }, LotteryUtils.formatPlaceholders(player, instance.guiMainMenuAccountFundTransfer, instance)));
         gui.setSilent(true);
         new BukkitRunnable() {
             @Override
@@ -559,6 +557,199 @@ public class LotteryPluginGUI implements Listener {
             }
         }.runTaskTimer(plugin, 10, 10);
         return gui;
+    }
+
+    public InventoryGui getTransactionMenu(Player player) {
+        String[] guiSetup = {
+                "         ",
+                "bzaaacaaa",
+                "azaaaaaaa",
+                "azadaeafa",
+                "         "
+        };
+        InventoryGui gui = new InventoryGui(plugin, LotteryUtils.formatPlaceholders(player, instance.guiAccountFundTransferTitle, instance), guiSetup);
+        gui.setFiller(XMaterial.BLUE_STAINED_GLASS_PANE.parseItem());
+        gui.addElement(new StaticGuiElement('a', new ItemStack(Material.AIR), ChatColor.LIGHT_PURPLE.toString()));
+        gui.addElement(new StaticGuiElement('z', XMaterial.ORANGE_STAINED_GLASS_PANE.parseItem(), ChatColor.LIGHT_PURPLE.toString()));
+        gui.addElement(new StaticGuiElement('b', SkinUtils.getSkull(player.getUniqueId()), LotteryUtils.formatPlaceholders(player, instance.guiBettingAccountProfile, instance)));
+
+        LotteryPlayer lotteryPlayer = instance.getLotteryPlayerManager().getLotteryPlayer(player.getUniqueId());
+        long money = lotteryPlayer.getStats(PlayerStatsKey.ACCOUNT_BALANCE, long.class);
+        gui.addElement(new StaticGuiElement('c', XMaterial.GOLD_INGOT.parseItem(), Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiAccountFundTransferCurrentBalance, instance)).map(s -> s.replace("{Amount}", StringUtils.formatComma(money))).toArray(String[]::new)));
+
+        long time = lotteryPlayer.getPreference(PlayerPreferenceKey.SUSPEND_ACCOUNT_UNTIL, long.class);
+        if (System.currentTimeMillis() < time) {
+            gui.addElement(new StaticGuiElement('d', new ItemStack(Material.AIR), ChatColor.LIGHT_PURPLE.toString()));
+            gui.addElement(new StaticGuiElement('e', new ItemStack(Material.BARRIER), click -> {
+                player.sendMessage(instance.messageBettingAccountSuspended.replace("{Date}", instance.dateFormat.format(new Date(time))).replace("{Price}", "0"));
+                Bukkit.getScheduler().runTaskLater(plugin, () -> close(player, gui, false), 1);
+                return true;
+            }, ChatColor.RED + "-"));
+            gui.addElement(new StaticGuiElement('f', new ItemStack(Material.AIR), ChatColor.LIGHT_PURPLE.toString()));
+        } else {
+            gui.addElement(new StaticGuiElement(money > 0 ? 'd' : 'e', XMaterial.EMERALD.parseItem(), click -> {
+                Bukkit.getScheduler().runTaskLater(plugin, () -> close(player, gui, false), 1);
+                Bukkit.getScheduler().runTaskLater(plugin, () -> getTransactionInput(player, AccountTransactionMode.DEPOSIT).open(player), 2);
+                return true;
+            }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiAccountFundTransferDeposit, instance)).map(s -> s.replace("{Amount}", StringUtils.formatComma(money))).toArray(String[]::new)));
+            if (money > 0) {
+                gui.addElement(new StaticGuiElement('e', XMaterial.RED_DYE.parseItem(), click -> {
+                    Bukkit.getScheduler().runTaskLater(plugin, () -> close(player, gui, false), 1);
+                    Bukkit.getScheduler().runTaskLater(plugin, () -> getTransactionInput(player, AccountTransactionMode.WITHDRAW).open(player), 2);
+                    return true;
+                }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiAccountFundTransferWithdraw, instance)).map(s -> s.replace("{Amount}", StringUtils.formatComma(money))).toArray(String[]::new)));
+                gui.addElement(new StaticGuiElement('f', setEnchanted(XMaterial.RED_DYE.parseItem()), click -> {
+                    Bukkit.getScheduler().runTaskLater(plugin, () -> close(player, gui, false), 1);
+                    Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+                        long total = lotteryPlayer.getStats(PlayerStatsKey.ACCOUNT_BALANCE, long.class);
+                        if (instance.giveMoney(player.getUniqueId(), total)) {
+                            if (instance.backendBungeecordMode) {
+                                long current = lotteryPlayer.getStats(PlayerStatsKey.ACCOUNT_BALANCE, long.class);
+                                LotterySixPlugin.getPluginMessageHandler().updatePlayerStats(lotteryPlayer, PlayerStatsKey.ACCOUNT_BALANCE, current - total);
+                            } else {
+                                lotteryPlayer.updateStats(PlayerStatsKey.ACCOUNT_BALANCE, long.class, i -> i - total);
+                            }
+                            player.sendMessage(instance.messageWithdrawSuccess.replace("{Amount}", StringUtils.formatComma(total)));
+                            Bukkit.getScheduler().runTaskLater(plugin, () -> checkReopen(player), 5);
+                        } else {
+                            player.sendMessage(instance.messageWithdrawFailed);
+                        }
+                    });
+                    return true;
+                }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiAccountFundTransferWithdrawAll, instance)).map(s -> s.replace("{Amount}", StringUtils.formatComma(money))).toArray(String[]::new)));
+            } else {
+                gui.addElement(new StaticGuiElement('d', new ItemStack(Material.AIR), ChatColor.LIGHT_PURPLE.toString()));
+                gui.addElement(new StaticGuiElement('f', new ItemStack(Material.AIR), ChatColor.LIGHT_PURPLE.toString()));
+            }
+        }
+
+        gui.setSilent(true);
+        return gui;
+    }
+
+    public AnvilGUI.Builder getTransactionInput(Player player, AccountTransactionMode transactionMode) {
+        ItemStack left = XMaterial.GOLD_INGOT.parseItem();
+        ItemMeta leftMeta = left.getItemMeta();
+        leftMeta.setDisplayName("0");
+        left.setItemMeta(leftMeta);
+        return new AnvilGUI.Builder().plugin(plugin)
+                .title(LotteryUtils.formatPlaceholders(player, transactionMode.equals(AccountTransactionMode.WITHDRAW) ? instance.guiAccountFundTransferWithdrawInputTitle : instance.guiAccountFundTransferDepositInputTitle, instance))
+                .itemLeft(left)
+                .onComplete(completion -> {
+                    Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+                        String input = completion.getText().trim();
+                        try {
+                            long amount = Long.parseLong(input);
+                            Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+                                if (amount <= 0) {
+                                    player.sendMessage(instance.messageInvalidNumber);
+                                } else {
+                                    LotteryPlayer lotteryPlayer = instance.getLotteryPlayerManager().getLotteryPlayer(player.getUniqueId());
+                                    long money = lotteryPlayer.getStats(PlayerStatsKey.ACCOUNT_BALANCE, long.class);
+                                    if (transactionMode.equals(AccountTransactionMode.WITHDRAW)) {
+                                        if (money < amount) {
+                                            player.sendMessage(instance.messageNotEnoughMoney.replace("{Price}", StringUtils.formatComma(amount)));
+                                        } else if (instance.giveMoney(player.getUniqueId(), amount)) {
+                                            if (instance.backendBungeecordMode) {
+                                                long current = lotteryPlayer.getStats(PlayerStatsKey.ACCOUNT_BALANCE, long.class);
+                                                LotterySixPlugin.getPluginMessageHandler().updatePlayerStats(lotteryPlayer, PlayerStatsKey.ACCOUNT_BALANCE, current - amount);
+                                            } else {
+                                                lotteryPlayer.updateStats(PlayerStatsKey.ACCOUNT_BALANCE, long.class, i -> i - amount);
+                                            }
+                                            player.sendMessage(instance.messageWithdrawSuccess.replace("{Amount}", StringUtils.formatComma(amount)));
+                                            Bukkit.getScheduler().runTaskLater(plugin, () -> checkReopen(player), 5);
+                                        } else {
+                                            player.sendMessage(instance.messageWithdrawFailed);
+                                        }
+                                    } else {
+                                        if (instance.takeMoney(player.getUniqueId(), amount)) {
+                                            if (instance.backendBungeecordMode) {
+                                                long current = lotteryPlayer.getStats(PlayerStatsKey.ACCOUNT_BALANCE, long.class);
+                                                LotterySixPlugin.getPluginMessageHandler().updatePlayerStats(lotteryPlayer, PlayerStatsKey.ACCOUNT_BALANCE, current + amount);
+                                            } else {
+                                                lotteryPlayer.updateStats(PlayerStatsKey.ACCOUNT_BALANCE, long.class, i -> i + amount);
+                                            }
+                                            player.sendMessage(instance.messageDepositSuccess.replace("{Amount}", StringUtils.formatComma(amount)));
+                                            Bukkit.getScheduler().runTaskLater(plugin, () -> checkReopen(player), 5);
+                                        } else {
+                                            player.sendMessage(instance.messageNotEnoughMoney.replace("{Price}", StringUtils.formatComma(amount)));
+                                        }
+                                    }
+                                }
+                            });
+                        } catch (NumberFormatException e) {
+                            player.sendMessage(instance.messageInvalidNumber);
+                        }
+                    });
+                    return Collections.singletonList(AnvilGUI.ResponseAction.close());
+                });
+    }
+
+    public void checkFixedTransactionDeposit(Player player, long amount, Runnable onSuccess) {
+        LotteryPlayer lotteryPlayer = instance.getLotteryPlayerManager().getLotteryPlayer(player.getUniqueId());
+        long time = lotteryPlayer.getPreference(PlayerPreferenceKey.SUSPEND_ACCOUNT_UNTIL, long.class);
+        if (System.currentTimeMillis() < time) {
+            player.sendMessage(instance.messageBettingAccountSuspended.replace("{Date}", instance.dateFormat.format(new Date(time))).replace("{Price}", StringUtils.formatComma(amount)));
+            InventoryGui gui = InventoryGui.getOpen(player);
+            if (gui != null) {
+                Bukkit.getScheduler().runTaskLater(plugin, () -> close(player, gui, false), 1);
+            }
+            return;
+        }
+        long money = lotteryPlayer.getStats(PlayerStatsKey.ACCOUNT_BALANCE, long.class);
+        if (amount > money) {
+            long amountNeeded = amount - money;
+            String[] guiSetup = {
+                    "         ",
+                    " aaaaaaa ",
+                    " aabacaa ",
+                    " aaaaaaa ",
+                    "         "
+            };
+            InventoryGui gui = new InventoryGui(plugin, LotteryUtils.formatPlaceholders(player, instance.guiAccountFundTransferPlacingBetTitle, instance), guiSetup);
+            gui.setFiller(XMaterial.RED_STAINED_GLASS_PANE.parseItem());
+            gui.addElement(new StaticGuiElement('a', new ItemStack(Material.AIR), ChatColor.LIGHT_PURPLE.toString()));
+            gui.addElement(new StaticGuiElement('b', XMaterial.EMERALD.parseItem(), click -> {
+                Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+                    if (instance.takeMoney(player.getUniqueId(), amountNeeded)) {
+                        if (instance.backendBungeecordMode) {
+                            long current = lotteryPlayer.getStats(PlayerStatsKey.ACCOUNT_BALANCE, long.class);
+                            LotterySixPlugin.getPluginMessageHandler().updatePlayerStats(lotteryPlayer, PlayerStatsKey.ACCOUNT_BALANCE, current + amountNeeded);
+                        } else {
+                            lotteryPlayer.updateStats(PlayerStatsKey.ACCOUNT_BALANCE, long.class, i -> i + amountNeeded);
+                        }
+                        player.sendMessage(instance.messageDepositSuccess.replace("{Amount}", StringUtils.formatComma(amount)));
+                        new BukkitRunnable() {
+                            private int counter = 0;
+                            @Override
+                            public void run() {
+                                long current = lotteryPlayer.getStats(PlayerStatsKey.ACCOUNT_BALANCE, long.class);
+                                if (amount <= current) {
+                                    cancel();
+                                    onSuccess.run();
+                                }
+                                if (counter++ > 40) {
+                                    cancel();
+                                }
+                            }
+                        }.runTaskTimer(plugin, 2, 1);
+                    } else {
+                        player.sendMessage(instance.messageNotEnoughMoney.replace("{Price}", StringUtils.formatComma(amountNeeded)));
+                    }
+                    Bukkit.getScheduler().runTaskLater(plugin, () -> close(player, gui, false), 1);
+                });
+                return true;
+            }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiAccountFundTransferPlacingBetConfirm, instance)).map(s -> s
+                    .replace("{Amount}", StringUtils.formatComma(amountNeeded))).toArray(String[]::new)));
+            gui.addElement(new StaticGuiElement('c', XMaterial.BARRIER.parseItem(), click -> {
+                Bukkit.getScheduler().runTaskLater(plugin, () -> close(player, gui, false), 1);
+                Bukkit.getScheduler().runTaskLater(plugin, () -> checkReopen(player), 5);
+                return true;
+            }, LotteryUtils.formatPlaceholders(player, instance.guiAccountFundTransferPlacingBetCancel, instance)));
+            gui.show(player);
+        } else {
+            onSuccess.run();
+        }
     }
 
     public ItemStack getPlacedBets(Player player) {
@@ -1026,6 +1217,26 @@ public class LotteryPluginGUI implements Listener {
         return gui;
     }
 
+    public InventoryGui getNumberConfirm(Player player, PlayableLotterySixGame game, Collection<BetNumbers> betNumbers, BetNumbersType type) {
+        if (betNumbers.isEmpty()) {
+            throw new IllegalArgumentException("betNumbers cannot be empty");
+        }
+        switch (type) {
+            case SINGLE:
+                return getSingleNumberConfirm(player, game, betNumbers.iterator().next());
+            case MULTIPLE:
+            case BANKER:
+                return getComplexNumberConfirm(player, game, betNumbers.iterator().next());
+            case RANDOM:
+                return getSingleBulkNumberConfirm(player, game, betNumbers);
+            case MULTIPLE_RANDOM:
+            case BANKER_RANDOM:
+                return getComplexBulkNumberConfirm(player, game, betNumbers);
+            default:
+                throw new IllegalArgumentException("Unknown BetNumbersType \"" + type + "\"");
+        }
+    }
+
     public InventoryGui getSingleNumberConfirm(Player player, PlayableLotterySixGame game, BetNumbers betNumbers) {
         String[] guiSetup = {
                 "         ",
@@ -1043,48 +1254,50 @@ public class LotteryPluginGUI implements Listener {
         gui.addElement(new StaticGuiElement('g', XMaterial.DIAMOND.parseItem(), Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetLotteryInfo, instance, game))
                 .map(each -> each.replace("{Price}", StringUtils.formatComma(price))).toArray(String[]::new)));
         gui.addElement(new StaticGuiElement('h', XMaterial.GOLD_INGOT.parseItem(), click -> {
-            if (game != null && game.isValid()) {
-                if (instance.backendBungeecordMode) {
-                    LotterySixPlugin.getPluginMessageHandler().requestAddBet(player.getName(), player.getUniqueId(), instance.pricePerBet, BetUnitType.FULL, betNumbers);
-                } else {
-                    AddBetResult result = game.addBet(player.getName(), player.getUniqueId(), instance.pricePerBet, BetUnitType.FULL, betNumbers);
-                    switch (result) {
-                        case SUCCESS: {
-                            player.sendMessage(instance.messageBetPlaced.replace("{Price}", StringUtils.formatComma(price)));
-                            break;
+            checkFixedTransactionDeposit(player, price, () -> {
+                if (game != null && game.isValid()) {
+                    if (instance.backendBungeecordMode) {
+                        LotterySixPlugin.getPluginMessageHandler().requestAddBet(player.getName(), player.getUniqueId(), instance.pricePerBet, BetUnitType.FULL, betNumbers);
+                    } else {
+                        AddBetResult result = game.addBet(player.getName(), player.getUniqueId(), instance.pricePerBet, BetUnitType.FULL, betNumbers);
+                        switch (result) {
+                            case SUCCESS: {
+                                player.sendMessage(instance.messageBetPlaced.replace("{Price}", StringUtils.formatComma(price)));
+                                break;
+                            }
+                            case GAME_LOCKED: {
+                                player.sendMessage(instance.messageGameLocked.replace("{Price}", StringUtils.formatComma(price)));
+                                break;
+                            }
+                            case NOT_ENOUGH_MONEY: {
+                                player.sendMessage(instance.messageNotEnoughMoney.replace("{Price}", StringUtils.formatComma(price)));
+                                break;
+                            }
+                            case LIMIT_SELF: {
+                                player.sendMessage(instance.messageBetLimitReachedSelf.replace("{Price}", StringUtils.formatComma(price)));
+                                break;
+                            }
+                            case LIMIT_PERMISSION: {
+                                player.sendMessage(instance.messageBetLimitReachedPermission.replace("{Price}", StringUtils.formatComma(price)));
+                                break;
+                            }
+                            case LIMIT_CHANCE_PER_SELECTION: {
+                                player.sendMessage(instance.messageBetLimitMaximumChancePerSelection.replace("{Price}", StringUtils.formatComma(price)));
+                                break;
+                            }
+                            case ACCOUNT_SUSPENDED: {
+                                long time = instance.getLotteryPlayerManager().getLotteryPlayer(player.getUniqueId()).getPreference(PlayerPreferenceKey.SUSPEND_ACCOUNT_UNTIL, long.class);
+                                player.sendMessage(instance.messageBettingAccountSuspended.replace("{Date}", instance.dateFormat.format(new Date(time))).replace("{Price}", StringUtils.formatComma(price)));
+                                break;
+                            }
                         }
-                        case GAME_LOCKED: {
-                            player.sendMessage(instance.messageGameLocked.replace("{Price}", StringUtils.formatComma(price)));
-                            break;
-                        }
-                        case NOT_ENOUGH_MONEY: {
-                            player.sendMessage(instance.messageNotEnoughMoney.replace("{Price}", StringUtils.formatComma(price)));
-                            break;
-                        }
-                        case LIMIT_SELF: {
-                            player.sendMessage(instance.messageBetLimitReachedSelf.replace("{Price}", StringUtils.formatComma(price)));
-                            break;
-                        }
-                        case LIMIT_PERMISSION: {
-                            player.sendMessage(instance.messageBetLimitReachedPermission.replace("{Price}", StringUtils.formatComma(price)));
-                            break;
-                        }
-                        case LIMIT_CHANCE_PER_SELECTION: {
-                            player.sendMessage(instance.messageBetLimitMaximumChancePerSelection.replace("{Price}", StringUtils.formatComma(price)));
-                            break;
-                        }
-                        case ACCOUNT_SUSPENDED: {
-                            long time = instance.getPlayerPreferenceManager().getLotteryPlayer(player.getUniqueId()).getPreference(PlayerPreferenceKey.SUSPEND_ACCOUNT_UNTIL, long.class);
-                            player.sendMessage(instance.messageBettingAccountSuspended.replace("{Date}", instance.dateFormat.format(new Date(time))).replace("{Price}", StringUtils.formatComma(price)));
-                            break;
+                        if (result.isSuccess()) {
+                            Bukkit.getScheduler().runTaskLater(plugin, () -> checkReopen(click.getWhoClicked()), 5);
                         }
                     }
-                    if (result.isSuccess()) {
-                        Bukkit.getScheduler().runTaskLater(plugin, () -> checkReopen(click.getWhoClicked()), 5);
-                    }
+                    Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
                 }
-                Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
-            }
+            });
             return true;
         }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetUnitInvestmentConfirm, instance, game))
                 .map(each -> each.replace("{Price}", StringUtils.formatComma(price))).toArray(String[]::new)));
@@ -1113,94 +1326,98 @@ public class LotteryPluginGUI implements Listener {
         gui.addElement(new StaticGuiElement('g', XMaterial.DIAMOND.parseItem(), Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetLotteryInfo, instance, game))
                 .map(each -> each.replace("{Price}", StringUtils.formatComma(price)).replace("{PricePartial}", StringUtils.formatComma(partial))).toArray(String[]::new)));
         gui.addElement(new StaticGuiElement('h', XMaterial.GOLD_NUGGET.parseItem(), click -> {
-            if (game != null && game.isValid()) {
-                if (instance.backendBungeecordMode) {
-                    LotterySixPlugin.getPluginMessageHandler().requestAddBet(player.getName(), player.getUniqueId(), partial, BetUnitType.PARTIAL, betNumbers);
-                } else {
-                    AddBetResult result = game.addBet(player.getName(), player.getUniqueId(), partial, BetUnitType.PARTIAL, betNumbers);
-                    switch (result) {
-                        case SUCCESS: {
-                            player.sendMessage(instance.messageBetPlaced.replace("{Price}", StringUtils.formatComma(partial)));
-                            break;
+            checkFixedTransactionDeposit(player, partial, () -> {
+                if (game != null && game.isValid()) {
+                    if (instance.backendBungeecordMode) {
+                        LotterySixPlugin.getPluginMessageHandler().requestAddBet(player.getName(), player.getUniqueId(), partial, BetUnitType.PARTIAL, betNumbers);
+                    } else {
+                        AddBetResult result = game.addBet(player.getName(), player.getUniqueId(), partial, BetUnitType.PARTIAL, betNumbers);
+                        switch (result) {
+                            case SUCCESS: {
+                                player.sendMessage(instance.messageBetPlaced.replace("{Price}", StringUtils.formatComma(partial)));
+                                break;
+                            }
+                            case GAME_LOCKED: {
+                                player.sendMessage(instance.messageGameLocked.replace("{Price}", StringUtils.formatComma(partial)));
+                                break;
+                            }
+                            case NOT_ENOUGH_MONEY: {
+                                player.sendMessage(instance.messageNotEnoughMoney.replace("{Price}", StringUtils.formatComma(partial)));
+                                break;
+                            }
+                            case LIMIT_SELF: {
+                                player.sendMessage(instance.messageBetLimitReachedSelf.replace("{Price}", StringUtils.formatComma(partial)));
+                                break;
+                            }
+                            case LIMIT_PERMISSION: {
+                                player.sendMessage(instance.messageBetLimitReachedPermission.replace("{Price}", StringUtils.formatComma(partial)));
+                                break;
+                            }
+                            case LIMIT_CHANCE_PER_SELECTION: {
+                                player.sendMessage(instance.messageBetLimitMaximumChancePerSelection.replace("{Price}", StringUtils.formatComma(partial)));
+                                break;
+                            }
+                            case ACCOUNT_SUSPENDED: {
+                                long time = instance.getLotteryPlayerManager().getLotteryPlayer(player.getUniqueId()).getPreference(PlayerPreferenceKey.SUSPEND_ACCOUNT_UNTIL, long.class);
+                                player.sendMessage(instance.messageBettingAccountSuspended.replace("{Date}", instance.dateFormat.format(new Date(time))).replace("{Price}", StringUtils.formatComma(partial)));
+                                break;
+                            }
                         }
-                        case GAME_LOCKED: {
-                            player.sendMessage(instance.messageGameLocked.replace("{Price}", StringUtils.formatComma(partial)));
-                            break;
-                        }
-                        case NOT_ENOUGH_MONEY: {
-                            player.sendMessage(instance.messageNotEnoughMoney.replace("{Price}", StringUtils.formatComma(partial)));
-                            break;
-                        }
-                        case LIMIT_SELF: {
-                            player.sendMessage(instance.messageBetLimitReachedSelf.replace("{Price}", StringUtils.formatComma(partial)));
-                            break;
-                        }
-                        case LIMIT_PERMISSION: {
-                            player.sendMessage(instance.messageBetLimitReachedPermission.replace("{Price}", StringUtils.formatComma(partial)));
-                            break;
-                        }
-                        case LIMIT_CHANCE_PER_SELECTION: {
-                            player.sendMessage(instance.messageBetLimitMaximumChancePerSelection.replace("{Price}", StringUtils.formatComma(partial)));
-                            break;
-                        }
-                        case ACCOUNT_SUSPENDED: {
-                            long time = instance.getPlayerPreferenceManager().getLotteryPlayer(player.getUniqueId()).getPreference(PlayerPreferenceKey.SUSPEND_ACCOUNT_UNTIL, long.class);
-                            player.sendMessage(instance.messageBettingAccountSuspended.replace("{Date}", instance.dateFormat.format(new Date(time))).replace("{Price}", StringUtils.formatComma(partial)));
-                            break;
+                        if (result.isSuccess()) {
+                            Bukkit.getScheduler().runTaskLater(plugin, () -> checkReopen(click.getWhoClicked()), 5);
                         }
                     }
-                    if (result.isSuccess()) {
-                        Bukkit.getScheduler().runTaskLater(plugin, () -> checkReopen(click.getWhoClicked()), 5);
-                    }
+                    Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
                 }
-                Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
-            }
+            });
             return true;
         }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetPartialInvestmentConfirm, instance, game))
                 .map(each -> each.replace("{Price}", StringUtils.formatComma(price)).replace("{PricePartial}", StringUtils.formatComma(partial))).toArray(String[]::new)));
         gui.addElement(new StaticGuiElement('i', XMaterial.GOLD_INGOT.parseItem(), click -> {
-            if (game != null && game.isValid()) {
-                if (instance.backendBungeecordMode) {
-                    LotterySixPlugin.getPluginMessageHandler().requestAddBet(player.getName(), player.getUniqueId(), price, BetUnitType.FULL, betNumbers);
-                } else {
-                    AddBetResult result = game.addBet(player.getName(), player.getUniqueId(), price, BetUnitType.FULL, betNumbers);
-                    switch (result) {
-                        case SUCCESS: {
-                            player.sendMessage(instance.messageBetPlaced.replace("{Price}", StringUtils.formatComma(price)));
-                            break;
+            checkFixedTransactionDeposit(player, price, () -> {
+                if (game != null && game.isValid()) {
+                    if (instance.backendBungeecordMode) {
+                        LotterySixPlugin.getPluginMessageHandler().requestAddBet(player.getName(), player.getUniqueId(), price, BetUnitType.FULL, betNumbers);
+                    } else {
+                        AddBetResult result = game.addBet(player.getName(), player.getUniqueId(), price, BetUnitType.FULL, betNumbers);
+                        switch (result) {
+                            case SUCCESS: {
+                                player.sendMessage(instance.messageBetPlaced.replace("{Price}", StringUtils.formatComma(price)));
+                                break;
+                            }
+                            case GAME_LOCKED: {
+                                player.sendMessage(instance.messageGameLocked.replace("{Price}", StringUtils.formatComma(price)));
+                                break;
+                            }
+                            case NOT_ENOUGH_MONEY: {
+                                player.sendMessage(instance.messageNotEnoughMoney.replace("{Price}", StringUtils.formatComma(price)));
+                                break;
+                            }
+                            case LIMIT_SELF: {
+                                player.sendMessage(instance.messageBetLimitReachedSelf.replace("{Price}", StringUtils.formatComma(price)));
+                                break;
+                            }
+                            case LIMIT_PERMISSION: {
+                                player.sendMessage(instance.messageBetLimitReachedPermission.replace("{Price}", StringUtils.formatComma(price)));
+                                break;
+                            }
+                            case LIMIT_CHANCE_PER_SELECTION: {
+                                player.sendMessage(instance.messageBetLimitMaximumChancePerSelection.replace("{Price}", StringUtils.formatComma(price)));
+                                break;
+                            }
+                            case ACCOUNT_SUSPENDED: {
+                                long time = instance.getLotteryPlayerManager().getLotteryPlayer(player.getUniqueId()).getPreference(PlayerPreferenceKey.SUSPEND_ACCOUNT_UNTIL, long.class);
+                                player.sendMessage(instance.messageBettingAccountSuspended.replace("{Date}", instance.dateFormat.format(new Date(time))).replace("{Price}", StringUtils.formatComma(price)));
+                                break;
+                            }
                         }
-                        case GAME_LOCKED: {
-                            player.sendMessage(instance.messageGameLocked.replace("{Price}", StringUtils.formatComma(price)));
-                            break;
-                        }
-                        case NOT_ENOUGH_MONEY: {
-                            player.sendMessage(instance.messageNotEnoughMoney.replace("{Price}", StringUtils.formatComma(price)));
-                            break;
-                        }
-                        case LIMIT_SELF: {
-                            player.sendMessage(instance.messageBetLimitReachedSelf.replace("{Price}", StringUtils.formatComma(price)));
-                            break;
-                        }
-                        case LIMIT_PERMISSION: {
-                            player.sendMessage(instance.messageBetLimitReachedPermission.replace("{Price}", StringUtils.formatComma(price)));
-                            break;
-                        }
-                        case LIMIT_CHANCE_PER_SELECTION: {
-                            player.sendMessage(instance.messageBetLimitMaximumChancePerSelection.replace("{Price}", StringUtils.formatComma(price)));
-                            break;
-                        }
-                        case ACCOUNT_SUSPENDED: {
-                            long time = instance.getPlayerPreferenceManager().getLotteryPlayer(player.getUniqueId()).getPreference(PlayerPreferenceKey.SUSPEND_ACCOUNT_UNTIL, long.class);
-                            player.sendMessage(instance.messageBettingAccountSuspended.replace("{Date}", instance.dateFormat.format(new Date(time))).replace("{Price}", StringUtils.formatComma(price)));
-                            break;
+                        if (result.isSuccess()) {
+                            Bukkit.getScheduler().runTaskLater(plugin, () -> checkReopen(click.getWhoClicked()), 5);
                         }
                     }
-                    if (result.isSuccess()) {
-                        Bukkit.getScheduler().runTaskLater(plugin, () -> checkReopen(click.getWhoClicked()), 5);
-                    }
+                    Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
                 }
-                Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
-            }
+            });
             return true;
         }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetUnitInvestmentConfirm, instance, game))
                 .map(each -> each.replace("{Price}", StringUtils.formatComma(price)).replace("{PricePartial}", StringUtils.formatComma(partial))).toArray(String[]::new)));
@@ -1229,48 +1446,50 @@ public class LotteryPluginGUI implements Listener {
         gui.addElement(new StaticGuiElement('g', XMaterial.DIAMOND.parseItem(), Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetLotteryInfo, instance, game))
                 .map(each -> each.replace("{Price}", StringUtils.formatComma(price))).toArray(String[]::new)));
         gui.addElement(new StaticGuiElement('h', XMaterial.GOLD_INGOT.parseItem(), click -> {
-            if (game != null && game.isValid()) {
-                if (instance.backendBungeecordMode) {
-                    LotterySixPlugin.getPluginMessageHandler().requestAddBet(player.getName(), player.getUniqueId(), price / betNumbers.size(), BetUnitType.FULL, betNumbers);
-                } else {
-                    AddBetResult result = game.addBet(player.getName(), player.getUniqueId(), price / betNumbers.size(), BetUnitType.FULL, betNumbers);
-                    switch (result) {
-                        case SUCCESS: {
-                            player.sendMessage(instance.messageBetPlaced.replace("{Price}", StringUtils.formatComma(price)));
-                            break;
+            checkFixedTransactionDeposit(player, price, () -> {
+                if (game != null && game.isValid()) {
+                    if (instance.backendBungeecordMode) {
+                        LotterySixPlugin.getPluginMessageHandler().requestAddBet(player.getName(), player.getUniqueId(), price / betNumbers.size(), BetUnitType.FULL, betNumbers);
+                    } else {
+                        AddBetResult result = game.addBet(player.getName(), player.getUniqueId(), price / betNumbers.size(), BetUnitType.FULL, betNumbers);
+                        switch (result) {
+                            case SUCCESS: {
+                                player.sendMessage(instance.messageBetPlaced.replace("{Price}", StringUtils.formatComma(price)));
+                                break;
+                            }
+                            case GAME_LOCKED: {
+                                player.sendMessage(instance.messageGameLocked.replace("{Price}", StringUtils.formatComma(price)));
+                                break;
+                            }
+                            case NOT_ENOUGH_MONEY: {
+                                player.sendMessage(instance.messageNotEnoughMoney.replace("{Price}", StringUtils.formatComma(price)));
+                                break;
+                            }
+                            case LIMIT_SELF: {
+                                player.sendMessage(instance.messageBetLimitReachedSelf.replace("{Price}", StringUtils.formatComma(price)));
+                                break;
+                            }
+                            case LIMIT_PERMISSION: {
+                                player.sendMessage(instance.messageBetLimitReachedPermission.replace("{Price}", StringUtils.formatComma(price)));
+                                break;
+                            }
+                            case LIMIT_CHANCE_PER_SELECTION: {
+                                player.sendMessage(instance.messageBetLimitMaximumChancePerSelection.replace("{Price}", StringUtils.formatComma(price)));
+                                break;
+                            }
+                            case ACCOUNT_SUSPENDED: {
+                                long time = instance.getLotteryPlayerManager().getLotteryPlayer(player.getUniqueId()).getPreference(PlayerPreferenceKey.SUSPEND_ACCOUNT_UNTIL, long.class);
+                                player.sendMessage(instance.messageBettingAccountSuspended.replace("{Date}", instance.dateFormat.format(new Date(time))).replace("{Price}", StringUtils.formatComma(price)));
+                                break;
+                            }
                         }
-                        case GAME_LOCKED: {
-                            player.sendMessage(instance.messageGameLocked.replace("{Price}", StringUtils.formatComma(price)));
-                            break;
-                        }
-                        case NOT_ENOUGH_MONEY: {
-                            player.sendMessage(instance.messageNotEnoughMoney.replace("{Price}", StringUtils.formatComma(price)));
-                            break;
-                        }
-                        case LIMIT_SELF: {
-                            player.sendMessage(instance.messageBetLimitReachedSelf.replace("{Price}", StringUtils.formatComma(price)));
-                            break;
-                        }
-                        case LIMIT_PERMISSION: {
-                            player.sendMessage(instance.messageBetLimitReachedPermission.replace("{Price}", StringUtils.formatComma(price)));
-                            break;
-                        }
-                        case LIMIT_CHANCE_PER_SELECTION: {
-                            player.sendMessage(instance.messageBetLimitMaximumChancePerSelection.replace("{Price}", StringUtils.formatComma(price)));
-                            break;
-                        }
-                        case ACCOUNT_SUSPENDED: {
-                            long time = instance.getPlayerPreferenceManager().getLotteryPlayer(player.getUniqueId()).getPreference(PlayerPreferenceKey.SUSPEND_ACCOUNT_UNTIL, long.class);
-                            player.sendMessage(instance.messageBettingAccountSuspended.replace("{Date}", instance.dateFormat.format(new Date(time))).replace("{Price}", StringUtils.formatComma(price)));
-                            break;
+                        if (result.isSuccess()) {
+                            Bukkit.getScheduler().runTaskLater(plugin, () -> checkReopen(click.getWhoClicked()), 5);
                         }
                     }
-                    if (result.isSuccess()) {
-                        Bukkit.getScheduler().runTaskLater(plugin, () -> checkReopen(click.getWhoClicked()), 5);
-                    }
+                    Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
                 }
-                Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
-            }
+            });
             return true;
         }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetUnitInvestmentConfirm, instance, game))
                 .map(each -> each.replace("{Price}", StringUtils.formatComma(price))).toArray(String[]::new)));
@@ -1300,94 +1519,98 @@ public class LotteryPluginGUI implements Listener {
         gui.addElement(new StaticGuiElement('g', XMaterial.DIAMOND.parseItem(), Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetLotteryInfo, instance, game))
                 .map(each -> each.replace("{Price}", StringUtils.formatComma(price))).toArray(String[]::new)));
         gui.addElement(new StaticGuiElement('h', XMaterial.GOLD_NUGGET.parseItem(), click -> {
-            if (game != null && game.isValid()) {
-                if (instance.backendBungeecordMode) {
-                    LotterySixPlugin.getPluginMessageHandler().requestAddBet(player.getName(), player.getUniqueId(), partial / betNumbers.size(), BetUnitType.PARTIAL, betNumbers);
-                } else {
-                    AddBetResult result = game.addBet(player.getName(), player.getUniqueId(), partial / betNumbers.size(), BetUnitType.PARTIAL, betNumbers);
-                    switch (result) {
-                        case SUCCESS: {
-                            player.sendMessage(instance.messageBetPlaced.replace("{Price}", StringUtils.formatComma(partial)));
-                            break;
+            checkFixedTransactionDeposit(player, partial, () -> {
+                if (game != null && game.isValid()) {
+                    if (instance.backendBungeecordMode) {
+                        LotterySixPlugin.getPluginMessageHandler().requestAddBet(player.getName(), player.getUniqueId(), partial / betNumbers.size(), BetUnitType.PARTIAL, betNumbers);
+                    } else {
+                        AddBetResult result = game.addBet(player.getName(), player.getUniqueId(), partial / betNumbers.size(), BetUnitType.PARTIAL, betNumbers);
+                        switch (result) {
+                            case SUCCESS: {
+                                player.sendMessage(instance.messageBetPlaced.replace("{Price}", StringUtils.formatComma(partial)));
+                                break;
+                            }
+                            case GAME_LOCKED: {
+                                player.sendMessage(instance.messageGameLocked.replace("{Price}", StringUtils.formatComma(partial)));
+                                break;
+                            }
+                            case NOT_ENOUGH_MONEY: {
+                                player.sendMessage(instance.messageNotEnoughMoney.replace("{Price}", StringUtils.formatComma(partial)));
+                                break;
+                            }
+                            case LIMIT_SELF: {
+                                player.sendMessage(instance.messageBetLimitReachedSelf.replace("{Price}", StringUtils.formatComma(partial)));
+                                break;
+                            }
+                            case LIMIT_PERMISSION: {
+                                player.sendMessage(instance.messageBetLimitReachedPermission.replace("{Price}", StringUtils.formatComma(partial)));
+                                break;
+                            }
+                            case LIMIT_CHANCE_PER_SELECTION: {
+                                player.sendMessage(instance.messageBetLimitMaximumChancePerSelection.replace("{Price}", StringUtils.formatComma(partial)));
+                                break;
+                            }
+                            case ACCOUNT_SUSPENDED: {
+                                long time = instance.getLotteryPlayerManager().getLotteryPlayer(player.getUniqueId()).getPreference(PlayerPreferenceKey.SUSPEND_ACCOUNT_UNTIL, long.class);
+                                player.sendMessage(instance.messageBettingAccountSuspended.replace("{Date}", instance.dateFormat.format(new Date(time))).replace("{Price}", StringUtils.formatComma(partial)));
+                                break;
+                            }
                         }
-                        case GAME_LOCKED: {
-                            player.sendMessage(instance.messageGameLocked.replace("{Price}", StringUtils.formatComma(partial)));
-                            break;
-                        }
-                        case NOT_ENOUGH_MONEY: {
-                            player.sendMessage(instance.messageNotEnoughMoney.replace("{Price}", StringUtils.formatComma(partial)));
-                            break;
-                        }
-                        case LIMIT_SELF: {
-                            player.sendMessage(instance.messageBetLimitReachedSelf.replace("{Price}", StringUtils.formatComma(partial)));
-                            break;
-                        }
-                        case LIMIT_PERMISSION: {
-                            player.sendMessage(instance.messageBetLimitReachedPermission.replace("{Price}", StringUtils.formatComma(partial)));
-                            break;
-                        }
-                        case LIMIT_CHANCE_PER_SELECTION: {
-                            player.sendMessage(instance.messageBetLimitMaximumChancePerSelection.replace("{Price}", StringUtils.formatComma(partial)));
-                            break;
-                        }
-                        case ACCOUNT_SUSPENDED: {
-                            long time = instance.getPlayerPreferenceManager().getLotteryPlayer(player.getUniqueId()).getPreference(PlayerPreferenceKey.SUSPEND_ACCOUNT_UNTIL, long.class);
-                            player.sendMessage(instance.messageBettingAccountSuspended.replace("{Date}", instance.dateFormat.format(new Date(time))).replace("{Price}", StringUtils.formatComma(partial)));
-                            break;
+                        if (result.isSuccess()) {
+                            Bukkit.getScheduler().runTaskLater(plugin, () -> checkReopen(click.getWhoClicked()), 5);
                         }
                     }
-                    if (result.isSuccess()) {
-                        Bukkit.getScheduler().runTaskLater(plugin, () -> checkReopen(click.getWhoClicked()), 5);
-                    }
+                    Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
                 }
-                Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
-            }
+            });
             return true;
         }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetPartialInvestmentConfirm, instance, game))
                 .map(each -> each.replace("{Price}", StringUtils.formatComma(price)).replace("{PricePartial}", StringUtils.formatComma(partial))).toArray(String[]::new)));
         gui.addElement(new StaticGuiElement('i', XMaterial.GOLD_INGOT.parseItem(), click -> {
-            if (game != null && game.isValid()) {
-                if (instance.backendBungeecordMode) {
-                    LotterySixPlugin.getPluginMessageHandler().requestAddBet(player.getName(), player.getUniqueId(), price / betNumbers.size(), BetUnitType.FULL, betNumbers);
-                } else {
-                    AddBetResult result = game.addBet(player.getName(), player.getUniqueId(), price / betNumbers.size(), BetUnitType.FULL, betNumbers);
-                    switch (result) {
-                        case SUCCESS: {
-                            player.sendMessage(instance.messageBetPlaced.replace("{Price}", StringUtils.formatComma(price)));
-                            break;
+            checkFixedTransactionDeposit(player, price, () -> {
+                if (game != null && game.isValid()) {
+                    if (instance.backendBungeecordMode) {
+                        LotterySixPlugin.getPluginMessageHandler().requestAddBet(player.getName(), player.getUniqueId(), price / betNumbers.size(), BetUnitType.FULL, betNumbers);
+                    } else {
+                        AddBetResult result = game.addBet(player.getName(), player.getUniqueId(), price / betNumbers.size(), BetUnitType.FULL, betNumbers);
+                        switch (result) {
+                            case SUCCESS: {
+                                player.sendMessage(instance.messageBetPlaced.replace("{Price}", StringUtils.formatComma(price)));
+                                break;
+                            }
+                            case GAME_LOCKED: {
+                                player.sendMessage(instance.messageGameLocked.replace("{Price}", StringUtils.formatComma(price)));
+                                break;
+                            }
+                            case NOT_ENOUGH_MONEY: {
+                                player.sendMessage(instance.messageNotEnoughMoney.replace("{Price}", StringUtils.formatComma(price)));
+                                break;
+                            }
+                            case LIMIT_SELF: {
+                                player.sendMessage(instance.messageBetLimitReachedSelf.replace("{Price}", StringUtils.formatComma(price)));
+                                break;
+                            }
+                            case LIMIT_PERMISSION: {
+                                player.sendMessage(instance.messageBetLimitReachedPermission.replace("{Price}", StringUtils.formatComma(price)));
+                                break;
+                            }
+                            case LIMIT_CHANCE_PER_SELECTION: {
+                                player.sendMessage(instance.messageBetLimitMaximumChancePerSelection.replace("{Price}", StringUtils.formatComma(price)));
+                                break;
+                            }
+                            case ACCOUNT_SUSPENDED: {
+                                long time = instance.getLotteryPlayerManager().getLotteryPlayer(player.getUniqueId()).getPreference(PlayerPreferenceKey.SUSPEND_ACCOUNT_UNTIL, long.class);
+                                player.sendMessage(instance.messageBettingAccountSuspended.replace("{Date}", instance.dateFormat.format(new Date(time))).replace("{Price}", StringUtils.formatComma(price)));
+                                break;
+                            }
                         }
-                        case GAME_LOCKED: {
-                            player.sendMessage(instance.messageGameLocked.replace("{Price}", StringUtils.formatComma(price)));
-                            break;
-                        }
-                        case NOT_ENOUGH_MONEY: {
-                            player.sendMessage(instance.messageNotEnoughMoney.replace("{Price}", StringUtils.formatComma(price)));
-                            break;
-                        }
-                        case LIMIT_SELF: {
-                            player.sendMessage(instance.messageBetLimitReachedSelf.replace("{Price}", StringUtils.formatComma(price)));
-                            break;
-                        }
-                        case LIMIT_PERMISSION: {
-                            player.sendMessage(instance.messageBetLimitReachedPermission.replace("{Price}", StringUtils.formatComma(price)));
-                            break;
-                        }
-                        case LIMIT_CHANCE_PER_SELECTION: {
-                            player.sendMessage(instance.messageBetLimitMaximumChancePerSelection.replace("{Price}", StringUtils.formatComma(price)));
-                            break;
-                        }
-                        case ACCOUNT_SUSPENDED: {
-                            long time = instance.getPlayerPreferenceManager().getLotteryPlayer(player.getUniqueId()).getPreference(PlayerPreferenceKey.SUSPEND_ACCOUNT_UNTIL, long.class);
-                            player.sendMessage(instance.messageBettingAccountSuspended.replace("{Date}", instance.dateFormat.format(new Date(time))).replace("{Price}", StringUtils.formatComma(price)));
-                            break;
+                        if (result.isSuccess()) {
+                            Bukkit.getScheduler().runTaskLater(plugin, () -> checkReopen(click.getWhoClicked()), 5);
                         }
                     }
-                    if (result.isSuccess()) {
-                        Bukkit.getScheduler().runTaskLater(plugin, () -> checkReopen(click.getWhoClicked()), 5);
-                    }
+                    Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
                 }
-                Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
-            }
+            });
             return true;
         }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetUnitInvestmentConfirm, instance, game))
                 .map(each -> each.replace("{Price}", StringUtils.formatComma(price)).replace("{PricePartial}", StringUtils.formatComma(partial))).toArray(String[]::new)));
@@ -1705,6 +1928,12 @@ public class LotteryPluginGUI implements Listener {
         public boolean shouldSetStack() {
             return shouldSetStack;
         }
+    }
+
+    public enum AccountTransactionMode {
+
+        WITHDRAW, DEPOSIT;
+
     }
 
 }

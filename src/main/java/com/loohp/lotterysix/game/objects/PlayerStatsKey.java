@@ -26,7 +26,10 @@ public enum PlayerStatsKey {
     TOTAL_ROUNDS_PARTICIPATED(long.class, 0L, false),
     TOTAL_WINNINGS(long.class, 0L, true),
     HIGHEST_WON_TIER(PrizeTier.class, null, false),
-    PENDING_TRANSACTION(long.class, 0L, true);
+    @Deprecated
+    PENDING_TRANSACTION(long.class, 0L, true),
+    NOTIFY_BALANCE_CHANGE(long.class, 0L, false),
+    ACCOUNT_BALANCE(long.class, 0L, true);
 
     private final Class<?> valueTypeClass;
     private final Object defaultValue;

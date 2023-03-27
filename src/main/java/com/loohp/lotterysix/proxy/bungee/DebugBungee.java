@@ -60,7 +60,7 @@ public class DebugBungee implements Listener {
         long limit = LotterySixBungee.getInstance().getPlayerBetLimit(player.getUniqueId());
         sender.sendMessage(ChatColor.GREEN + "Bet Limit By Permission: " + (limit <= 0 ? "Unlimited" : limit));
         sender.sendMessage("");
-        LotteryPlayer lotteryPlayer = LotterySixBungee.getInstance().getPlayerPreferenceManager().getLotteryPlayer(player.getUniqueId());
+        LotteryPlayer lotteryPlayer = LotterySixBungee.getInstance().getLotteryPlayerManager().getLotteryPlayer(player.getUniqueId());
         sender.sendMessage(ChatColor.AQUA + "Preferences ----");
         for (PlayerPreferenceKey key : PlayerPreferenceKey.values()) {
             sender.sendMessage(ChatColor.GREEN + key.name() + ": " + lotteryPlayer.getPreference(key, key.getValueTypeClass()));

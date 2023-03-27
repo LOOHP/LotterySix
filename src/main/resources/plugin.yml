@@ -19,6 +19,9 @@ permissions:
   lotterysix.play:
     default: true
     description: Allow players to play lottery six
+  lotterysix.balance:
+    default: op
+    description: Allow players to check and set any player's betting account balance
   lotterysix.start:
     default: op
     description: Allow players to manuelly start the next game

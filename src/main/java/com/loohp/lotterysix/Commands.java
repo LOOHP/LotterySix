@@ -23,11 +23,13 @@ package com.loohp.lotterysix;
 import com.cronutils.model.Cron;
 import com.loohp.lotterysix.debug.Debug;
 import com.loohp.lotterysix.game.lottery.PlayableLotterySixGame;
-import com.loohp.lotterysix.game.player.LotteryPlayer;
+import com.loohp.lotterysix.game.objects.Pair;
 import com.loohp.lotterysix.game.objects.PlayerPreferenceKey;
 import com.loohp.lotterysix.game.objects.PlayerStatsKey;
 import com.loohp.lotterysix.game.objects.WinningNumbers;
+import com.loohp.lotterysix.game.objects.betnumbers.BetNumbersBuilder;
 import com.loohp.lotterysix.game.objects.betnumbers.BetNumbersType;
+import com.loohp.lotterysix.game.player.LotteryPlayer;
 import com.loohp.lotterysix.updater.Updater;
 import com.loohp.lotterysix.utils.ArrayUtils;
 import com.loohp.lotterysix.utils.ChatColorUtils;
@@ -48,6 +50,8 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class Commands implements CommandExecutor, TabCompleter {
 
@@ -113,9 +117,63 @@ public class Commands implements CommandExecutor, TabCompleter {
                 }
                 if (sender instanceof Player) {
                     Player player = (Player) sender;
-                    LotterySixPlugin.getGuiProvider().getMainMenu(player).show(player);
+                    if (args.length > 1) {
+                        String input = String.join(" ", Arrays.copyOfRange(args, 1, args.length));
+                        PlayableLotterySixGame game = LotterySixPlugin.getInstance().getCurrentGame();
+                        if (game != null) {
+                            Pair<Stream<? extends BetNumbersBuilder>, BetNumbersType> pair = BetNumbersBuilder.fromString(1, LotterySixPlugin.getInstance().numberOfChoices, input);
+                            if (pair == null) {
+                                player.sendMessage(LotterySixPlugin.getInstance().messageInvalidBetNumbers);
+                            } else {
+                                LotterySixPlugin.getGuiProvider().getNumberConfirm(player, game, pair.getFirst().map(e -> e.build()).collect(Collectors.toList()), pair.getSecond()).show(player);
+                            }
+                        } else {
+                            player.sendMessage(LotterySixPlugin.getInstance().messageNoGameRunning);
+                        }
+                    } else {
+                        LotterySixPlugin.getGuiProvider().getMainMenu(player).show(player);
+                    }
                 } else {
                     sender.sendMessage(LotterySixPlugin.getInstance().messageNoConsole);
+                }
+            } else {
+                sender.sendMessage(LotterySixPlugin.getInstance().messageNoPermission);
+            }
+            return true;
+        } else if (args[0].equalsIgnoreCase("balance")) {
+            if (sender.hasPermission("lotterysix.balance")) {
+                if (LotterySixPlugin.getInstance().isGameLocked()) {
+                    sender.sendMessage(LotterySixPlugin.getInstance().messageGameLocked);
+                    return true;
+                }
+                if (args.length > 2) {
+                    UUID uuid = Bukkit.getOfflinePlayer(args[1]).getUniqueId();
+                    LotteryPlayer lotteryPlayer = LotterySixPlugin.getInstance().getLotteryPlayerManager().getLotteryPlayer(uuid);
+                    long money = lotteryPlayer.getStats(PlayerStatsKey.ACCOUNT_BALANCE, long.class);
+                    if (args[2].equalsIgnoreCase("get")) {
+                        sender.sendMessage(LotterySixPlugin.getInstance().messagePlayerBalance.replace("{Player}", args[1]).replace("{Balance}", StringUtils.formatComma(money)));
+                    } else if (args.length > 3) {
+                        try {
+                            long newMoney = Long.parseLong(args[3]);
+                            if (args[2].equalsIgnoreCase("set")) {
+                                lotteryPlayer.setStats(PlayerStatsKey.ACCOUNT_BALANCE, newMoney);
+                                sender.sendMessage(LotterySixPlugin.getInstance().messagePlayerBalance.replace("{Player}", args[1]).replace("{Balance}", StringUtils.formatComma(newMoney)));
+                            } else if (args[2].equalsIgnoreCase("add")) {
+                                lotteryPlayer.updateStats(PlayerStatsKey.ACCOUNT_BALANCE, long.class, i -> i + newMoney);
+                                long updated = lotteryPlayer.getStats(PlayerStatsKey.ACCOUNT_BALANCE, long.class);
+                                sender.sendMessage(LotterySixPlugin.getInstance().messagePlayerBalance.replace("{Player}", args[1]).replace("{Balance}", StringUtils.formatComma(updated)));
+                            } else {
+                                sender.sendMessage(LotterySixPlugin.getInstance().messageInvalidUsage);
+                            }
+                        } catch (NumberFormatException e) {
+                            sender.sendMessage(LotterySixPlugin.getInstance().messageInvalidNumber);
+                            return true;
+                        }
+                    } else {
+                        sender.sendMessage(LotterySixPlugin.getInstance().messageInvalidUsage);
+                    }
+                } else {
+                    sender.sendMessage(LotterySixPlugin.getInstance().messageInvalidUsage);
                 }
             } else {
                 sender.sendMessage(LotterySixPlugin.getInstance().messageNoPermission);
@@ -216,7 +274,7 @@ public class Commands implements CommandExecutor, TabCompleter {
                         if (value == null) {
                             sender.sendMessage(LotterySixPlugin.getInstance().messageInvalidUsage);
                         } else {
-                            LotterySixPlugin.getInstance().getPlayerPreferenceManager().getLotteryPlayer(uuid).setPreference(preferenceKey, value);
+                            LotterySixPlugin.getInstance().getLotteryPlayerManager().getLotteryPlayer(uuid).setPreference(preferenceKey, value);
                             sender.sendMessage(LotterySixPlugin.getInstance().messagePreferenceUpdated);
                         }
                     }
@@ -364,19 +422,6 @@ public class Commands implements CommandExecutor, TabCompleter {
                 }
             }
             return true;
-        } else if (args[0].equalsIgnoreCase("pendingtransaction")) {
-            if (sender instanceof Player) {
-                Player player = (Player) sender;
-                LotteryPlayer lotteryPlayer = LotterySixPlugin.getInstance().getPlayerPreferenceManager().getLotteryPlayer(player.getUniqueId());
-                Long money = lotteryPlayer.updateStats(PlayerStatsKey.PENDING_TRANSACTION, long.class, i -> 0L);
-                if (money != null && money > 0) {
-                    player.sendMessage(LotterySixPlugin.getInstance().messagePendingClaimed.replace("{Money}", StringUtils.formatComma(money)));
-                    LotterySixPlugin.giveMoneyNow(player.getUniqueId(), money);
-                }
-            } else {
-                sender.sendMessage(LotterySixPlugin.getInstance().messageNoConsole);
-            }
-            return true;
         }
 
         sender.sendMessage(ChatColorUtils.translateAlternateColorCodes('&', Bukkit.spigot().getConfig().getString("messages.unknown-command")));
@@ -397,6 +442,9 @@ public class Commands implements CommandExecutor, TabCompleter {
                 }
                 if (sender.hasPermission("lotterysix.play")) {
                     tab.add("play");
+                }
+                if (sender.hasPermission("lotterysix.balance")) {
+                    tab.add("balance");
                 }
                 if (sender.hasPermission("lotterysix.start")) {
                     tab.add("start");
@@ -440,6 +488,11 @@ public class Commands implements CommandExecutor, TabCompleter {
                 if (sender.hasPermission("lotterysix.play")) {
                     if ("play".startsWith(args[0].toLowerCase())) {
                         tab.add("play");
+                    }
+                }
+                if (sender.hasPermission("lotterysix.balance")) {
+                    if ("balance".startsWith(args[0].toLowerCase())) {
+                        tab.add("balance");
                     }
                 }
                 if (sender.hasPermission("lotterysix.start")) {
@@ -489,6 +542,15 @@ public class Commands implements CommandExecutor, TabCompleter {
                 }
                 return tab;
             case 2:
+                if (sender.hasPermission("lotterysix.balance")) {
+                    if ("balance".equalsIgnoreCase(args[0])) {
+                        for (Player player : Bukkit.getOnlinePlayers()) {
+                            if (player.getName().toLowerCase().startsWith(args[1].toLowerCase())) {
+                                tab.add(player.getName());
+                            }
+                        }
+                    }
+                }
                 if (sender.hasPermission("lotterysix.preference")) {
                     if ("preference".equalsIgnoreCase(args[0])) {
                         for (PlayerPreferenceKey key : PlayerPreferenceKey.values()) {
@@ -563,6 +625,19 @@ public class Commands implements CommandExecutor, TabCompleter {
                 }
                 return tab;
             case 3:
+                if (sender.hasPermission("lotterysix.balance")) {
+                    if ("balance".equalsIgnoreCase(args[0])) {
+                        if ("get".startsWith(args[2].toLowerCase())) {
+                            tab.add("get");
+                        }
+                        if ("set".startsWith(args[2].toLowerCase())) {
+                            tab.add("set");
+                        }
+                        if ("add".startsWith(args[2].toLowerCase())) {
+                            tab.add("add");
+                        }
+                    }
+                }
                 if (sender.hasPermission("lotterysix.preference")) {
                     if ("preference".equalsIgnoreCase(args[0])) {
                         PlayerPreferenceKey key = PlayerPreferenceKey.fromKey(args[1]);
@@ -577,6 +652,11 @@ public class Commands implements CommandExecutor, TabCompleter {
                 }
                 return tab;
             case 4:
+                if (sender.hasPermission("lotterysix.balance")) {
+                    if ("balance".equalsIgnoreCase(args[0]) && ("set".equalsIgnoreCase(args[2]) || "add".equalsIgnoreCase(args[2]))) {
+                        tab.add("<value>");
+                    }
+                }
                 if (sender.hasPermission("lotterysix.preference.others")) {
                     if ("preference".equalsIgnoreCase(args[0])) {
                         for (Player player : Bukkit.getOnlinePlayers()) {
