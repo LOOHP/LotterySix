@@ -259,7 +259,7 @@ public class DiscordSRVHook extends ListenerAdapter implements Listener, SlashCo
             String input = event.getOptions().get(0).getAsString();
             Pair<Stream<? extends BetNumbersBuilder>, BetNumbersType> pair = BetNumbersBuilder.fromString(1, lotterySix.numberOfChoices, input);
             if (pair == null) {
-                event.reply(ChatColor.stripColor(lotterySix.messageInvalidBetNumbers)).queue();
+                event.reply(ChatColor.stripColor(lotterySix.messageInvalidBetNumbers)).setEphemeral(true).queue();
             } else {
                 String discordUserId = event.getUser().getId();
                 UUID uuid = DiscordSRV.getPlugin().getAccountLinkManager().getUuid(discordUserId);
