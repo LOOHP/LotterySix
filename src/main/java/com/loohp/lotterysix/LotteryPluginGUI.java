@@ -317,7 +317,7 @@ public class LotteryPluginGUI implements Listener {
         gui.addElement(new StaticGuiElement('y', XMaterial.ORANGE_STAINED_GLASS_PANE.parseItem(), ChatColor.LIGHT_PURPLE.toString()));
 
         CompletedLotterySixGame completedGame = instance.getCompletedGames().isEmpty() ? null : instance.getCompletedGames().get(0);
-        gui.addElement(new StaticGuiElement('b', completedGame.hasPlayerWinnings(player.getUniqueId()) ? setEnchanted(XMaterial.CLOCK.parseItem()) : XMaterial.CLOCK.parseItem(), click -> {
+        gui.addElement(new StaticGuiElement('b', completedGame != null && completedGame.hasPlayerWinnings(player.getUniqueId()) ? setEnchanted(XMaterial.CLOCK.parseItem()) : XMaterial.CLOCK.parseItem(), click -> {
             Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), gui, false), 1);
             Bukkit.getScheduler().runTaskLater(plugin, () -> getPastResults((Player) click.getWhoClicked(), completedGame).show(click.getWhoClicked()), 2);
             return true;
@@ -1652,7 +1652,7 @@ public class LotteryPluginGUI implements Listener {
             gui.addElement(new StaticGuiElement(c, getNumberItem(specialNumber, true, NumberSelectedState.NOT_SELECTED), getNumberColor(specialNumber) + "" + specialNumber));
             gui.addElement(new StaticGuiElement('h', XMaterial.CLOCK.parseItem(), LotteryUtils.formatPlaceholders(player, instance.guiLastResultsLotteryInfo, instance, game)));
 
-            gui.addElement(new StaticGuiElement('i', XMaterial.GOLD_INGOT.parseItem(), click -> {
+            gui.addElement(new StaticGuiElement('i', game.hasPlayerWinnings(player.getUniqueId()) ? setEnchanted(XMaterial.GOLD_INGOT.parseItem()) : XMaterial.GOLD_INGOT.parseItem(), click -> {
                 Bukkit.getScheduler().runTaskLater(plugin, () -> {
                     close(click.getWhoClicked(), click.getGui(), false);
 
