@@ -92,6 +92,9 @@ public class MathUtils {
     }
 
     public static double probabilityFormula(double a, double b) {
+        if (a == b) {
+            return 1.0;
+        }
         double result = 1;
         for (; b > 0; a--, b--) {
             result *= a / b;

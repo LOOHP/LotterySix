@@ -30,6 +30,7 @@ import com.loohp.lotterysix.game.objects.WinningNumbers;
 import com.loohp.lotterysix.game.objects.betnumbers.BetNumbersBuilder;
 import com.loohp.lotterysix.game.objects.betnumbers.BetNumbersType;
 import com.loohp.lotterysix.game.player.LotteryPlayer;
+import com.loohp.lotterysix.objects.Scheduler;
 import com.loohp.lotterysix.updater.Updater;
 import com.loohp.lotterysix.utils.ArrayUtils;
 import com.loohp.lotterysix.utils.ChatColorUtils;
@@ -85,7 +86,7 @@ public class Commands implements CommandExecutor, TabCompleter {
             if (sender.hasPermission("lotterysix.update")) {
                 sender.sendMessage(ChatColor.AQUA + "[LotterySix] LotterySix written by LOOHP!");
                 sender.sendMessage(ChatColor.GOLD + "[LotterySix] You are running LotterySix version: " + LotterySixPlugin.plugin.getDescription().getVersion());
-                Bukkit.getScheduler().runTaskAsynchronously(LotterySixPlugin.plugin, () -> {
+                Scheduler.runTaskAsynchronously(LotterySixPlugin.plugin, () -> {
                     Updater.UpdaterResponse version = Updater.checkUpdate();
                     if (version.getResult().equals("latest")) {
                         if (version.isDevBuildLatest()) {

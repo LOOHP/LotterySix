@@ -43,6 +43,7 @@ import com.loohp.lotterysix.game.objects.LotterySixAction;
 import com.loohp.lotterysix.game.objects.PlayerPreferenceKey;
 import com.loohp.lotterysix.game.objects.PlayerStatsKey;
 import com.loohp.lotterysix.game.objects.betnumbers.BetNumbers;
+import com.loohp.lotterysix.objects.Scheduler;
 import com.loohp.lotterysix.utils.ArrayUtils;
 import com.loohp.lotterysix.utils.ChatColorUtils;
 import com.loohp.lotterysix.utils.DataTypeIO;
@@ -234,7 +235,7 @@ public class PluginMessageHandler implements PluginMessageListener {
                             break;
                         }
                         case 0x06: { // Force Close GUIs
-                            Bukkit.getScheduler().runTask(LotterySixPlugin.plugin, () -> LotterySixPlugin.forceCloseAllGui());
+                            Scheduler.runTask(LotterySixPlugin.plugin, () -> LotterySixPlugin.forceCloseAllGui());
                             break;
                         }
                         case 0x07: { // Call LotterySix Event
@@ -264,7 +265,7 @@ public class PluginMessageHandler implements PluginMessageListener {
                                 LotterySixPlugin.discordSRVHook.reload();
                             }
                             if (LotterySixPlugin.activeBossBar != null) {
-                                Bukkit.getScheduler().runTask(LotterySixPlugin.plugin, () -> {
+                                Scheduler.runTask(LotterySixPlugin.plugin, () -> {
                                     for (Player player : Bukkit.getOnlinePlayers()) {
                                         if (!LotterySixPlugin.activeBossBar.getPlayers().contains(player)) {
                                             LotterySixPlugin.activeBossBar.addPlayer(player);
@@ -302,7 +303,7 @@ public class PluginMessageHandler implements PluginMessageListener {
                         case 0x0D: { // Open Main Menu
                             UUID uuid = DataTypeIO.readUUID(in);
                             String input = in.readBoolean() ? DataTypeIO.readString(in, StandardCharsets.UTF_8) : null;
-                            Bukkit.getScheduler().runTask(LotterySixPlugin.plugin, () -> {
+                            Scheduler.runTask(LotterySixPlugin.plugin, () -> {
                                 Player player = Bukkit.getPlayer(uuid);
                                 if (player != null) {
                                     if (input == null) {
@@ -321,14 +322,14 @@ public class PluginMessageHandler implements PluginMessageListener {
                                         }
                                     }
                                 }
-                            });
+                            }, Bukkit.getPlayer(uuid));
                             break;
                         }
                         case 0x0E: { // Respond Add Bet Result
                             UUID uuid = DataTypeIO.readUUID(in);
                             AddBetResult result = AddBetResult.values()[in.readInt()];
                             long price = in.readLong();
-                            Bukkit.getScheduler().runTask(LotterySixPlugin.plugin, () -> {
+                            Scheduler.runTask(LotterySixPlugin.plugin, () -> {
                                 Player player = Bukkit.getPlayer(uuid);
                                 if (player != null) {
                                     switch (result) {
@@ -363,10 +364,10 @@ public class PluginMessageHandler implements PluginMessageListener {
                                         }
                                     }
                                     if (result.isSuccess()) {
-                                        Bukkit.getScheduler().runTaskLater(LotterySixPlugin.plugin, () -> LotterySixPlugin.getGuiProvider().checkReopen(player), 5);
+                                        Scheduler.runTaskLater(LotterySixPlugin.plugin, () -> LotterySixPlugin.getGuiProvider().checkReopen(player), 5);
                                     }
                                 }
-                            });
+                            }, Bukkit.getPlayer(uuid));
                             break;
                         }
                         case 0x0F: { // Update Player Preference & Stats
@@ -400,7 +401,7 @@ public class PluginMessageHandler implements PluginMessageListener {
                         }
                         case 0x10: { // Call Updater
                             UUID uuid = DataTypeIO.readUUID(in);
-                            Bukkit.getScheduler().runTask(LotterySixPlugin.plugin, () -> {
+                            Scheduler.runTask(LotterySixPlugin.plugin, () -> {
                                 Player player = Bukkit.getPlayer(uuid);
                                 if (player != null) {
                                     Bukkit.dispatchCommand(player, "lotterysix update");
@@ -415,7 +416,7 @@ public class PluginMessageHandler implements PluginMessageListener {
                                 String style = DataTypeIO.readString(in, StandardCharsets.UTF_8);
                                 double progress = in.readDouble();
                                 UUID gameId = in.readBoolean() ? DataTypeIO.readUUID(in) : null;
-                                Bukkit.getScheduler().runTask(LotterySixPlugin.plugin, () -> {
+                                Scheduler.runTask(LotterySixPlugin.plugin, () -> {
                                     String message = nullableMessage;
                                     if (message == null) {
                                         LotterySixPlugin.activeBossBar.setVisible(false);
@@ -448,7 +449,7 @@ public class PluginMessageHandler implements PluginMessageListener {
     }
 
     private void sendData(int packetId, byte[] data) {
-        Bukkit.getScheduler().runTaskAsynchronously(LotterySixPlugin.plugin, () -> {
+        Scheduler.runTaskAsynchronously(LotterySixPlugin.plugin, () -> {
             Collection<? extends Player> players = Bukkit.getOnlinePlayers();
             if (players.isEmpty()) {
                 return;

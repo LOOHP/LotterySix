@@ -38,6 +38,7 @@ import com.loohp.lotterysix.game.objects.PrizeTier;
 import com.loohp.lotterysix.game.objects.betnumbers.BetNumbers;
 import com.loohp.lotterysix.game.objects.betnumbers.BetNumbersBuilder;
 import com.loohp.lotterysix.game.objects.betnumbers.BetNumbersType;
+import com.loohp.lotterysix.objects.Scheduler;
 import com.loohp.lotterysix.utils.LotteryUtils;
 import com.loohp.lotterysix.utils.StringUtils;
 import com.loohp.lotterysix.utils.SyncUtils;
@@ -347,7 +348,7 @@ public class DiscordSRVHook extends ListenerAdapter implements Listener, SlashCo
                 event.reply(lotterySix.discordSRVSlashCommandsViewPastDrawNoResults).setEphemeral(true).queue();
             } else {
                 event.deferReply(true).queue();
-                Bukkit.getScheduler().runTaskAsynchronously(LotterySixPlugin.plugin, () -> {
+                Scheduler.runTaskAsynchronously(LotterySixPlugin.plugin, () -> {
                     SyncUtils.blockUntilTrue(() -> !lotterySix.isGameLocked());
 
                     CompletedLotterySixGame game = selectedGame == null ? lotterySix.getCompletedGames().get(0) : selectedGame;

@@ -41,6 +41,8 @@ import com.loohp.lotterysix.game.objects.betnumbers.BetNumbers;
 import com.loohp.lotterysix.game.objects.betnumbers.BetNumbersBuilder;
 import com.loohp.lotterysix.game.objects.betnumbers.BetNumbersType;
 import com.loohp.lotterysix.game.player.LotteryPlayer;
+import com.loohp.lotterysix.objects.ScheduledRunnable;
+import com.loohp.lotterysix.objects.Scheduler;
 import com.loohp.lotterysix.utils.BookUtils;
 import com.loohp.lotterysix.utils.ChatColorUtils;
 import com.loohp.lotterysix.utils.LotteryUtils;
@@ -58,7 +60,6 @@ import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.TextComponent;
 import net.wesjd.anvilgui.AnvilGUI;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.HumanEntity;
@@ -69,13 +70,13 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.inventory.InventoryInteractEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -93,6 +94,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -198,16 +200,13 @@ public class LotteryPluginGUI implements Listener {
     private final LotterySixPlugin plugin;
     private final LotterySix instance;
     private final Map<Player, Long> lastGuiClick;
-    private final AtomicInteger tickCounter;
+    private final Map<Player, AtomicInteger> tickCounter;
 
     public LotteryPluginGUI(LotterySixPlugin plugin) {
         this.plugin = plugin;
         this.instance = LotterySixPlugin.getInstance();
         this.lastGuiClick = new HashMap<>();
-        this.tickCounter = new AtomicInteger();
-        Bukkit.getScheduler().runTaskTimer(plugin, () -> {
-            tickCounter.incrementAndGet();
-        }, 0, 1);
+        this.tickCounter = new ConcurrentHashMap<>();
     }
 
     public void forceClose(Player player) {
@@ -219,7 +218,7 @@ public class LotteryPluginGUI implements Listener {
 
     private void handleClick(InventoryInteractEvent event) {
         Player player = (Player) event.getWhoClicked();
-        long gameTick = tickCounter.get();
+        long gameTick = tickCounter.get(player).get();
         Long lastClick = lastGuiClick.get(player);
         if (lastClick == null || gameTick != lastClick) {
             lastGuiClick.put(player, gameTick);
@@ -229,16 +228,25 @@ public class LotteryPluginGUI implements Listener {
     }
 
     @EventHandler
+    public void onPlayerJoin(PlayerJoinEvent event) {
+        Player player = event.getPlayer();
+        AtomicInteger counter = new AtomicInteger();
+        tickCounter.put(player, counter);
+        Scheduler.runTaskTimer(plugin, () -> counter.incrementAndGet(), 0, 1, player);
+    }
+
+    @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
         lastGuiClick.remove(player);
         Deque<InventoryGui> guis = InventoryGui.clearHistory(player);
-        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+        Scheduler.runTaskLater(plugin, () -> {
             InventoryGui gui;
             while ((gui = guis.poll()) != null) {
                 gui.destroy();
             }
-        }, 1);
+        }, 1, player);
+        tickCounter.remove(player);
     }
 
     @EventHandler(priority = EventPriority.LOW)
@@ -255,10 +263,10 @@ public class LotteryPluginGUI implements Listener {
         if (inventory.getHolder() instanceof InventoryGui.Holder) {
             if (InventoryGui.getOpen(event.getWhoClicked()) == null) {
                 event.setCancelled(true);
-                Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                Scheduler.runTaskLater(plugin, () -> {
                     InventoryGui.clearHistory(event.getWhoClicked());
                     event.getWhoClicked().closeInventory();
-                }, 1);
+                }, 1, event.getWhoClicked());
             }
         }
     }
@@ -270,17 +278,17 @@ public class LotteryPluginGUI implements Listener {
             handleClick(event);
             if (InventoryGui.getOpen(event.getWhoClicked()) == null) {
                 event.setCancelled(true);
-                Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                Scheduler.runTaskLater(plugin, () -> {
                     InventoryGui.clearHistory(event.getWhoClicked());
                     event.getWhoClicked().closeInventory();
-                }, 1);
+                }, 1, event.getWhoClicked());
             }
         }
     }
 
     public void close(HumanEntity player, InventoryGui inventoryGui, boolean back) {
         inventoryGui.close(player, !back);
-        Bukkit.getScheduler().runTaskLater(plugin, () -> inventoryGui.destroy(), 1);
+        Scheduler.runTaskLater(plugin, () -> inventoryGui.destroy(), 1, player);
     }
 
     public void removeSecondLast(HumanEntity player) {
@@ -292,7 +300,7 @@ public class LotteryPluginGUI implements Listener {
         itr.next();
         InventoryGui inventoryGui = itr.next();
         itr.remove();
-        Bukkit.getScheduler().runTaskLater(plugin, () -> inventoryGui.destroy(), 1);
+        Scheduler.runTaskLater(plugin, () -> inventoryGui.destroy(), 1, player);
     }
 
     public void checkReopen(HumanEntity player) {
@@ -318,8 +326,8 @@ public class LotteryPluginGUI implements Listener {
 
         CompletedLotterySixGame completedGame = instance.getCompletedGames().isEmpty() ? null : instance.getCompletedGames().get(0);
         gui.addElement(new StaticGuiElement('b', completedGame != null && completedGame.hasPlayerWinnings(player.getUniqueId()) ? setEnchanted(XMaterial.CLOCK.parseItem()) : XMaterial.CLOCK.parseItem(), click -> {
-            Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), gui, false), 1);
-            Bukkit.getScheduler().runTaskLater(plugin, () -> getPastResults((Player) click.getWhoClicked(), completedGame).show(click.getWhoClicked()), 2);
+            Scheduler.runTaskLater(plugin, () -> close(click.getWhoClicked(), gui, false), 1, player);
+            Scheduler.runTaskLater(plugin, () -> getPastResults((Player) click.getWhoClicked(), completedGame).show(click.getWhoClicked()), 2, player);
             return true;
         }, LotteryUtils.formatPlaceholders(player, instance.guiMainMenuCheckPastResults, instance)));
         gui.addElement(new DynamicGuiElement('c', viewer -> {
@@ -328,14 +336,14 @@ public class LotteryPluginGUI implements Listener {
                 return new StaticGuiElement('c', XMaterial.BARRIER.parseItem(), LotteryUtils.formatPlaceholders(player, instance.guiMainMenuNoLotteryGamesScheduled, instance));
             } else {
                 return new StaticGuiElement('c', XMaterial.PAPER.parseItem(), click -> {
-                    Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                    Scheduler.runTaskLater(plugin, () -> {
                         close(click.getWhoClicked(), click.getGui(), true);
 
-                        Bukkit.getScheduler().runTaskLaterAsynchronously(plugin, () -> {
+                        Scheduler.runTaskLaterAsynchronously(plugin, () -> {
                             ItemStack itemStack = getPlacedBets((Player) click.getWhoClicked());
-                            Bukkit.getScheduler().runTaskLater(plugin, () -> BookUtils.openBook((Player) click.getWhoClicked(), itemStack), 1);
+                            Scheduler.runTaskLater(plugin, () -> BookUtils.openBook((Player) click.getWhoClicked(), itemStack), 1, player);
                         }, 1);
-                    }, 1);
+                    }, 1, player);
                     return true;
                 }, LotteryUtils.formatPlaceholders(player, instance.guiMainMenuCheckOwnBets, instance, currentGame));
             }
@@ -346,33 +354,33 @@ public class LotteryPluginGUI implements Listener {
                 return new StaticGuiElement('d', XMaterial.RED_WOOL.parseItem(), LotteryUtils.formatPlaceholders(player, instance.guiMainMenuNoLotteryGamesScheduled, instance));
             } else {
                 return new StaticGuiElement('d', XMaterial.GOLD_INGOT.parseItem(), click -> {
-                    Bukkit.getScheduler().runTaskLater(plugin, () -> getBetTypeChooser((Player) click.getWhoClicked(), instance.getCurrentGame()).show(click.getWhoClicked()), 1);
+                    Scheduler.runTaskLater(plugin, () -> getBetTypeChooser((Player) click.getWhoClicked(), instance.getCurrentGame()).show(click.getWhoClicked()), 1, player);
                     return true;
                 }, LotteryUtils.formatPlaceholders(player, instance.guiMainMenuPlaceNewBets, instance, currentGame));
             }
         }));
         gui.addElement(new StaticGuiElement('e', XMaterial.OAK_SIGN.parseItem(), click -> {
-            Bukkit.getScheduler().runTaskLater(plugin, () -> getNumberStatistics((Player) click.getWhoClicked(), instance.getCompletedGames().isEmpty() ? null : instance.getCompletedGames().get(0)).show(click.getWhoClicked()), 1);
+            Scheduler.runTaskLater(plugin, () -> getNumberStatistics((Player) click.getWhoClicked(), instance.getCompletedGames().isEmpty() ? null : instance.getCompletedGames().get(0)).show(click.getWhoClicked()), 1, player);
             return true;
         }, LotteryUtils.formatPlaceholders(player, instance.guiMainMenuStatistics, instance)));
         gui.addElement(new StaticGuiElement('z', XMaterial.COMPASS.parseItem(), click -> {
             TextComponent message = new TextComponent(LotteryUtils.formatPlaceholders(player, instance.explanationMessage, instance));
             message.setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, instance.explanationURL));
             click.getWhoClicked().spigot().sendMessage(message);
-            Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), true), 1);
+            Scheduler.runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), true), 1, player);
             return true;
         }, LotteryUtils.formatPlaceholders(player, instance.explanationGUIItem, instance)));
         gui.addElement(new StaticGuiElement('f', SkinUtils.getSkull(player.getUniqueId()), click -> {
-            Bukkit.getScheduler().runTaskLater(plugin, () -> getBettingAccount((Player) click.getWhoClicked()).show(click.getWhoClicked()), 1);
+            Scheduler.runTaskLater(plugin, () -> getBettingAccount((Player) click.getWhoClicked()).show(click.getWhoClicked()), 1, player);
             return true;
         }, LotteryUtils.formatPlaceholders(player, instance.guiMainMenuBettingAccount, instance)));
         gui.addElement(new StaticGuiElement('$', XMaterial.EMERALD.parseItem(), click -> {
-            Bukkit.getScheduler().runTaskLater(plugin, () -> getTransactionMenu((Player) click.getWhoClicked()).show(click.getWhoClicked()), 1);
+            Scheduler.runTaskLater(plugin, () -> getTransactionMenu((Player) click.getWhoClicked()).show(click.getWhoClicked()), 1, player);
             return true;
         }, LotteryUtils.formatPlaceholders(player, instance.guiMainMenuAccountFundTransfer, instance)));
         gui.setCloseAction(close -> false);
         Set<GuiElement> elements = Collections.singleton(gui.getElement('c'));
-        new BukkitRunnable() {
+        new ScheduledRunnable() {
             @Override
             public void run() {
                 Deque<InventoryGui> history = InventoryGui.getHistory(player);
@@ -385,7 +393,7 @@ public class LotteryPluginGUI implements Listener {
                     gui.draw(player, false);
                 }
             }
-        }.runTaskTimer(plugin, 10, 10);
+        }.runTaskTimer(plugin, 10, 10, player);
         return gui;
     }
 
@@ -483,12 +491,12 @@ public class LotteryPluginGUI implements Listener {
             left.setItemMeta(leftMeta);
             return new StaticGuiElement('g', active ? setEnchanted(XMaterial.OAK_FENCE_GATE.parseItem()) : XMaterial.OAK_FENCE_GATE.parseItem(), click -> {
                 if (click.getType().isLeftClick()) {
-                    Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
-                    Bukkit.getScheduler().runTaskLater(plugin, () -> new AnvilGUI.Builder().plugin(plugin)
+                    Scheduler.runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1, player);
+                    Scheduler.runTaskLater(plugin, () -> new AnvilGUI.Builder().plugin(plugin)
                             .title(LotteryUtils.formatPlaceholders(player, instance.guiBettingAccountSetBetLimitPerRoundTitle, instance))
                             .itemLeft(left)
                             .onComplete(completion -> {
-                                Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+                                Scheduler.runTaskAsynchronously(plugin, () -> {
                                     String input = completion.getText().trim();
                                     try {
                                         long newValue = Math.max(0, Long.parseLong(input));
@@ -497,15 +505,15 @@ public class LotteryPluginGUI implements Listener {
                                         } else {
                                             lotteryPlayer.setPreference(PlayerPreferenceKey.BET_LIMIT_PER_ROUND, newValue);
                                         }
-                                        Bukkit.getScheduler().runTaskLater(plugin, () -> getMainMenu(player).show(player), 2);
-                                        Bukkit.getScheduler().runTaskLater(plugin, () -> getBettingAccount(player).show(player), 3);
+                                        Scheduler.runTaskLater(plugin, () -> getMainMenu(player).show(player), 2, player);
+                                        Scheduler.runTaskLater(plugin, () -> getBettingAccount(player).show(player), 3, player);
                                     } catch (Exception e) {
                                         player.sendMessage(instance.messageInvalidUsage);
                                     }
                                 });
                                 return Collections.singletonList(AnvilGUI.ResponseAction.close());
                             })
-                            .open(player), 2);
+                            .open(player), 2, player);
                 } else if (click.getType().isRightClick()) {
                     if (instance.backendBungeecordMode) {
                         LotterySixPlugin.getPluginMessageHandler().resetPlayerPreference(lotteryPlayer, PlayerPreferenceKey.BET_LIMIT_PER_ROUND);
@@ -539,11 +547,11 @@ public class LotteryPluginGUI implements Listener {
             }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiBettingAccountSuspendAccountForAWeek, instance)).map(s -> s.replace("{Value}", value)).toArray(String[]::new));
         }));
         gui.addElement(new StaticGuiElement('$', XMaterial.EMERALD.parseItem(), click -> {
-            Bukkit.getScheduler().runTaskLater(plugin, () -> getTransactionMenu((Player) click.getWhoClicked()).show(click.getWhoClicked()), 1);
+            Scheduler.runTaskLater(plugin, () -> getTransactionMenu((Player) click.getWhoClicked()).show(click.getWhoClicked()), 1, player);
             return true;
         }, LotteryUtils.formatPlaceholders(player, instance.guiMainMenuAccountFundTransfer, instance)));
         gui.setSilent(true);
-        new BukkitRunnable() {
+        new ScheduledRunnable() {
             @Override
             public void run() {
                 Deque<InventoryGui> history = InventoryGui.getHistory(player);
@@ -555,7 +563,7 @@ public class LotteryPluginGUI implements Listener {
                     gui.draw(player);
                 }
             }
-        }.runTaskTimer(plugin, 10, 10);
+        }.runTaskTimer(plugin, 10, 10, player);
         return gui;
     }
 
@@ -582,25 +590,25 @@ public class LotteryPluginGUI implements Listener {
             gui.addElement(new StaticGuiElement('d', new ItemStack(Material.AIR), ChatColor.LIGHT_PURPLE.toString()));
             gui.addElement(new StaticGuiElement('e', new ItemStack(Material.BARRIER), click -> {
                 player.sendMessage(instance.messageBettingAccountSuspended.replace("{Date}", instance.dateFormat.format(new Date(time))).replace("{Price}", "0"));
-                Bukkit.getScheduler().runTaskLater(plugin, () -> close(player, gui, false), 1);
+                Scheduler.runTaskLater(plugin, () -> close(player, gui, false), 1, player);
                 return true;
             }, ChatColor.RED + "-"));
             gui.addElement(new StaticGuiElement('f', new ItemStack(Material.AIR), ChatColor.LIGHT_PURPLE.toString()));
         } else {
             gui.addElement(new StaticGuiElement(money > 0 ? 'd' : 'e', XMaterial.EMERALD.parseItem(), click -> {
-                Bukkit.getScheduler().runTaskLater(plugin, () -> close(player, gui, false), 1);
-                Bukkit.getScheduler().runTaskLater(plugin, () -> getTransactionInput(player, AccountTransactionMode.DEPOSIT).open(player), 2);
+                Scheduler.runTaskLater(plugin, () -> close(player, gui, false), 1, player);
+                Scheduler.runTaskLater(plugin, () -> getTransactionInput(player, AccountTransactionMode.DEPOSIT).open(player), 2, player);
                 return true;
             }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiAccountFundTransferDeposit, instance)).map(s -> s.replace("{Amount}", StringUtils.formatComma(money))).toArray(String[]::new)));
             if (money > 0) {
                 gui.addElement(new StaticGuiElement('e', XMaterial.RED_DYE.parseItem(), click -> {
-                    Bukkit.getScheduler().runTaskLater(plugin, () -> close(player, gui, false), 1);
-                    Bukkit.getScheduler().runTaskLater(plugin, () -> getTransactionInput(player, AccountTransactionMode.WITHDRAW).open(player), 2);
+                    Scheduler.runTaskLater(plugin, () -> close(player, gui, false), 1, player);
+                    Scheduler.runTaskLater(plugin, () -> getTransactionInput(player, AccountTransactionMode.WITHDRAW).open(player), 2, player);
                     return true;
                 }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiAccountFundTransferWithdraw, instance)).map(s -> s.replace("{Amount}", StringUtils.formatComma(money))).toArray(String[]::new)));
                 gui.addElement(new StaticGuiElement('f', setEnchanted(XMaterial.RED_DYE.parseItem()), click -> {
-                    Bukkit.getScheduler().runTaskLater(plugin, () -> close(player, gui, false), 1);
-                    Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+                    Scheduler.runTaskLater(plugin, () -> close(player, gui, false), 1, player);
+                    Scheduler.runTaskAsynchronously(plugin, () -> {
                         long total = lotteryPlayer.getStats(PlayerStatsKey.ACCOUNT_BALANCE, long.class);
                         if (instance.giveMoney(player.getUniqueId(), total)) {
                             if (instance.backendBungeecordMode) {
@@ -610,7 +618,7 @@ public class LotteryPluginGUI implements Listener {
                                 lotteryPlayer.updateStats(PlayerStatsKey.ACCOUNT_BALANCE, long.class, i -> i - total);
                             }
                             player.sendMessage(instance.messageWithdrawSuccess.replace("{Amount}", StringUtils.formatComma(total)));
-                            Bukkit.getScheduler().runTaskLater(plugin, () -> checkReopen(player), 5);
+                            Scheduler.runTaskLater(plugin, () -> checkReopen(player), 5, player);
                         } else {
                             player.sendMessage(instance.messageWithdrawFailed);
                         }
@@ -636,11 +644,11 @@ public class LotteryPluginGUI implements Listener {
                 .title(LotteryUtils.formatPlaceholders(player, transactionMode.equals(AccountTransactionMode.WITHDRAW) ? instance.guiAccountFundTransferWithdrawInputTitle : instance.guiAccountFundTransferDepositInputTitle, instance))
                 .itemLeft(left)
                 .onComplete(completion -> {
-                    Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+                    Scheduler.runTaskAsynchronously(plugin, () -> {
                         String input = completion.getText().trim();
                         try {
                             long amount = Long.parseLong(input);
-                            Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+                            Scheduler.runTaskAsynchronously(plugin, () -> {
                                 if (amount <= 0) {
                                     player.sendMessage(instance.messageInvalidNumber);
                                 } else {
@@ -657,7 +665,7 @@ public class LotteryPluginGUI implements Listener {
                                                 lotteryPlayer.updateStats(PlayerStatsKey.ACCOUNT_BALANCE, long.class, i -> i - amount);
                                             }
                                             player.sendMessage(instance.messageWithdrawSuccess.replace("{Amount}", StringUtils.formatComma(amount)));
-                                            Bukkit.getScheduler().runTaskLater(plugin, () -> checkReopen(player), 5);
+                                            Scheduler.runTaskLater(plugin, () -> checkReopen(player), 5, player);
                                         } else {
                                             player.sendMessage(instance.messageWithdrawFailed);
                                         }
@@ -670,7 +678,7 @@ public class LotteryPluginGUI implements Listener {
                                                 lotteryPlayer.updateStats(PlayerStatsKey.ACCOUNT_BALANCE, long.class, i -> i + amount);
                                             }
                                             player.sendMessage(instance.messageDepositSuccess.replace("{Amount}", StringUtils.formatComma(amount)));
-                                            Bukkit.getScheduler().runTaskLater(plugin, () -> checkReopen(player), 5);
+                                            Scheduler.runTaskLater(plugin, () -> checkReopen(player), 5, player);
                                         } else {
                                             player.sendMessage(instance.messageNotEnoughMoney.replace("{Price}", StringUtils.formatComma(amount)));
                                         }
@@ -692,7 +700,7 @@ public class LotteryPluginGUI implements Listener {
             player.sendMessage(instance.messageBettingAccountSuspended.replace("{Date}", instance.dateFormat.format(new Date(time))).replace("{Price}", StringUtils.formatComma(amount)));
             InventoryGui gui = InventoryGui.getOpen(player);
             if (gui != null) {
-                Bukkit.getScheduler().runTaskLater(plugin, () -> close(player, gui, false), 1);
+                Scheduler.runTaskLater(plugin, () -> close(player, gui, false), 1, player);
             }
             return;
         }
@@ -710,7 +718,7 @@ public class LotteryPluginGUI implements Listener {
             gui.setFiller(XMaterial.RED_STAINED_GLASS_PANE.parseItem());
             gui.addElement(new StaticGuiElement('a', new ItemStack(Material.AIR), ChatColor.LIGHT_PURPLE.toString()));
             gui.addElement(new StaticGuiElement('b', XMaterial.EMERALD.parseItem(), click -> {
-                Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+                Scheduler.runTaskAsynchronously(plugin, () -> {
                     if (instance.takeMoney(player.getUniqueId(), amountNeeded)) {
                         if (instance.backendBungeecordMode) {
                             long current = lotteryPlayer.getStats(PlayerStatsKey.ACCOUNT_BALANCE, long.class);
@@ -719,7 +727,7 @@ public class LotteryPluginGUI implements Listener {
                             lotteryPlayer.updateStats(PlayerStatsKey.ACCOUNT_BALANCE, long.class, i -> i + amountNeeded);
                         }
                         player.sendMessage(instance.messageDepositSuccess.replace("{Amount}", StringUtils.formatComma(amount)));
-                        new BukkitRunnable() {
+                        new ScheduledRunnable() {
                             private int counter = 0;
                             @Override
                             public void run() {
@@ -732,18 +740,18 @@ public class LotteryPluginGUI implements Listener {
                                     cancel();
                                 }
                             }
-                        }.runTaskTimer(plugin, 2, 1);
+                        }.runTaskTimer(plugin, 2, 1, player);
                     } else {
                         player.sendMessage(instance.messageNotEnoughMoney.replace("{Price}", StringUtils.formatComma(amountNeeded)));
                     }
-                    Bukkit.getScheduler().runTaskLater(plugin, () -> close(player, gui, false), 1);
+                    Scheduler.runTaskLater(plugin, () -> close(player, gui, false), 1, player);
                 });
                 return true;
             }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiAccountFundTransferPlacingBetConfirm, instance)).map(s -> s
                     .replace("{Amount}", StringUtils.formatComma(amountNeeded))).toArray(String[]::new)));
             gui.addElement(new StaticGuiElement('c', XMaterial.BARRIER.parseItem(), click -> {
-                Bukkit.getScheduler().runTaskLater(plugin, () -> close(player, gui, false), 1);
-                Bukkit.getScheduler().runTaskLater(plugin, () -> checkReopen(player), 5);
+                Scheduler.runTaskLater(plugin, () -> close(player, gui, false), 1, player);
+                Scheduler.runTaskLater(plugin, () -> checkReopen(player), 5, player);
                 return true;
             }, LotteryUtils.formatPlaceholders(player, instance.guiAccountFundTransferPlacingBetCancel, instance)));
             gui.show(player);
@@ -795,19 +803,19 @@ public class LotteryPluginGUI implements Listener {
         gui.setFiller(XMaterial.ORANGE_STAINED_GLASS_PANE.parseItem());
         gui.addElement(new StaticGuiElement('a', new ItemStack(Material.AIR), ChatColor.LIGHT_PURPLE.toString()));
         gui.addElement(new StaticGuiElement('b', XMaterial.BRICK.parseItem(), click -> {
-            Bukkit.getScheduler().runTaskLater(plugin, () -> getNumberChooser((Player) click.getWhoClicked(), game, BetNumbersBuilder.single(1, instance.numberOfChoices)).show(click.getWhoClicked()), 1);
+            Scheduler.runTaskLater(plugin, () -> getNumberChooser((Player) click.getWhoClicked(), game, BetNumbersBuilder.single(1, instance.numberOfChoices)).show(click.getWhoClicked()), 1, player);
             return true;
         }, LotteryUtils.formatPlaceholders(player, instance.guiSelectNewBetTypeSingle, instance)));
         gui.addElement(new StaticGuiElement('c', XMaterial.IRON_INGOT.parseItem(), click -> {
-            Bukkit.getScheduler().runTaskLater(plugin, () -> getNumberChooser((Player) click.getWhoClicked(), game, BetNumbersBuilder.multiple(1, instance.numberOfChoices)).show(click.getWhoClicked()), 1);
+            Scheduler.runTaskLater(plugin, () -> getNumberChooser((Player) click.getWhoClicked(), game, BetNumbersBuilder.multiple(1, instance.numberOfChoices)).show(click.getWhoClicked()), 1, player);
             return true;
         }, LotteryUtils.formatPlaceholders(player, instance.guiSelectNewBetTypeMultiple, instance)));
         gui.addElement(new StaticGuiElement('d', XMaterial.GOLD_INGOT.parseItem(), click -> {
-            Bukkit.getScheduler().runTaskLater(plugin, () -> getNumberChooser((Player) click.getWhoClicked(), game, BetNumbersBuilder.banker(1, instance.numberOfChoices)).show(click.getWhoClicked()), 1);
+            Scheduler.runTaskLater(plugin, () -> getNumberChooser((Player) click.getWhoClicked(), game, BetNumbersBuilder.banker(1, instance.numberOfChoices)).show(click.getWhoClicked()), 1, player);
             return true;
         }, LotteryUtils.formatPlaceholders(player, instance.guiSelectNewBetTypeBanker, instance)));
         gui.addElement(new StaticGuiElement('e', XMaterial.REDSTONE.parseItem(), click -> {
-            Bukkit.getScheduler().runTaskLater(plugin, () -> getRandomEntryChooser((Player) click.getWhoClicked(), game, BetNumbersType.RANDOM).show(click.getWhoClicked()), 1);
+            Scheduler.runTaskLater(plugin, () -> getRandomEntryChooser((Player) click.getWhoClicked(), game, BetNumbersType.RANDOM).show(click.getWhoClicked()), 1, player);
             return true;
         }, LotteryUtils.formatPlaceholders(player, instance.guiSelectNewBetTypeRandom, instance)));
         gui.setSilent(true);
@@ -828,24 +836,24 @@ public class LotteryPluginGUI implements Listener {
         gui.addElement(new StaticGuiElement('a', new ItemStack(Material.AIR), ChatColor.LIGHT_PURPLE.toString()));
 
         gui.addElement(new StaticGuiElement('b', type.equals(BetNumbersType.RANDOM) ? setEnchanted(XMaterial.BRICK.parseItem()) : XMaterial.BRICK.parseItem(), click -> {
-            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            Scheduler.runTaskLater(plugin, () -> {
                 getRandomEntryChooser((Player) click.getWhoClicked(), game, BetNumbersType.RANDOM).show(click.getWhoClicked());
-                Bukkit.getScheduler().runTaskLater(plugin, () -> removeSecondLast(player), 2);
-            }, 1);
+                Scheduler.runTaskLater(plugin, () -> removeSecondLast(player), 2, player);
+            }, 1, player);
             return true;
         }, LotteryUtils.formatPlaceholders(player, instance.guiRandomEntrySingleTab, instance)));
         gui.addElement(new StaticGuiElement('c', type.equals(BetNumbersType.MULTIPLE_RANDOM) ? setEnchanted(XMaterial.IRON_INGOT.parseItem()) : XMaterial.IRON_INGOT.parseItem(), click -> {
-            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            Scheduler.runTaskLater(plugin, () -> {
                 getRandomEntryChooser((Player) click.getWhoClicked(), game, BetNumbersType.MULTIPLE_RANDOM).show(click.getWhoClicked());
-                Bukkit.getScheduler().runTaskLater(plugin, () -> removeSecondLast(player), 2);
-            }, 1);
+                Scheduler.runTaskLater(plugin, () -> removeSecondLast(player), 2, player);
+            }, 1, player);
             return true;
         }, LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryMultipleTab, instance)));
         gui.addElement(new StaticGuiElement('d', type.equals(BetNumbersType.BANKER_RANDOM) ? setEnchanted(XMaterial.GOLD_INGOT.parseItem()) : XMaterial.GOLD_INGOT.parseItem(), click -> {
-            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            Scheduler.runTaskLater(plugin, () -> {
                 getRandomEntryChooser((Player) click.getWhoClicked(), game, BetNumbersType.BANKER_RANDOM).show(click.getWhoClicked());
-                Bukkit.getScheduler().runTaskLater(plugin, () -> removeSecondLast(player), 2);
-            }, 1);
+                Scheduler.runTaskLater(plugin, () -> removeSecondLast(player), 2, player);
+            }, 1, player);
             return true;
         }, LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBankerTab, instance)));
 
@@ -855,35 +863,35 @@ public class LotteryPluginGUI implements Listener {
             gui.addElement(new StaticGuiElement('j', new ItemStack(Material.AIR), ChatColor.LIGHT_PURPLE.toString()));
 
             gui.addElement(new StaticGuiElement('e', setItemSize(XMaterial.PAPER.parseItem(), 1), click -> {
-                Bukkit.getScheduler().runTaskLater(plugin, () -> getSingleBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.random(1, instance.numberOfChoices, 1).map(each -> each.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2);
+                Scheduler.runTaskLater(plugin, () -> getSingleBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.random(1, instance.numberOfChoices, 1).map(each -> each.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2, player);
                 return true;
             }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBetCountValueSimple, instance)).map(each -> each.replace("{Count}", "1").replace("{BetUnits}", "1").replace("{Price}", StringUtils.formatComma(instance.pricePerBet))).toArray(String[]::new)));
             gui.addElement(new StaticGuiElement('g', setItemSize(XMaterial.PAPER.parseItem(), 2), click -> {
-                Bukkit.getScheduler().runTaskLater(plugin, () -> getSingleBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.random(1, instance.numberOfChoices, 2).map(each -> each.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2);
+                Scheduler.runTaskLater(plugin, () -> getSingleBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.random(1, instance.numberOfChoices, 2).map(each -> each.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2, player);
                 return true;
             }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBetCountValueSimple, instance)).map(each -> each.replace("{Count}", "2").replace("{BetUnits}", "2").replace("{Price}", StringUtils.formatComma(instance.pricePerBet * 2))).toArray(String[]::new)));
             gui.addElement(new StaticGuiElement('i', setItemSize(XMaterial.PAPER.parseItem(), 5), click -> {
-                Bukkit.getScheduler().runTaskLater(plugin, () -> getSingleBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.random(1, instance.numberOfChoices, 5).map(each -> each.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2);
+                Scheduler.runTaskLater(plugin, () -> getSingleBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.random(1, instance.numberOfChoices, 5).map(each -> each.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2, player);
                 return true;
             }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBetCountValueSimple, instance)).map(each -> each.replace("{Count}", "5").replace("{BetUnits}", "5").replace("{Price}", StringUtils.formatComma(instance.pricePerBet * 5))).toArray(String[]::new)));
             gui.addElement(new StaticGuiElement('k', setItemSize(XMaterial.PAPER.parseItem(), 10), click -> {
-                Bukkit.getScheduler().runTaskLater(plugin, () -> getSingleBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.random(1, instance.numberOfChoices, 10).map(each -> each.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2);
+                Scheduler.runTaskLater(plugin, () -> getSingleBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.random(1, instance.numberOfChoices, 10).map(each -> each.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2, player);
                 return true;
             }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBetCountValueSimple, instance)).map(each -> each.replace("{Count}", "10").replace("{BetUnits}", "10").replace("{Price}", StringUtils.formatComma(instance.pricePerBet * 10))).toArray(String[]::new)));
             gui.addElement(new StaticGuiElement('l', setItemSize(XMaterial.PAPER.parseItem(), 20), click -> {
-                Bukkit.getScheduler().runTaskLater(plugin, () -> getSingleBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.random(1, instance.numberOfChoices, 20).map(each -> each.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2);
+                Scheduler.runTaskLater(plugin, () -> getSingleBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.random(1, instance.numberOfChoices, 20).map(each -> each.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2, player);
                 return true;
             }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBetCountValueSimple, instance)).map(each -> each.replace("{Count}", "20").replace("{BetUnits}", "20").replace("{Price}", StringUtils.formatComma(instance.pricePerBet * 20))).toArray(String[]::new)));
             gui.addElement(new StaticGuiElement('m', setItemSize(XMaterial.PAPER.parseItem(), 40), click -> {
-                Bukkit.getScheduler().runTaskLater(plugin, () -> getSingleBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.random(1, instance.numberOfChoices, 40).map(each -> each.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2);
+                Scheduler.runTaskLater(plugin, () -> getSingleBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.random(1, instance.numberOfChoices, 40).map(each -> each.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2, player);
                 return true;
             }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBetCountValueSimple, instance)).map(each -> each.replace("{Count}", "40").replace("{BetUnits}", "40").replace("{Price}", StringUtils.formatComma(instance.pricePerBet * 40))).toArray(String[]::new)));
             gui.addElement(new StaticGuiElement('n', setItemSize(XMaterial.PAPER.parseItem(), 50), click -> {
-                Bukkit.getScheduler().runTaskLater(plugin, () -> getSingleBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.random(1, instance.numberOfChoices, 50).map(each -> each.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2);
+                Scheduler.runTaskLater(plugin, () -> getSingleBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.random(1, instance.numberOfChoices, 50).map(each -> each.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2, player);
                 return true;
             }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBetCountValueSimple, instance)).map(each -> each.replace("{Count}", "50").replace("{BetUnits}", "50").replace("{Price}", StringUtils.formatComma(instance.pricePerBet * 50))).toArray(String[]::new)));
             gui.addElement(new StaticGuiElement('o', setEnchanted(XMaterial.PAPER.parseItem()), click -> {
-                Bukkit.getScheduler().runTaskLater(plugin, () -> getSingleBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.random(1, instance.numberOfChoices, 100).map(each -> each.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2);
+                Scheduler.runTaskLater(plugin, () -> getSingleBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.random(1, instance.numberOfChoices, 100).map(each -> each.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2, player);
                 return true;
             }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBetCountValueSimple, instance)).map(each -> each.replace("{Count}", "100").replace("{BetUnits}", "100").replace("{Price}", StringUtils.formatComma(instance.pricePerBet * 100))).toArray(String[]::new)));
         } else if (type.equals(BetNumbersType.MULTIPLE_RANDOM)) {
@@ -911,7 +919,7 @@ public class LotteryPluginGUI implements Listener {
             gui.addElement(new DynamicGuiElement('l', () -> {
                 long price = LotteryUtils.calculatePrice(size.get(), 0, instance.pricePerBet);
                 return new StaticGuiElement('l', setItemSize(XMaterial.PAPER.parseItem(), 1), click -> {
-                    Bukkit.getScheduler().runTaskLater(plugin, () -> getComplexBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.multipleRandom(1, instance.numberOfChoices, size.get(), 1).map(each -> each.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2);
+                    Scheduler.runTaskLater(plugin, () -> getComplexBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.multipleRandom(1, instance.numberOfChoices, size.get(), 1).map(each -> each.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2, player);
                     return true;
                 }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBetCountValueComplex, instance)).map(each -> each
                         .replace("{Count}", "1")
@@ -922,7 +930,7 @@ public class LotteryPluginGUI implements Listener {
             gui.addElement(new DynamicGuiElement('m', () -> {
                 long price = LotteryUtils.calculatePrice(size.get(), 0, instance.pricePerBet);
                 return new StaticGuiElement('m', setItemSize(XMaterial.PAPER.parseItem(), 2), click -> {
-                    Bukkit.getScheduler().runTaskLater(plugin, () -> getComplexBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.multipleRandom(1, instance.numberOfChoices, size.get(), 2).map(each -> each.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2);
+                    Scheduler.runTaskLater(plugin, () -> getComplexBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.multipleRandom(1, instance.numberOfChoices, size.get(), 2).map(each -> each.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2, player);
                     return true;
                 }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBetCountValueComplex, instance)).map(each -> each
                         .replace("{Count}", "2")
@@ -933,7 +941,7 @@ public class LotteryPluginGUI implements Listener {
             gui.addElement(new DynamicGuiElement('n', () -> {
                 long price = LotteryUtils.calculatePrice(size.get(), 0, instance.pricePerBet);
                 return new StaticGuiElement('n', setItemSize(XMaterial.PAPER.parseItem(), 5), click -> {
-                    Bukkit.getScheduler().runTaskLater(plugin, () -> getComplexBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.multipleRandom(1, instance.numberOfChoices, size.get(), 5).map(each -> each.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2);
+                    Scheduler.runTaskLater(plugin, () -> getComplexBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.multipleRandom(1, instance.numberOfChoices, size.get(), 5).map(each -> each.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2, player);
                     return true;
                 }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBetCountValueComplex, instance)).map(each -> each
                         .replace("{Count}", "5")
@@ -944,7 +952,7 @@ public class LotteryPluginGUI implements Listener {
             gui.addElement(new DynamicGuiElement('o', () -> {
                 long price = LotteryUtils.calculatePrice(size.get(), 0, instance.pricePerBet);
                 return new StaticGuiElement('o', setItemSize(XMaterial.PAPER.parseItem(), 10), click -> {
-                    Bukkit.getScheduler().runTaskLater(plugin, () -> getComplexBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.multipleRandom(1, instance.numberOfChoices, size.get(), 10).map(each -> each.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2);
+                    Scheduler.runTaskLater(plugin, () -> getComplexBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.multipleRandom(1, instance.numberOfChoices, size.get(), 10).map(each -> each.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2, player);
                     return true;
                 }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBetCountValueComplex, instance)).map(each -> each
                         .replace("{Count}", "10")
@@ -993,7 +1001,7 @@ public class LotteryPluginGUI implements Listener {
             gui.addElement(new DynamicGuiElement('l', () -> {
                 long price = LotteryUtils.calculatePrice(selectionSize.get(), bankerSize.get(), instance.pricePerBet);
                 return new StaticGuiElement('l', setItemSize(XMaterial.PAPER.parseItem(), 1), click -> {
-                    Bukkit.getScheduler().runTaskLater(plugin, () -> getComplexBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.bankerRandom(1, instance.numberOfChoices, bankerSize.get(), selectionSize.get(), 1).map(each -> each.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2);
+                    Scheduler.runTaskLater(plugin, () -> getComplexBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.bankerRandom(1, instance.numberOfChoices, bankerSize.get(), selectionSize.get(), 1).map(each -> each.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2, player);
                     return true;
                 }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBetCountValueComplex, instance)).map(each -> each
                         .replace("{Count}", "1")
@@ -1004,7 +1012,7 @@ public class LotteryPluginGUI implements Listener {
             gui.addElement(new DynamicGuiElement('m', () -> {
                 long price = LotteryUtils.calculatePrice(selectionSize.get(), bankerSize.get(), instance.pricePerBet);
                 return new StaticGuiElement('m', setItemSize(XMaterial.PAPER.parseItem(), 2), click -> {
-                    Bukkit.getScheduler().runTaskLater(plugin, () -> getComplexBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.bankerRandom(1, instance.numberOfChoices, bankerSize.get(), selectionSize.get(), 2).map(each -> each.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2);
+                    Scheduler.runTaskLater(plugin, () -> getComplexBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.bankerRandom(1, instance.numberOfChoices, bankerSize.get(), selectionSize.get(), 2).map(each -> each.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2, player);
                     return true;
                 }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBetCountValueComplex, instance)).map(each -> each
                         .replace("{Count}", "2")
@@ -1015,7 +1023,7 @@ public class LotteryPluginGUI implements Listener {
             gui.addElement(new DynamicGuiElement('n', () -> {
                 long price = LotteryUtils.calculatePrice(selectionSize.get(), bankerSize.get(), instance.pricePerBet);
                 return new StaticGuiElement('n', setItemSize(XMaterial.PAPER.parseItem(), 5), click -> {
-                    Bukkit.getScheduler().runTaskLater(plugin, () -> getComplexBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.bankerRandom(1, instance.numberOfChoices, bankerSize.get(), selectionSize.get(), 5).map(each -> each.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2);
+                    Scheduler.runTaskLater(plugin, () -> getComplexBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.bankerRandom(1, instance.numberOfChoices, bankerSize.get(), selectionSize.get(), 5).map(each -> each.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2, player);
                     return true;
                 }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBetCountValueComplex, instance)).map(each -> each
                         .replace("{Count}", "5")
@@ -1026,7 +1034,7 @@ public class LotteryPluginGUI implements Listener {
             gui.addElement(new DynamicGuiElement('o', () -> {
                 long price = LotteryUtils.calculatePrice(selectionSize.get(), bankerSize.get(), instance.pricePerBet);
                 return new StaticGuiElement('o', setItemSize(XMaterial.PAPER.parseItem(), 10), click -> {
-                    Bukkit.getScheduler().runTaskLater(plugin, () -> getComplexBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.bankerRandom(1, instance.numberOfChoices, bankerSize.get(), selectionSize.get(), 10).map(each -> each.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2);
+                    Scheduler.runTaskLater(plugin, () -> getComplexBulkNumberConfirm((Player) click.getWhoClicked(), game, BetNumbersBuilder.bankerRandom(1, instance.numberOfChoices, bankerSize.get(), selectionSize.get(), 10).map(each -> each.build()).collect(Collectors.toList())).show(click.getWhoClicked()), 2, player);
                     return true;
                 }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBetCountValueComplex, instance)).map(each -> each
                         .replace("{Count}", "10")
@@ -1082,14 +1090,14 @@ public class LotteryPluginGUI implements Listener {
                     gui.removeElement('\0');
                     gui.addElement(new StaticGuiElement('\0', isBanker && !((BetNumbersBuilder.BankerBuilder) builder).inSelectionPhase() ? XMaterial.EMERALD.parseItem() : XMaterial.GOLD_INGOT.parseItem(), click -> {
                         if (builder.completed()) {
-                            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                            Scheduler.runTaskLater(plugin, () -> {
                                 BetNumbers betNumbers = builder.build();
                                 if (betNumbers.getType().equals(BetNumbersType.SINGLE)) {
                                     getSingleNumberConfirm((Player) click.getWhoClicked(), game, betNumbers).show(click.getWhoClicked());
                                 } else {
                                     getComplexNumberConfirm((Player) click.getWhoClicked(), game, betNumbers).show(click.getWhoClicked());
                                 }
-                            }, 2);
+                            }, 2, player);
                         } else if (isBanker && !((BetNumbersBuilder.BankerBuilder) builder).inSelectionPhase() && !((BetNumbersBuilder.BankerBuilder) builder).getBankers().isEmpty()) {
                             ((BetNumbersBuilder.BankerBuilder) builder).finishBankers();
                             gui.removeElement('\0');
@@ -1292,18 +1300,18 @@ public class LotteryPluginGUI implements Listener {
                             }
                         }
                         if (result.isSuccess()) {
-                            Bukkit.getScheduler().runTaskLater(plugin, () -> checkReopen(click.getWhoClicked()), 5);
+                            Scheduler.runTaskLater(plugin, () -> checkReopen(click.getWhoClicked()), 5, player);
                         }
                     }
-                    Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
+                    Scheduler.runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1, player);
                 }
             });
             return true;
         }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetUnitInvestmentConfirm, instance, game))
                 .map(each -> each.replace("{Price}", StringUtils.formatComma(price))).toArray(String[]::new)));
         gui.addElement(new StaticGuiElement('i', XMaterial.BARRIER.parseItem(), click -> {
-            Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
-            Bukkit.getScheduler().runTaskLater(plugin, () -> checkReopen(click.getWhoClicked()), 5);
+            Scheduler.runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1, player);
+            Scheduler.runTaskLater(plugin, () -> checkReopen(click.getWhoClicked()), 5, player);
             return true;
         }, LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetCancel, instance, game)));
 
@@ -1364,10 +1372,10 @@ public class LotteryPluginGUI implements Listener {
                             }
                         }
                         if (result.isSuccess()) {
-                            Bukkit.getScheduler().runTaskLater(plugin, () -> checkReopen(click.getWhoClicked()), 5);
+                            Scheduler.runTaskLater(plugin, () -> checkReopen(click.getWhoClicked()), 5, player);
                         }
                     }
-                    Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
+                    Scheduler.runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1, player);
                 }
             });
             return true;
@@ -1412,18 +1420,18 @@ public class LotteryPluginGUI implements Listener {
                             }
                         }
                         if (result.isSuccess()) {
-                            Bukkit.getScheduler().runTaskLater(plugin, () -> checkReopen(click.getWhoClicked()), 5);
+                            Scheduler.runTaskLater(plugin, () -> checkReopen(click.getWhoClicked()), 5, player);
                         }
                     }
-                    Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
+                    Scheduler.runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1, player);
                 }
             });
             return true;
         }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetUnitInvestmentConfirm, instance, game))
                 .map(each -> each.replace("{Price}", StringUtils.formatComma(price)).replace("{PricePartial}", StringUtils.formatComma(partial))).toArray(String[]::new)));
         gui.addElement(new StaticGuiElement('j', XMaterial.BARRIER.parseItem(), click -> {
-            Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
-            Bukkit.getScheduler().runTaskLater(plugin, () -> checkReopen(click.getWhoClicked()), 5);
+            Scheduler.runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1, player);
+            Scheduler.runTaskLater(plugin, () -> checkReopen(click.getWhoClicked()), 5, player);
             return true;
         }, LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetCancel, instance, game)));
 
@@ -1484,18 +1492,18 @@ public class LotteryPluginGUI implements Listener {
                             }
                         }
                         if (result.isSuccess()) {
-                            Bukkit.getScheduler().runTaskLater(plugin, () -> checkReopen(click.getWhoClicked()), 5);
+                            Scheduler.runTaskLater(plugin, () -> checkReopen(click.getWhoClicked()), 5, player);
                         }
                     }
-                    Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
+                    Scheduler.runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1, player);
                 }
             });
             return true;
         }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetUnitInvestmentConfirm, instance, game))
                 .map(each -> each.replace("{Price}", StringUtils.formatComma(price))).toArray(String[]::new)));
         gui.addElement(new StaticGuiElement('i', XMaterial.BARRIER.parseItem(), click -> {
-            Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
-            Bukkit.getScheduler().runTaskLater(plugin, () -> checkReopen(click.getWhoClicked()), 5);
+            Scheduler.runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1, player);
+            Scheduler.runTaskLater(plugin, () -> checkReopen(click.getWhoClicked()), 5, player);
             return true;
         }, LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetCancel, instance, game)));
 
@@ -1557,10 +1565,10 @@ public class LotteryPluginGUI implements Listener {
                             }
                         }
                         if (result.isSuccess()) {
-                            Bukkit.getScheduler().runTaskLater(plugin, () -> checkReopen(click.getWhoClicked()), 5);
+                            Scheduler.runTaskLater(plugin, () -> checkReopen(click.getWhoClicked()), 5, player);
                         }
                     }
-                    Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
+                    Scheduler.runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1, player);
                 }
             });
             return true;
@@ -1605,18 +1613,18 @@ public class LotteryPluginGUI implements Listener {
                             }
                         }
                         if (result.isSuccess()) {
-                            Bukkit.getScheduler().runTaskLater(plugin, () -> checkReopen(click.getWhoClicked()), 5);
+                            Scheduler.runTaskLater(plugin, () -> checkReopen(click.getWhoClicked()), 5, player);
                         }
                     }
-                    Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
+                    Scheduler.runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1, player);
                 }
             });
             return true;
         }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetUnitInvestmentConfirm, instance, game))
                 .map(each -> each.replace("{Price}", StringUtils.formatComma(price)).replace("{PricePartial}", StringUtils.formatComma(partial))).toArray(String[]::new)));
         gui.addElement(new StaticGuiElement('j', XMaterial.BARRIER.parseItem(), click -> {
-            Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
-            Bukkit.getScheduler().runTaskLater(plugin, () -> checkReopen(click.getWhoClicked()), 5);
+            Scheduler.runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1, player);
+            Scheduler.runTaskLater(plugin, () -> checkReopen(click.getWhoClicked()), 5, player);
             return true;
         }, LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetCancel, instance, game)));
 
@@ -1653,10 +1661,10 @@ public class LotteryPluginGUI implements Listener {
             gui.addElement(new StaticGuiElement('h', XMaterial.CLOCK.parseItem(), LotteryUtils.formatPlaceholders(player, instance.guiLastResultsLotteryInfo, instance, game)));
 
             gui.addElement(new StaticGuiElement('i', game.hasPlayerWinnings(player.getUniqueId()) ? setEnchanted(XMaterial.GOLD_INGOT.parseItem()) : XMaterial.GOLD_INGOT.parseItem(), click -> {
-                Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                Scheduler.runTaskLater(plugin, () -> {
                     close(click.getWhoClicked(), click.getGui(), false);
 
-                    Bukkit.getScheduler().runTaskLaterAsynchronously(plugin, () -> {
+                    Scheduler.runTaskLaterAsynchronously(plugin, () -> {
                         String winningNumberStr = game.getDrawResult().toFormattedString();
 
                         List<BaseComponent> pages = new ArrayList<>();
@@ -1765,19 +1773,19 @@ public class LotteryPluginGUI implements Listener {
                         meta.setTitle("LotterySix");
                         itemStack.setItemMeta(meta);
                         ItemStack book = BookUtils.setPagesComponent(itemStack, pages);
-                        Bukkit.getScheduler().runTaskLater(plugin, () -> BookUtils.openBook((Player) click.getWhoClicked(), book), 1);
+                        Scheduler.runTaskLater(plugin, () -> BookUtils.openBook((Player) click.getWhoClicked(), book), 1, player);
                     }, 1);
-                }, 1);
+                }, 1, player);
                 return true;
             }, LotteryUtils.formatPlaceholders(player, instance.guiLastResultsYourBets, instance, game)));
             gui.addElement(new StaticGuiElement('j', XMaterial.MAP.parseItem(), click -> {
-                Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
-                Bukkit.getScheduler().runTaskLater(plugin, () -> getPastResultsList(player, game).show(player), 2);
+                Scheduler.runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1, player);
+                Scheduler.runTaskLater(plugin, () -> getPastResultsList(player, game).show(player), 2, player);
                 return true;
             }, LotteryUtils.formatPlaceholders(player, instance.guiLastResultsListHistoricGames, instance, game)));
         }
         gui.setCloseAction(action -> {
-            Bukkit.getScheduler().runTaskLater(plugin, () -> checkReopen(action.getPlayer()), 5);
+            Scheduler.runTaskLater(plugin, () -> checkReopen(action.getPlayer()), 5, player);
             return false;
         });
 
@@ -1806,10 +1814,10 @@ public class LotteryPluginGUI implements Listener {
         gui.setFiller(XMaterial.BLACK_STAINED_GLASS_PANE.parseItem());
         if (startPosition >= 5) {
             gui.addElement(new StaticGuiElement('\0', XMaterial.ARROW.parseItem(), click -> {
-                Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                Scheduler.runTaskLater(plugin, () -> {
                     getPastResultsList(player, currentPosition - 5, lastSelectedGame).show(player);
                     removeSecondLast(player);
-                }, 1);
+                }, 1, player);
                 return true;
             }, LotteryUtils.formatPlaceholders(player, instance.guiLastResultsHistoricNewerGames, instance, lastSelectedGame)));
         } else {
@@ -1817,10 +1825,10 @@ public class LotteryPluginGUI implements Listener {
         }
         if (startPosition + 5 < completedGames.size()) {
             gui.addElement(new StaticGuiElement('\2', XMaterial.ARROW.parseItem(), click -> {
-                Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                Scheduler.runTaskLater(plugin, () -> {
                     getPastResultsList(player, currentPosition + 5, lastSelectedGame).show(player);
                     removeSecondLast(player);
-                }, 1);
+                }, 1, player);
                 return true;
             }, LotteryUtils.formatPlaceholders(player, instance.guiLastResultsHistoricOlderGames, instance, lastSelectedGame)));
         } else {
@@ -1829,8 +1837,8 @@ public class LotteryPluginGUI implements Listener {
         char c = 'a';
         for (CompletedLotterySixGameIndex gameIndex : list) {
             gui.addElement(new StaticGuiElement(c++, XMaterial.PAPER.parseItem(), click -> {
-                Bukkit.getScheduler().runTaskLater(plugin, () -> close(player, gui, false), 1);
-                Bukkit.getScheduler().runTaskLater(plugin, () -> getPastResults(player, completedGames.get(position.get(gameIndex))).show(player), 2);
+                Scheduler.runTaskLater(plugin, () -> close(player, gui, false), 1, player);
+                Scheduler.runTaskLater(plugin, () -> getPastResults(player, completedGames.get(position.get(gameIndex))).show(player), 2, player);
                 return true;
             }, LotteryUtils.formatPlaceholders(player, instance.guiLastResultsHistoricGameListInfo, instance, gameIndex)));
             if (gameIndex.hasSpecialName()) {
@@ -1854,12 +1862,12 @@ public class LotteryPluginGUI implements Listener {
         leftMeta.setDisplayName(lastSelectedGame.getGameNumber() == null ? " " : lastSelectedGame.getGameNumber().toString());
         left.setItemMeta(leftMeta);
         gui.addElement(new StaticGuiElement('\1', XMaterial.MAP.parseItem(), click -> {
-            Bukkit.getScheduler().runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1);
-            Bukkit.getScheduler().runTaskLater(plugin, () -> new AnvilGUI.Builder().plugin(plugin)
+            Scheduler.runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1, player);
+            Scheduler.runTaskLater(plugin, () -> new AnvilGUI.Builder().plugin(plugin)
                     .title(LotteryUtils.formatPlaceholders(player, instance.guiGameNumberInputTitle, instance, lastSelectedGame))
                     .itemLeft(left)
                     .onComplete(completion -> {
-                        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+                        Scheduler.runTaskAsynchronously(plugin, () -> {
                             String input = completion.getText().trim();
                             try {
                                 GameNumber gameNumber = GameNumber.fromString(input);
@@ -1867,7 +1875,7 @@ public class LotteryPluginGUI implements Listener {
                                 if (targetGame == null) {
                                     player.sendMessage(instance.messageGameNumberNotFound);
                                 } else {
-                                    Bukkit.getScheduler().runTaskLater(plugin, () -> getPastResults(player, targetGame).show(player), 2);
+                                    Scheduler.runTaskLater(plugin, () -> getPastResults(player, targetGame).show(player), 2, player);
                                 }
                             } catch (Exception e) {
                                 player.sendMessage(instance.messageGameNumberNotFound);
@@ -1875,11 +1883,11 @@ public class LotteryPluginGUI implements Listener {
                         });
                         return Collections.singletonList(AnvilGUI.ResponseAction.close());
                     })
-                    .open(player), 2);
+                    .open(player), 2, player);
             return true;
         }, LotteryUtils.formatPlaceholders(player, instance.guiLastResultsLookupHistoricGames, instance, lastSelectedGame)));
         gui.setCloseAction(action -> {
-            Bukkit.getScheduler().runTaskLater(plugin, () -> checkReopen(action.getPlayer()), 5);
+            Scheduler.runTaskLater(plugin, () -> checkReopen(action.getPlayer()), 5, player);
             return false;
         });
 

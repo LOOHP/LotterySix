@@ -34,6 +34,7 @@ import com.loohp.lotterysix.game.objects.PlayerStatsKey;
 import com.loohp.lotterysix.game.player.LotteryPlayer;
 import com.loohp.lotterysix.metrics.Charts;
 import com.loohp.lotterysix.metrics.Metrics;
+import com.loohp.lotterysix.objects.Scheduler;
 import com.loohp.lotterysix.placeholderapi.LotteryPlaceholders;
 import com.loohp.lotterysix.pluginmessaging.PluginMessageHandler;
 import com.loohp.lotterysix.updater.Updater;
@@ -54,6 +55,7 @@ import org.bukkit.OfflinePlayer;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -286,18 +288,8 @@ public class LotterySixPlugin extends JavaPlugin implements Listener {
     }
 
     public static void forceCloseAllGui() {
-        runOrScheduleSync(() -> {
-            for (Player player : Bukkit.getOnlinePlayers()) {
-                guiProvider.forceClose(player);
-            }
-        });
-    }
-
-    public static void runOrScheduleSync(Runnable runnable) {
-        if (Bukkit.isPrimaryThread()) {
-            runnable.run();
-        } else {
-            Bukkit.getScheduler().runTask(LotterySixPlugin.plugin, runnable);
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            Scheduler.executeOrScheduleSync(plugin, () -> guiProvider.forceClose(player), player);
         }
     }
 
@@ -328,10 +320,10 @@ public class LotterySixPlugin extends JavaPlugin implements Listener {
         if (activeBossBar != null) {
             activeBossBar.addPlayer(event.getPlayer());
         }
-        Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
+        Scheduler.runTaskAsynchronously(this, () -> {
             LotteryPlayer lotteryPlayer = instance.getLotteryPlayerManager().loadLotteryPlayer(event.getPlayer().getUniqueId(), true);
             if (!instance.backendBungeecordMode) {
-                Bukkit.getScheduler().runTaskLaterAsynchronously(this, () -> notifyOfflineBalanceChange(lotteryPlayer), 20);
+                Scheduler.runTaskLaterAsynchronously(this, () -> notifyOfflineBalanceChange(lotteryPlayer), 20);
             }
         });
     }
@@ -341,6 +333,6 @@ public class LotterySixPlugin extends JavaPlugin implements Listener {
         if (activeBossBar != null) {
             activeBossBar.removePlayer(event.getPlayer());
         }
-        Bukkit.getScheduler().runTaskAsynchronously(this, () -> instance.getLotteryPlayerManager().unloadLotteryPlayer(event.getPlayer().getUniqueId(), true));
+        Scheduler.runTaskAsynchronously(this, () -> instance.getLotteryPlayerManager().unloadLotteryPlayer(event.getPlayer().getUniqueId(), true));
     }
 }

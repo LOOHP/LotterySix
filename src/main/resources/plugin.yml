@@ -3,6 +3,7 @@ version: '${project.version}'
 main: com.loohp.lotterysix.LotterySixPlugin
 api-version: 1.13
 authors: [LOOHP]
+folia-supported: true
 depend: [Vault, PlaceholderAPI]
 softdepend: [DiscordSRV, floodgate]
 description: Number picking lottery inspired by 'Mark Six' by the HKJC. Please bet responsibly.

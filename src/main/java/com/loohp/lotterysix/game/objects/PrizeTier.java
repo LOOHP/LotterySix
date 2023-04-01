@@ -20,6 +20,8 @@
 
 package com.loohp.lotterysix.game.objects;
 
+import static com.loohp.lotterysix.utils.MathUtils.probabilityFormula;
+
 public enum PrizeTier {
 
     FIRST("1st", new WinningCriteria(6, false), -1, 2, true),
@@ -95,6 +97,15 @@ public enum PrizeTier {
 
         public boolean satisfies(int matches, boolean matchedSpecial) {
             return matches >= matchNumbers && (!requireSpecialNumber || matchedSpecial);
+        }
+
+        public double probability(int numberOfChoices) {
+            int notMatched = (requireSpecialNumber ? 5 : 6) - matchNumbers;
+            return probabilityFormula(6, matchNumbers) * probabilityFormula(numberOfChoices - 7, notMatched) / probabilityFormula(numberOfChoices, 6);
+        }
+
+        public double oneOverProbability(int numberOfChoices) {
+            return 1.0 / probability(numberOfChoices);
         }
 
         public int getMatchNumbers() {

@@ -98,7 +98,7 @@ public class LotteryUtils {
                 .replace("{NumberOfChoices}", () -> lotterySix.numberOfChoices + "");
         for (PrizeTier prizeTier : PrizeTier.values()) {
             str = str.replace("{" + prizeTier.name() + "Odds}", () -> {
-                double odds = calculateOddsOneOver(lotterySix.numberOfChoices, prizeTier);
+                double odds = prizeTier.getWinningCriteria().oneOverProbability(lotterySix.numberOfChoices);
                 return Double.isFinite(odds) ? ODDS_FORMAT.format(odds) : "-";
             });
         }
@@ -138,7 +138,7 @@ public class LotteryUtils {
                     .replace("{BetPlayerNames}", "-");
             for (PrizeTier prizeTier : PrizeTier.values()) {
                 str = str.replace("{" + prizeTier.name() + "Odds}", () -> {
-                    double odds = calculateOddsOneOver(lotterySix.numberOfChoices, prizeTier);
+                    double odds = prizeTier.getWinningCriteria().oneOverProbability(lotterySix.numberOfChoices);
                     return Double.isFinite(odds) ? ODDS_FORMAT.format(odds) : "-";
                 });
             }
@@ -164,7 +164,7 @@ public class LotteryUtils {
                     .replace("{BetPlayerNames}", () -> chainPlayerBetNames(game.getBets()));
             for (PrizeTier prizeTier : PrizeTier.values()) {
                 str = str.replace("{" + prizeTier.name() + "Odds}", () -> {
-                    double odds = calculateOddsOneOver(lotterySix.numberOfChoices, prizeTier);
+                    double odds = prizeTier.getWinningCriteria().oneOverProbability(lotterySix.numberOfChoices);
                     return Double.isFinite(odds) ? ODDS_FORMAT.format(odds) : "-";
                 });
             }
@@ -201,7 +201,7 @@ public class LotteryUtils {
                     .replace("{PricePerPartialBet}", () -> StringUtils.formatComma(lotterySix.pricePerBet / BetUnitType.PARTIAL.getDivisor()));
             for (PrizeTier prizeTier : PrizeTier.values()) {
                 str = str.replace("{" + prizeTier.name() + "Odds}", () -> {
-                    double odds = calculateOddsOneOver(lotterySix.numberOfChoices, prizeTier);
+                    double odds = prizeTier.getWinningCriteria().oneOverProbability(lotterySix.numberOfChoices);
                     return Double.isFinite(odds) ? ODDS_FORMAT.format(odds) : "-";
                 });
             }
@@ -219,7 +219,7 @@ public class LotteryUtils {
                     .replace("{PricePerPartialBet}", () -> StringUtils.formatComma(lotterySix.pricePerBet / BetUnitType.PARTIAL.getDivisor()));
             for (PrizeTier prizeTier : PrizeTier.values()) {
                 str = str.replace("{" + prizeTier.name() + "Odds}", () -> {
-                    double odds = calculateOddsOneOver(lotterySix.numberOfChoices, prizeTier);
+                    double odds = prizeTier.getWinningCriteria().oneOverProbability(lotterySix.numberOfChoices);
                     return Double.isFinite(odds) ? ODDS_FORMAT.format(odds) : "-";
                 });
             }
@@ -270,7 +270,7 @@ public class LotteryUtils {
                 String prizeTierName = prizeTier.name();
                 str = str
                         .replace("{" + prizeTier.name() + "Odds}", () -> {
-                            double odds = calculateOddsOneOver(lotterySix.numberOfChoices, prizeTier);
+                            double odds = prizeTier.getWinningCriteria().oneOverProbability(lotterySix.numberOfChoices);
                             return Double.isFinite(odds) ? ODDS_FORMAT.format(odds) : "-";
                         })
                         .replace("{" + prizeTierName + "Prize}", "-")
@@ -314,7 +314,7 @@ public class LotteryUtils {
                 String prizeTierName = prizeTier.name();
                 str = str
                         .replace("{" + prizeTier.name() + "Odds}", () -> {
-                            double odds = calculateOddsOneOver(lotterySix.numberOfChoices, prizeTier);
+                            double odds = prizeTier.getWinningCriteria().oneOverProbability(lotterySix.numberOfChoices);
                             return Double.isFinite(odds) ? ODDS_FORMAT.format(odds) : "-";
                         })
                         .replace("{" + prizeTierName + "Prize}", () -> StringUtils.formatComma(game.getPrizeForTier(prizeTier)))
@@ -336,40 +336,6 @@ public class LotteryUtils {
 
     public static String chainPlayerWinningsNames(Collection<PlayerWinnings> winnings) {
         return winnings.stream().map(each -> each.getName()).distinct().collect(Collectors.joining(", "));
-    }
-
-    public static double calculateOdds(int numberOfChoices, PrizeTier prizeTier) {
-        switch (prizeTier) {
-            case FIRST: {
-                return 1.0 / probabilityFormula(numberOfChoices, 6);
-            }
-            case SECOND: {
-                return probabilityFormula(6, 5) / probabilityFormula(numberOfChoices, 6);
-            }
-            case THIRD: {
-                return probabilityFormula(6, 5) * probabilityFormula(numberOfChoices - 7, 1) / probabilityFormula(numberOfChoices, 6);
-            }
-            case FOURTH: {
-                return probabilityFormula(6, 4) * probabilityFormula(numberOfChoices - 7, 1) / probabilityFormula(numberOfChoices, 6);
-            }
-            case FIFTH: {
-                return probabilityFormula(6, 4) * probabilityFormula(numberOfChoices - 7, 2) / probabilityFormula(numberOfChoices, 6);
-            }
-            case SIXTH: {
-                return probabilityFormula(6, 3) * probabilityFormula(numberOfChoices - 7, 2) / probabilityFormula(numberOfChoices, 6);
-            }
-            case SEVENTH: {
-                return probabilityFormula(6, 3) * probabilityFormula(numberOfChoices - 7, 3) / probabilityFormula(numberOfChoices, 6);
-            }
-            default: {
-                throw new IllegalArgumentException("Unknown prize tier " + prizeTier);
-            }
-        }
-    }
-
-    public static double calculateOddsOneOver(int numberOfChoices, PrizeTier prizeTier) {
-        double odds = calculateOdds(numberOfChoices, prizeTier);
-        return 1.0 / odds;
     }
 
 }

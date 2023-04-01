@@ -21,6 +21,7 @@
 package com.loohp.lotterysix.updater;
 
 import com.loohp.lotterysix.LotterySixPlugin;
+import com.loohp.lotterysix.objects.Scheduler;
 import com.loohp.lotterysix.utils.HTTPRequestUtils;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.chat.ClickEvent;
@@ -98,7 +99,7 @@ public class Updater implements Listener {
 
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
-        Bukkit.getScheduler().runTaskLaterAsynchronously(LotterySixPlugin.plugin, () -> {
+        Scheduler.runTaskLaterAsynchronously(LotterySixPlugin.plugin, () -> {
             if (LotterySixPlugin.getInstance().updaterEnabled) {
                 Player player = event.getPlayer();
                 if (player.hasPermission("lotterysix.update")) {
