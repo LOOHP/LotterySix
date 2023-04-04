@@ -56,6 +56,7 @@ Formatting:
   MultipleWinningsDescription: "&6{Tier} ${Winnings} &7x{Times}"
   BulkWinningsDescription: "&6{HighestTier}+ ${Winnings} (${UnitPrice})"
   CombinationWinningsDescription: "&6{HighestTier}+ ${Winnings} (${UnitPrice})"
+  RandomEntryGeneric: "&cRandom Entry"
   BetNumbersTypes:
     SINGLE: "&6Single Entry"
     MULTIPLE: "&fMultiple Entry"
@@ -529,22 +530,17 @@ DiscordSRV:
       - ""
       - "*Congratulations!*"
     ThumbnailURL: "https://resources.loohpjames.com/spigot/plugins/lotterysix/icon.png"
+  #Discord Slash Command /lottery
   SlashCommands:
     Global:
+      Title: "LotterySix Menu"
+      Description: "Open LotterySix menu"
       Messages:
         NotLinked: "Minecraft account must be linked to use this command."
         NoOneOnline: "A player must be online on the local server for this command to function."
-      Labels:
-        GameNumber:
-          Name: "game-number"
-          Description: "Game number of the LotterySix game to look up (e.g. '23/001')"
-        BetNumbers:
-          Name: "bet-numbers"
-          Description: "Numbers you would like to bet on"
-    #SlashCommand /betaccount
+        TimeOut: "Action timed out! Please start over again."
+        UnknownError: "An unknown error occurred!"
     BetAccount:
-      Enabled: true
-      Description: "View your betting account"
       Title: "%player_name%'s Betting Account"
       SubTitle:
         - "Highest Won Tier: %lotterysix_stats_highest_won_tier%"
@@ -552,31 +548,30 @@ DiscordSRV:
         - "Game Account Balance: $%vault_eco_balance_commas%"
         - "Betting Account Balance: $%lotterysix_stats_account_balance%"
       ThumbnailURL: "https://resources.loohpjames.com/spigot/plugins/lotterysix/icon.png"
-    #SlashCommand /placebet
     PlaceBet:
-      Enabled: true
-      Description: "Place a new bet"
       NoGame: "There are no LotterySix games scheduled"
-      Title: "Place Bet"
+      Title: "Place New Bets"
       SubTitle:
         - "Game Number: {GameNumber}"
         - "Draw Date: {Date}"
         - ""
         - "**Betting Account Balance: $%lotterysix_stats_account_balance%**"
         - "**Entry Type: {BetNumbersType}**"
+      Components:
+        NotYetFinish: "Please choose your numbers!"
+        Finish: "Finish selection"
+        FinishBankers: "Finish banker selection"
+        MultipleRandomSize: "Number of Selections: {Count}"
+        BankerRandomBankerSize: "Number of Bankers: {Count}"
+        BankerRandomSelectionSize: "Number of Selections: {Count}"
       ThumbnailURL: "https://resources.loohpjames.com/spigot/plugins/lotterysix/icon.png"
-    #SlashCommand /pastdraw
     ViewPastDraw:
-      Enabled: true
-      Description: "View the draw results of the last LotterySix round"
+      Title: "LotterySix Draw Results"
       NoResults: "No results are available"
       YourBets: "**Your bets**"
       NoWinnings: "No Winnings"
       ThumbnailURL: "https://resources.loohpjames.com/spigot/plugins/lotterysix/icon.png"
-    #SlashCommand /mybets
     ViewCurrentBets:
-      Enabled: true
-      Description: "View my bets for the current round of LotterySix"
       Title: "Your Bets"
       SubTitle:
         - "Game Number: {GameNumber}"
@@ -586,13 +581,8 @@ DiscordSRV:
       NoBets: "You haven't placed any bets"
       NoGame: "There are no LotterySix games scheduled"
       ThumbnailURL: "https://resources.loohpjames.com/spigot/plugins/lotterysix/icon.png"
-    #SlashCommand /numberstats
     ViewNumberStatistics:
-      Enabled: true
-      Description: "View number statistics for LotterySix"
-      NumberField: "Number"
-      LastDrawnField: "Since Last Drawn"
-      TimesDrawnField: "Times Drawn"
+      Title: "Statistics"
       ThumbnailURL: "https://resources.loohpjames.com/spigot/plugins/lotterysix/icon.png"
 
 #If you would like to create custom texture for the number selection items
