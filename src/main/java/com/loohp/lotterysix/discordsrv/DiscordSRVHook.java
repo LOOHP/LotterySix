@@ -21,7 +21,11 @@
 package com.loohp.lotterysix.discordsrv;
 
 import com.loohp.lotterysix.LotterySixPlugin;
-import com.loohp.lotterysix.discordsrv.menus.*;
+import com.loohp.lotterysix.discordsrv.menus.BettingAccountInteraction;
+import com.loohp.lotterysix.discordsrv.menus.NumberStatisticsInteraction;
+import com.loohp.lotterysix.discordsrv.menus.PastDrawInteraction;
+import com.loohp.lotterysix.discordsrv.menus.PlaceBetInteraction;
+import com.loohp.lotterysix.discordsrv.menus.ViewBetsInteraction;
 import com.loohp.lotterysix.events.LotterySixEvent;
 import com.loohp.lotterysix.events.PlayerBetEvent;
 import com.loohp.lotterysix.game.LotterySix;
