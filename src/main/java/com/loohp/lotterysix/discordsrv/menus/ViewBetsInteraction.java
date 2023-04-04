@@ -55,7 +55,11 @@ public class ViewBetsInteraction extends DiscordInteraction {
 
     @Override
     public List<ActionRow> getActionRows(UUID uuid) {
-        return Collections.singletonList(ActionRow.of(Button.success(INTERACTION_LABEL, instance.discordSRVSlashCommandsViewCurrentBetsTitle).withEmoji(Emoji.fromUnicode("\uD83C\uDFAB"))));
+        Button button = Button.success(INTERACTION_LABEL, instance.discordSRVSlashCommandsViewCurrentBetsTitle).withEmoji(Emoji.fromUnicode("\uD83C\uDFAB"));
+        if (instance.getCurrentGame() == null) {
+            button = button.asDisabled();
+        }
+        return Collections.singletonList(ActionRow.of(button));
     }
 
     @Override

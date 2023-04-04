@@ -238,11 +238,18 @@ public class DiscordSRVHook extends ListenerAdapter implements Listener, SlashCo
         if (label.equals(SLASH_COMMAND_LABEL)) {
             event.deferReply(true).queue();
             String discordUserId = event.getUser().getId();
+            String description;
+            if (lotterySix.getCurrentGame() == null) {
+                description = ChatColor.stripColor(LotteryUtils.formatPlaceholders(null, lotterySix.discordSRVSlashCommandsGlobalSubTitleNoGame, lotterySix, lotterySix.getCurrentGame()));
+            } else {
+                description = ChatColor.stripColor(LotteryUtils.formatPlaceholders(null, lotterySix.discordSRVSlashCommandsGlobalSubTitleActiveGame, lotterySix, lotterySix.getCurrentGame()));
+            }
             event.getHook().editOriginalEmbeds(new EmbedBuilder()
-                    .setTitle(lotterySix.discordSRVSlashCommandsGlobalTitle)
-                    .setColor(Color.YELLOW)
-                    .setThumbnail(lotterySix.discordSRVSlashCommandsGlobalThumbnailURL)
-                    .build()).setActionRows(buildActionRows(interactionMap.values(), discordUserId)).queue();
+                            .setTitle(lotterySix.discordSRVSlashCommandsGlobalTitle)
+                            .setDescription(description)
+                            .setColor(Color.YELLOW)
+                            .setThumbnail(lotterySix.discordSRVSlashCommandsGlobalThumbnailURL)
+                            .build()).setActionRows(buildActionRows(interactionMap.values(), discordUserId)).queue();
         }
     }
 

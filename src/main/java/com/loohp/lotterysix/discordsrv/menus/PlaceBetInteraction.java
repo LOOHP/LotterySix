@@ -172,7 +172,11 @@ public class PlaceBetInteraction extends DiscordInteraction {
 
     @Override
     public List<ActionRow> getActionRows(UUID uuid) {
-        return Collections.singletonList(ActionRow.of(Button.success(INTERACTION_LABEL, instance.discordSRVSlashCommandsPlaceBetTitle).withEmoji(Emoji.fromUnicode("\uD83D\uDCB0"))));
+        Button button = Button.success(INTERACTION_LABEL, instance.discordSRVSlashCommandsPlaceBetTitle).withEmoji(Emoji.fromUnicode("\uD83D\uDCB0"));
+        if (instance.getCurrentGame() == null) {
+            button = button.asDisabled();
+        }
+        return Collections.singletonList(ActionRow.of(button));
     }
 
     @Override

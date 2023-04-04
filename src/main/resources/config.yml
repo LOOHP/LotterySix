@@ -536,6 +536,15 @@ DiscordSRV:
       Title: "LotterySix Menu"
       Description: "Open LotterySix menu"
       ThumbnailURL: "https://resources.loohpjames.com/spigot/plugins/lotterysix/icon.png"
+      SubTitle:
+        ActiveGame:
+          - "**Next LotterySix**"
+          - "**Game Number: {GameNumber}**"
+          - "**Draw Date: {Date}**"
+          - "**Turnover: ${TotalBets}**"
+          - "**Estimated Prize Pool: ${PrizePool}**"
+        NoGame:
+          - "There are no LotterySix games scheduled"
       Messages:
         NotLinked: "Minecraft account must be linked to use this command."
         NoOneOnline: "A player must be online on the local server for this command to function."
