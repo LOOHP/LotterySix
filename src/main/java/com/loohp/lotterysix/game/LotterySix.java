@@ -269,6 +269,7 @@ public class LotterySix implements AutoCloseable {
     public String discordSRVDrawResultAnnouncementThumbnailURL;
     public String discordSRVSlashCommandsGlobalTitle;
     public String discordSRVSlashCommandsGlobalDescription;
+    public String discordSRVSlashCommandsGlobalThumbnailURL;
     public String discordSRVSlashCommandsGlobalMessagesNotLinked;
     public String discordSRVSlashCommandsGlobalMessagesNoOneOnline;
     public String discordSRVSlashCommandsGlobalMessagesTimeOut;
@@ -953,6 +954,7 @@ public class LotterySix implements AutoCloseable {
         discordSRVDrawResultAnnouncementThumbnailURL = config.getConfiguration().getString("DiscordSRV.DrawResultAnnouncement.ThumbnailURL");
         discordSRVSlashCommandsGlobalTitle = config.getConfiguration().getString("DiscordSRV.SlashCommands.Global.Title");
         discordSRVSlashCommandsGlobalDescription = config.getConfiguration().getString("DiscordSRV.SlashCommands.Global.Description");
+        discordSRVSlashCommandsGlobalThumbnailURL = config.getConfiguration().getString("DiscordSRV.SlashCommands.Global.ThumbnailURL");
         discordSRVSlashCommandsGlobalMessagesNotLinked = config.getConfiguration().getString("DiscordSRV.SlashCommands.Global.Messages.NotLinked");
         discordSRVSlashCommandsGlobalMessagesNoOneOnline = config.getConfiguration().getString("DiscordSRV.SlashCommands.Global.Messages.NoOneOnline");
         discordSRVSlashCommandsGlobalMessagesTimeOut = config.getConfiguration().getString("DiscordSRV.SlashCommands.Global.Messages.TimeOut");

@@ -535,6 +535,7 @@ DiscordSRV:
     Global:
       Title: "LotterySix Menu"
       Description: "Open LotterySix menu"
+      ThumbnailURL: "https://resources.loohpjames.com/spigot/plugins/lotterysix/icon.png"
       Messages:
         NotLinked: "Minecraft account must be linked to use this command."
         NoOneOnline: "A player must be online on the local server for this command to function."
