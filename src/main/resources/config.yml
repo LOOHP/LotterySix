@@ -23,7 +23,7 @@ Messages:
   DepositSuccess: "&aSuccessfully deposited ${Amount} into your betting account"
   WithdrawFailed: "&cFailed to withdraw from your betting account"
   InvalidNumber: "&cThat is not a valid number"
-  InvalidBetNumbers: "&cInvalid bet numbers, for more info, please visit: https://github.com/LOOHP/LotterySix/wiki/Placing-Bets-Through-Discord"
+  InvalidBetNumbers: "&cInvalid bet numbers"
   PlayerBalance: "&a{Player} now has ${Balance} in their Betting Account."
 
 Explanation:
