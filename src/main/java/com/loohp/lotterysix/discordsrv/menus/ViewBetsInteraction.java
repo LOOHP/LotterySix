@@ -69,9 +69,8 @@ public class ViewBetsInteraction extends DiscordInteraction {
 
         PlayableLotterySixGame game = instance.getCurrentGame();
         if (game == null) {
-            event.editMessage(instance.discordSRVSlashCommandsViewCurrentBetsNoGame).setActionRows().setEmbeds().queue();
+            event.getHook().editOriginal(instance.discordSRVSlashCommandsViewCurrentBetsNoGame).setActionRows().setEmbeds().queue();
         } else {
-            event.deferEdit().queue();
             OfflinePlayer player = uuid == null ? null : Bukkit.getOfflinePlayer(uuid);
             StringBuilder sb = new StringBuilder();
             for (String line : instance.discordSRVSlashCommandsViewCurrentBetsSubTitle) {

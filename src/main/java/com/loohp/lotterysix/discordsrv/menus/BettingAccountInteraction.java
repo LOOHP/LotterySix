@@ -62,10 +62,9 @@ public class BettingAccountInteraction extends DiscordInteraction {
         String discordUserId = event.getUser().getId();
         UUID uuid = DiscordSRV.getPlugin().getAccountLinkManager().getUuid(discordUserId);
         if (uuid == null) {
-            event.editMessage(instance.discordSRVSlashCommandsGlobalMessagesNotLinked).setActionRows().setEmbeds().queue();
+            event.getHook().editOriginal(instance.discordSRVSlashCommandsGlobalMessagesNotLinked).setActionRows().setEmbeds().queue();
             return;
         }
-        event.deferEdit().queue();
         OfflinePlayer player = Bukkit.getOfflinePlayer(uuid);
         StringBuilder sb = new StringBuilder();
         for (String line : instance.discordSRVSlashCommandsBetAccountSubTitle) {

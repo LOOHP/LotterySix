@@ -21,11 +21,7 @@
 package com.loohp.lotterysix.discordsrv;
 
 import com.loohp.lotterysix.LotterySixPlugin;
-import com.loohp.lotterysix.discordsrv.menus.BettingAccountInteraction;
-import com.loohp.lotterysix.discordsrv.menus.NumberStatisticsInteraction;
-import com.loohp.lotterysix.discordsrv.menus.PastDrawInteraction;
-import com.loohp.lotterysix.discordsrv.menus.PlaceBetInteraction;
-import com.loohp.lotterysix.discordsrv.menus.ViewBetsInteraction;
+import com.loohp.lotterysix.discordsrv.menus.*;
 import com.loohp.lotterysix.events.LotterySixEvent;
 import com.loohp.lotterysix.events.PlayerBetEvent;
 import com.loohp.lotterysix.game.LotterySix;
@@ -237,19 +233,23 @@ public class DiscordSRVHook extends ListenerAdapter implements Listener, SlashCo
         String label = event.getName();
         if (label.equals(SLASH_COMMAND_LABEL)) {
             event.deferReply(true).queue();
-            String discordUserId = event.getUser().getId();
-            String description;
-            if (lotterySix.getCurrentGame() == null) {
-                description = ChatColor.stripColor(LotteryUtils.formatPlaceholders(null, lotterySix.discordSRVSlashCommandsGlobalSubTitleNoGame, lotterySix, lotterySix.getCurrentGame()));
+            if (LotterySixPlugin.getInstance().isGameLocked()) {
+                event.getHook().editOriginal(ChatColor.stripColor(LotterySixPlugin.getInstance().messageGameLocked)).setEmbeds().setActionRows().queue();
             } else {
-                description = ChatColor.stripColor(LotteryUtils.formatPlaceholders(null, lotterySix.discordSRVSlashCommandsGlobalSubTitleActiveGame, lotterySix, lotterySix.getCurrentGame()));
+                String discordUserId = event.getUser().getId();
+                String description;
+                if (lotterySix.getCurrentGame() == null) {
+                    description = ChatColor.stripColor(LotteryUtils.formatPlaceholders(null, lotterySix.discordSRVSlashCommandsGlobalSubTitleNoGame, lotterySix, lotterySix.getCurrentGame()));
+                } else {
+                    description = ChatColor.stripColor(LotteryUtils.formatPlaceholders(null, lotterySix.discordSRVSlashCommandsGlobalSubTitleActiveGame, lotterySix, lotterySix.getCurrentGame()));
+                }
+                event.getHook().editOriginalEmbeds(new EmbedBuilder()
+                        .setTitle(lotterySix.discordSRVSlashCommandsGlobalTitle)
+                        .setDescription(description)
+                        .setColor(Color.YELLOW)
+                        .setThumbnail(lotterySix.discordSRVSlashCommandsGlobalThumbnailURL)
+                        .build()).setActionRows(buildActionRows(interactionMap.values(), discordUserId)).queue();
             }
-            event.getHook().editOriginalEmbeds(new EmbedBuilder()
-                            .setTitle(lotterySix.discordSRVSlashCommandsGlobalTitle)
-                            .setDescription(description)
-                            .setColor(Color.YELLOW)
-                            .setThumbnail(lotterySix.discordSRVSlashCommandsGlobalThumbnailURL)
-                            .build()).setActionRows(buildActionRows(interactionMap.values(), discordUserId)).queue();
         }
     }
 
@@ -257,20 +257,21 @@ public class DiscordSRVHook extends ListenerAdapter implements Listener, SlashCo
 
         @Override
         public void onGenericComponentInteractionCreate(GenericComponentInteractionCreateEvent event) {
-            try {
-                for (DiscordInteraction interaction : interactionMap.values()) {
-                    if (event.getComponent().getId().startsWith(interaction.getInteractionLabelStartWith())) {
-                        interaction.handle(event);
-                        return;
-                    }
-                }
-            } catch (Throwable e) {
-                e.printStackTrace();
-            }
-            if (event.isAcknowledged()) {
-                event.getHook().editOriginal(LotterySixPlugin.getInstance().discordSRVSlashCommandsGlobalMessagesUnknownError).setEmbeds().setActionRows().queue();
+            event.deferEdit().queue();
+            if (LotterySixPlugin.getInstance().isGameLocked()) {
+                event.getHook().editOriginal(ChatColor.stripColor(LotterySixPlugin.getInstance().messageGameLocked)).setEmbeds().setActionRows().queue();
             } else {
-                event.editMessage(LotterySixPlugin.getInstance().discordSRVSlashCommandsGlobalMessagesUnknownError).setEmbeds().setActionRows().queue();
+                try {
+                    for (DiscordInteraction interaction : interactionMap.values()) {
+                        if (event.getComponent().getId().startsWith(interaction.getInteractionLabelStartWith())) {
+                            interaction.handle(event);
+                            return;
+                        }
+                    }
+                } catch (Throwable e) {
+                    e.printStackTrace();
+                }
+                event.getHook().editOriginal(LotterySixPlugin.getInstance().discordSRVSlashCommandsGlobalMessagesUnknownError).setEmbeds().setActionRows().queue();
             }
         }
 

@@ -95,15 +95,14 @@ public class PastDrawInteraction extends DiscordInteraction {
                 try {
                     selectedGame = instance.getCompletedGames().get(GameNumber.fromString(gameNumber));
                 } catch (Exception e) {
-                    event.editMessage(instance.discordSRVSlashCommandsViewPastDrawNoResults).setActionRows().setEmbeds().queue();
+                    event.getHook().editOriginal(instance.discordSRVSlashCommandsViewPastDrawNoResults).setActionRows().setEmbeds().queue();
                     return;
                 }
             }
 
             if (instance.getCompletedGames().isEmpty() && selectedGame == null) {
-                event.editMessage(instance.discordSRVSlashCommandsViewPastDrawNoResults).setActionRows().setEmbeds().queue();
+                event.getHook().editOriginal(instance.discordSRVSlashCommandsViewPastDrawNoResults).setActionRows().setEmbeds().queue();
             } else {
-                event.deferEdit().queue();
                 Scheduler.runTaskAsynchronously(LotterySixPlugin.plugin, () -> {
                     SyncUtils.blockUntilTrue(() -> !instance.isGameLocked());
 
@@ -243,7 +242,6 @@ public class PastDrawInteraction extends DiscordInteraction {
                 });
             }
         } else {
-            event.deferEdit().queue();
             GameNumber gameNumber = GameNumber.fromString(event.getMessage().getActionRows().get(0).getComponents().get(0).getId().substring(SELECTION_MENU_LABEL.length()));
             int currentPosition = instance.getCompletedGames().indexOf(instance.getCompletedGames().get(gameNumber));
             if (componentId.equals(SELECTION_MENU_OLDER_LABEL)) {

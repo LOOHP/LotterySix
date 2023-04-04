@@ -184,17 +184,16 @@ public class PlaceBetInteraction extends DiscordInteraction {
         String discordUserId = event.getUser().getId();
         UUID uuid = DiscordSRV.getPlugin().getAccountLinkManager().getUuid(discordUserId);
         if (uuid == null) {
-            event.editMessage(instance.discordSRVSlashCommandsGlobalMessagesNotLinked).setActionRows().setEmbeds().queue();
+            event.getHook().editOriginal(instance.discordSRVSlashCommandsGlobalMessagesNotLinked).setActionRows().setEmbeds().queue();
             return;
         }
         PlayableLotterySixGame game = instance.getCurrentGame();
         if (game == null) {
-            event.editMessage(instance.discordSRVSlashCommandsPlaceBetNoGame).setActionRows().setEmbeds().queue();
+            event.getHook().editOriginal(instance.discordSRVSlashCommandsPlaceBetNoGame).setActionRows().setEmbeds().queue();
             return;
         }
         OfflinePlayer player = Bukkit.getOfflinePlayer(uuid);
         String componentId = event.getComponent().getId();
-        event.deferEdit().queue();
         if (componentId.equals(INTERACTION_LABEL)) {
             List<String> separator = Arrays.asList("", "");
             String description = ChatColor.stripColor(Stream.of(
@@ -285,7 +284,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
             UUID selectionId = UUID.fromString(componentId.substring(SINGLE_ENTRY_CONFIRM_LABEL.length()));
             Set<Integer> selected = chosenNumbers.remove(selectionId);
             if (selected == null) {
-                event.editMessage(instance.discordSRVSlashCommandsGlobalMessagesTimeOut).setActionRows().setEmbeds().queue();
+                event.getHook().editOriginal(instance.discordSRVSlashCommandsGlobalMessagesTimeOut).setActionRows().setEmbeds().queue();
                 return;
             }
             BetNumbersBuilder.SingleBuilder builder = BetNumbersBuilder.single(1, instance.numberOfChoices);
@@ -366,7 +365,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
             UUID selectionId = UUID.fromString(componentId.substring(MULTIPLE_ENTRY_CONFIRM_LABEL.length()));
             Set<Integer> selected = chosenNumbers.remove(selectionId);
             if (selected == null) {
-                event.editMessage(instance.discordSRVSlashCommandsGlobalMessagesTimeOut).setActionRows().setEmbeds().queue();
+                event.getHook().editOriginal(instance.discordSRVSlashCommandsGlobalMessagesTimeOut).setActionRows().setEmbeds().queue();
                 return;
             }
             BetNumbersBuilder.MultipleBuilder builder = BetNumbersBuilder.multiple(1, instance.numberOfChoices);
@@ -531,7 +530,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
                 Set<Integer> bankers = chosenBankers.remove(selectionId);
                 Set<Integer> selected = chosenNumbers.remove(selectionId);
                 if (bankers == null || selected == null) {
-                    event.editMessage(instance.discordSRVSlashCommandsGlobalMessagesTimeOut).setActionRows().setEmbeds().queue();
+                    event.getHook().editOriginal(instance.discordSRVSlashCommandsGlobalMessagesTimeOut).setActionRows().setEmbeds().queue();
                     return;
                 }
                 BetNumbersBuilder.BankerBuilder builder = BetNumbersBuilder.banker(1, instance.numberOfChoices);
