@@ -283,6 +283,7 @@ public class LotterySix implements AutoCloseable {
     public String discordSRVSlashCommandsPlaceBetTitle;
     public String[] discordSRVSlashCommandsPlaceBetSubTitle;
     public String discordSRVSlashCommandsComponentsNotYetFinish;
+    public String discordSRVSlashCommandsComponentsAddRandom;
     public String discordSRVSlashCommandsComponentsFinish;
     public String discordSRVSlashCommandsComponentsFinishBankers;
     public String discordSRVSlashCommandsComponentsMultipleRandomSize;
@@ -970,6 +971,7 @@ public class LotterySix implements AutoCloseable {
         discordSRVSlashCommandsPlaceBetTitle = config.getConfiguration().getString("DiscordSRV.SlashCommands.PlaceBet.Title");
         discordSRVSlashCommandsPlaceBetSubTitle = config.getConfiguration().getStringList("DiscordSRV.SlashCommands.PlaceBet.SubTitle").toArray(new String[0]);
         discordSRVSlashCommandsComponentsNotYetFinish = config.getConfiguration().getString("DiscordSRV.SlashCommands.PlaceBet.Components.NotYetFinish");
+        discordSRVSlashCommandsComponentsAddRandom = config.getConfiguration().getString("DiscordSRV.SlashCommands.PlaceBet.Components.AddRandom");
         discordSRVSlashCommandsComponentsFinish = config.getConfiguration().getString("DiscordSRV.SlashCommands.PlaceBet.Components.Finish");
         discordSRVSlashCommandsComponentsFinishBankers = config.getConfiguration().getString("DiscordSRV.SlashCommands.PlaceBet.Components.FinishBankers");
         discordSRVSlashCommandsComponentsMultipleRandomSize = config.getConfiguration().getString("DiscordSRV.SlashCommands.PlaceBet.Components.MultipleRandomSize");

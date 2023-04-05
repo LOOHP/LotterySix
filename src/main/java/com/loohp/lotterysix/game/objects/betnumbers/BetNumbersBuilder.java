@@ -25,6 +25,7 @@ import com.loohp.lotterysix.game.objects.Pair;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -35,7 +36,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-public abstract class BetNumbersBuilder {
+public abstract class BetNumbersBuilder implements Iterable<Integer> {
 
     public static final Pattern RANDOM_REP_PATTERN = Pattern.compile("^RAN/([0-9]+)(?:/([0-9]+))?(?:/([0-9]+))?$");
 
@@ -220,11 +221,13 @@ public abstract class BetNumbersBuilder {
     protected final int minNumber;
     protected final int maxNumber;
     protected final BetNumbersType type;
+    protected boolean validateCompleteOnAdd;
 
     protected BetNumbersBuilder(int minNumber, int maxNumber, BetNumbersType type) {
         this.minNumber = minNumber;
         this.maxNumber = maxNumber;
         this.type = type;
+        this.validateCompleteOnAdd = true;
     }
 
     protected void checkBound(int number) {
@@ -235,6 +238,11 @@ public abstract class BetNumbersBuilder {
 
     public BetNumbersType getType() {
         return type;
+    }
+
+    public BetNumbersBuilder setValidateCompleteOnAdd(boolean value) {
+        this.validateCompleteOnAdd = value;
+        return this;
     }
 
     public abstract BetNumbersBuilder addNumber(int number);
@@ -275,7 +283,7 @@ public abstract class BetNumbersBuilder {
         @Override
         public synchronized SingleBuilder addNumber(int number) {
             checkBound(number);
-            if (completed()) {
+            if (validateCompleteOnAdd && completed()) {
                 throw new IllegalStateException("Lottery Number builder already completed!");
             }
             numbers.add(number);
@@ -284,7 +292,7 @@ public abstract class BetNumbersBuilder {
 
         @Override
         public IntObjectPair<BetNumbersBuilder> addRandomNumber() {
-            if (completed()) {
+            if (validateCompleteOnAdd && completed()) {
                 throw new IllegalStateException("Lottery Number builder already completed!");
             }
             if (numbers.size() > maxNumber - minNumber) {
@@ -327,6 +335,11 @@ public abstract class BetNumbersBuilder {
                 throw new IllegalStateException("Lottery Number builder not yet completed!");
             }
             return new BetNumbers(numbers, BetNumbersType.SINGLE);
+        }
+
+        @Override
+        public Iterator<Integer> iterator() {
+            return numbers.iterator();
         }
 
     }
@@ -393,6 +406,11 @@ public abstract class BetNumbersBuilder {
             return new BetNumbers(numbers, BetNumbersType.MULTIPLE);
         }
 
+        @Override
+        public Iterator<Integer> iterator() {
+            return numbers.iterator();
+        }
+
     }
 
     public static class BankerBuilder extends BetNumbersBuilder {
@@ -418,7 +436,7 @@ public abstract class BetNumbersBuilder {
                     selections.add(number);
                 }
             } else {
-                if (bankerCompleted()) {
+                if (validateCompleteOnAdd && bankerCompleted()) {
                     throw new IllegalStateException("Max numbers of bankers reached!");
                 }
                 bankers.add(number);
@@ -437,7 +455,7 @@ public abstract class BetNumbersBuilder {
                     selections.add(number);
                 }
             } else {
-                if (bankerCompleted()) {
+                if (validateCompleteOnAdd && bankerCompleted()) {
                     throw new IllegalStateException("Max numbers of bankers reached!");
                 }
                 bankers.add(number);
@@ -512,6 +530,11 @@ public abstract class BetNumbersBuilder {
             return new BetNumbers(bankers, selections, BetNumbersType.BANKER);
         }
 
+        @Override
+        public Iterator<Integer> iterator() {
+            return Stream.concat(bankers.stream(), selections.stream()).iterator();
+        }
+
     }
 
     public static class RandomBuilder extends BetNumbersBuilder {
@@ -573,6 +596,11 @@ public abstract class BetNumbersBuilder {
             return new BetNumbers(numbers, BetNumbersType.RANDOM);
         }
 
+        @Override
+        public Iterator<Integer> iterator() {
+            return Collections.emptyIterator();
+        }
+
     }
 
     public static class MultipleRandomBuilder extends BetNumbersBuilder {
@@ -626,6 +654,11 @@ public abstract class BetNumbersBuilder {
         public BetNumbers build() {
             List<Integer> numbers = ThreadLocalRandom.current().ints(minNumber, maxNumber + 1).distinct().limit(size).boxed().collect(Collectors.toList());
             return new BetNumbers(numbers, BetNumbersType.MULTIPLE_RANDOM);
+        }
+
+        @Override
+        public Iterator<Integer> iterator() {
+            return Collections.emptyIterator();
         }
 
     }
@@ -709,6 +742,11 @@ public abstract class BetNumbersBuilder {
             List<Integer> bankers = ThreadLocalRandom.current().ints(minNumber, maxNumber + 1).distinct().limit(bankersSize).boxed().collect(Collectors.toList());
             List<Integer> selections = ThreadLocalRandom.current().ints(minNumber, maxNumber + 1).distinct().filter(i -> !bankers.contains(i)).limit(selectionSize).boxed().collect(Collectors.toList());
             return new BetNumbers(bankers, selections, BetNumbersType.BANKER_RANDOM);
+        }
+
+        @Override
+        public Iterator<Integer> iterator() {
+            return Collections.emptyIterator();
         }
 
     }

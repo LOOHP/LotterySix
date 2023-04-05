@@ -569,6 +569,7 @@ DiscordSRV:
         - "**Entry Type: {BetNumbersType}**"
       Components:
         NotYetFinish: "Please choose your numbers!"
+        AddRandom: "Add Random"
         Finish: "Finish selection"
         FinishBankers: "Finish banker selection"
         MultipleRandomSize: "Number of Selections: {Count}"

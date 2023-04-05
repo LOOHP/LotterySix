@@ -105,10 +105,11 @@ public class WinningNumbers implements FormattedString {
     }
 
     public Stream<Pair<PrizeTier, WinningCombination>> checkWinning(BetNumbers betNumbers) {
+        PrizeTier[] prizeTiers = PrizeTier.values();
         return betNumbers.combinations().map(numbers -> {
             int matches = (int) numbers.stream().filter(i -> this.numbers.contains(i)).limit(6).count();
             boolean matchSpecial = numbers.contains(specialNumber);
-            for (PrizeTier prizeTier : PrizeTier.values()) {
+            for (PrizeTier prizeTier : prizeTiers) {
                 if (prizeTier.getWinningCriteria().satisfies(matches, matchSpecial)) {
                     return Pair.of(prizeTier, new WinningCombination(numbers));
                 }
