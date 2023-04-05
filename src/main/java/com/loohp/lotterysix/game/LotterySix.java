@@ -156,6 +156,7 @@ public class LotterySix implements AutoCloseable {
     public PrizeCalculationMode prizeCalculationMode;
     public CarryOverMode carryOverMode;
     public long maxTopPlacesPrize;
+    public boolean retainLowestPrizeForTier;
 
     public String guiMainMenuTitle;
     public String[] guiMainMenuCheckPastResults;
@@ -844,6 +845,7 @@ public class LotterySix implements AutoCloseable {
         prizeCalculationMode = PrizeCalculationMode.valueOf(config.getConfiguration().getString("LotterySix.PrizeCalculationMode").toUpperCase());
         carryOverMode = CarryOverMode.valueOf(config.getConfiguration().getString("LotterySix.CarryOverMode").toUpperCase());
         maxTopPlacesPrize = config.getConfiguration().getLong("LotterySix.MaxTopPlacesPrize");
+        retainLowestPrizeForTier = config.getConfiguration().getBoolean("LotterySix.RetainLowestPrizeForTier");
 
         guiMainMenuTitle = config.getConfiguration().getString("GUI.MainMenu.Title");
         guiMainMenuCheckPastResults = config.getConfiguration().getStringList("GUI.MainMenu.CheckPastResults").toArray(new String[0]);

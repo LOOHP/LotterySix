@@ -647,7 +647,7 @@ public class PlayableLotterySixGame implements IDedGame {
                     winnings.set(u, playerWinnings.winnings(newPrize));
                 }
             }
-            if (lowerTier.isTopTier()) {
+            if (lowerTier.isVariableTier()) {
                 carryOverNext += prizeMoneyRemoved;
             }
             totalPrizes -= prizeMoneyRemoved;
@@ -662,6 +662,25 @@ public class PlayableLotterySixGame implements IDedGame {
                 winnings.set(u, playerWinnings.winnings(rounded));
                 carryOverNext += (currentPrize - rounded);
             }
+        }
+
+        if (instance == null || instance.retainLowestPrizeForTier) {
+            prizeForTier.replaceAll((k, v) -> {
+                if (v <= 0) {
+                    return v;
+                }
+                return Math.max(v, instance.pricePerBet * k.getFixedPrizeMultiplier());
+            });
+            for (int u = 0; u < winnings.size(); u++) {
+                PlayerWinnings playerWinnings = winnings.get(u);
+                long currentPrize = playerWinnings.getWinnings();
+                long rounded = prizeForTier.get(playerWinnings.getTier()) / playerWinnings.getWinningBet(bets).getType().getDivisor();
+                if (currentPrize < rounded) {
+                    winnings.set(u, playerWinnings.winnings(rounded));
+                    carryOverNext -= (rounded - currentPrize);
+                }
+            }
+            carryOverNext = Math.max(0, carryOverNext);
         }
 
         winnings.sort(Comparator.comparing((PlayerWinnings playerWinnings) -> playerWinnings.getTier()).thenComparing((PlayerWinnings playerWinnings) -> playerWinnings.getWinningBet(bets).getTimePlaced()));
@@ -694,7 +713,7 @@ public class PlayableLotterySixGame implements IDedGame {
         Map<PrizeTier, Double> unitsFourthToSeventh = new EnumMap<>(PrizeTier.class);
         for (Map.Entry<PrizeTier, List<Pair<PlayerBets, WinningCombination>>> entry : tiers.entrySet()) {
             PrizeTier prizeTier = entry.getKey();
-            if (!prizeTier.isTopTier() && !entry.getValue().isEmpty()) {
+            if (!prizeTier.isVariableTier() && !entry.getValue().isEmpty()) {
                 double unit = entry.getValue().stream().mapToDouble(each -> each.getFirst().getType().getUnit()).sum();
                 unitsFourthToSeventh.put(prizeTier, unit);
                 long portion = Math.round(BigDecimal.valueOf(unit).multiply(BigDecimal.valueOf(pricePerBet)).multiply(BigDecimal.valueOf(prizeTier.getFixedPrizeMultiplier())).doubleValue());
@@ -711,7 +730,7 @@ public class PlayableLotterySixGame implements IDedGame {
         Map<PrizeTier, Long> maxPrizeInTier = new EnumMap<>(PrizeTier.class);
         for (Map.Entry<PrizeTier, Long> entry : portionsFourthToSeventh.entrySet()) {
             PrizeTier prizeTier = entry.getKey();
-            if (!prizeTier.isTopTier()) {
+            if (!prizeTier.isVariableTier()) {
                 Double unit = unitsFourthToSeventh.get(prizeTier);
                 if (unit == null) {
                     maxPrizeInTier.put(prizeTier, 0L);
@@ -925,6 +944,28 @@ public class PlayableLotterySixGame implements IDedGame {
                 winnings.set(u, playerWinnings.winnings(rounded));
                 carryOverNext += (currentPrize - rounded);
             }
+        }
+
+        if (instance == null || instance.retainLowestPrizeForTier) {
+            prizeForTier.replaceAll((k, v) -> {
+                if (v <= 0) {
+                    return v;
+                }
+                if (k.equals(PrizeTier.FIRST)) {
+                    return Math.max(v, instance.lowestTopPlacesPrize);
+                }
+                return Math.max(v, instance.pricePerBet * k.getFixedPrizeMultiplier());
+            });
+            for (int u = 0; u < winnings.size(); u++) {
+                PlayerWinnings playerWinnings = winnings.get(u);
+                long currentPrize = playerWinnings.getWinnings();
+                long rounded = prizeForTier.get(playerWinnings.getTier()) / playerWinnings.getWinningBet(bets).getType().getDivisor();
+                if (currentPrize < rounded) {
+                    winnings.set(u, playerWinnings.winnings(rounded));
+                    carryOverNext -= (rounded - currentPrize);
+                }
+            }
+            carryOverNext = Math.max(0, carryOverNext);
         }
 
         winnings.sort(Comparator.comparing((PlayerWinnings playerWinnings) -> playerWinnings.getTier()).thenComparing((PlayerWinnings playerWinnings) -> playerWinnings.getWinningBet(bets).getTimePlaced()));

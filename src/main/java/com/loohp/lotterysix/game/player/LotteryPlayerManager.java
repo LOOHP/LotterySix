@@ -128,19 +128,22 @@ public class LotteryPlayerManager {
                     persistentReferences.add(lotteryPlayer);
                 }
                 return lotteryPlayer;
-            } catch (IOException e) {
-                e.printStackTrace();
+            } catch (Exception e) {
+                new RuntimeException("Error while reading data for lottery player " + player, e).printStackTrace();
+                try {
+                    Files.copy(file.toPath(), new File(playerFolder, player + ".json.bak." + System.currentTimeMillis()).toPath());
+                } catch (IOException e1) {
+                    e1.printStackTrace();
+                }
             }
-        } else {
-            LotteryPlayer lotteryPlayer = new LotteryPlayer(this, player);
-            loadedPlayers.put(player, new WeakReference<>(lotteryPlayer));
-            if (persist) {
-                persistentReferences.add(lotteryPlayer);
-            }
-            saveLotteryPlayer(player);
-            return lotteryPlayer;
         }
-        return null;
+        LotteryPlayer lotteryPlayer = new LotteryPlayer(this, player);
+        loadedPlayers.put(player, new WeakReference<>(lotteryPlayer));
+        if (persist) {
+            persistentReferences.add(lotteryPlayer);
+        }
+        saveLotteryPlayer(player);
+        return lotteryPlayer;
     }
 
     public synchronized void saveLotteryPlayer(UUID player) {

@@ -119,6 +119,9 @@ LotterySix:
   #ONLY_TICKET_SALES that half of LowestTopPlacesPrize does not carry over to the next game
   #MODES: DEFAULT, ONLY_TICKET_SALES
   CarryOverMode: "DEFAULT"
+  #If true, even if there isn't enough money to retain the lowest prize for a tier, the plugin will generate money for it
+  #If false, even there isn't enough money to retain the lowest prize for a tier, each tier will be lowered proportionally
+  RetainLowestPrizeForTier: false
   #Highest possible value is 9223372036854775807
   MaxTopPlacesPrize: 9223372036854775807
   #DO NOT CHANGE this section if you don't know what you are doing!

@@ -24,9 +24,9 @@ import static com.loohp.lotterysix.utils.MathUtils.probabilityFormula;
 
 public enum PrizeTier {
 
-    FIRST("1st", new WinningCriteria(6, false), -1, 2, true),
-    SECOND("2nd", new WinningCriteria(5, true), -1, 2, true),
-    THIRD("3rd", new WinningCriteria(5, false), -1, 2, true),
+    FIRST("1st", new WinningCriteria(6, false), 7680, 2, true),
+    SECOND("2nd", new WinningCriteria(5, true), 3840, 2, true),
+    THIRD("3rd", new WinningCriteria(5, false), 1920, 2, true),
     FOURTH("4th", new WinningCriteria(4, true), 960, 15),
     FIFTH("5th", new WinningCriteria(4, false), 64, 2),
     SIXTH("6th", new WinningCriteria(3, true), 32, 8),
@@ -36,14 +36,14 @@ public enum PrizeTier {
     private final WinningCriteria winningCriteria;
     private int fixedPrizeMultiplier;
     private int minimumMultiplierFromLast;
-    private final boolean isTopTier;
+    private final boolean isVariableTier;
 
-    PrizeTier(String shortHand, WinningCriteria winningCriteria, int fixedPrizeMultiplier, int minimumMultiplierFromLast, boolean isTopTier) {
+    PrizeTier(String shortHand, WinningCriteria winningCriteria, int fixedPrizeMultiplier, int minimumMultiplierFromLast, boolean isVariableTier) {
         this.shortHand = shortHand;
         this.winningCriteria = winningCriteria;
         this.fixedPrizeMultiplier = fixedPrizeMultiplier;
         this.minimumMultiplierFromLast = minimumMultiplierFromLast;
-        this.isTopTier = isTopTier;
+        this.isVariableTier = isVariableTier;
     }
 
     PrizeTier(String shortHand, WinningCriteria winningCriteria, int fixedPrizeMultiplier, int minimumMultiplierFromLast) {
@@ -76,8 +76,8 @@ public enum PrizeTier {
         this.minimumMultiplierFromLast = minimumMultiplierFromLast;
     }
 
-    public boolean isTopTier() {
-        return isTopTier;
+    public boolean isVariableTier() {
+        return isVariableTier;
     }
 
     @Override
