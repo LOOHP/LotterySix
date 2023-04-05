@@ -264,11 +264,11 @@ public class DiscordSRVHook extends ListenerAdapter implements Listener, SlashCo
                         .setDescription(description)
                         .setColor(Color.YELLOW)
                         .setThumbnail(lotterySix.discordSRVSlashCommandsGlobalThumbnailURL);
-                if (advertisementImage != null) {
+                if (advertisementImage != null && lotterySix.getCurrentGame() != null) {
                     builder.setImage("attachment://image.png");
                 }
                 WebhookMessageUpdateAction<Message> action = event.getHook().editOriginalEmbeds(builder.build()).setActionRows(buildActionRows(interactionMap.values(), discordUserId));
-                if (advertisementImage != null) {
+                if (advertisementImage != null && lotterySix.getCurrentGame() != null) {
                     action = action.addFile(advertisementImage, "image.png");
                 }
                 action.queue();
