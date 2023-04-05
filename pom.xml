@@ -25,7 +25,7 @@
     <groupId>com.loohp</groupId>
     <artifactId>LotterySix</artifactId>
     <name>LotterySix</name>
-    <version>1.9.5.0</version>
+    <version>1.9.5.1</version>
 
     <description>Lottery game in Minecraft inspired by the game 'Mark Six' by the HKJC</description>
     <url>https://github.com/LOOHP/LotterySix/</url>
@@ -311,7 +311,7 @@
         <dependency>
             <groupId>de.themoep</groupId>
             <artifactId>inventorygui</artifactId>
-            <version>1.6-SNAPSHOT</version>
+            <version>1.6.1-SNAPSHOT</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
