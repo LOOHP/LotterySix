@@ -52,6 +52,7 @@ import github.scarsz.discordsrv.dependencies.jda.api.interactions.InteractionHoo
 import github.scarsz.discordsrv.dependencies.jda.api.interactions.commands.build.CommandData;
 import github.scarsz.discordsrv.dependencies.jda.api.interactions.components.ActionRow;
 import github.scarsz.discordsrv.dependencies.jda.api.interactions.components.Component;
+import github.scarsz.discordsrv.dependencies.jda.api.requests.restaction.MessageAction;
 import github.scarsz.discordsrv.dependencies.jda.api.requests.restaction.WebhookMessageUpdateAction;
 import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Bukkit;
@@ -175,7 +176,14 @@ public class DiscordSRVHook extends ListenerAdapter implements Listener, SlashCo
                         .setTitle(ChatColor.stripColor(LotteryUtils.formatPlaceholders(null, lotterySix.discordSRVDrawResultAnnouncementTitle, lotterySix, game)))
                         .setDescription(ChatColor.stripColor(LotteryUtils.formatPlaceholders(null, lotterySix.discordSRVDrawResultAnnouncementDescription, lotterySix, game)))
                         .setThumbnail(lotterySix.discordSRVDrawResultAnnouncementThumbnailURL);
-                channel.sendMessageEmbeds(builder.build()).queue();
+                if (advertisementImage != null) {
+                    builder.setImage("attachment://image.png");
+                }
+                MessageAction action = channel.sendMessageEmbeds(builder.build());
+                if (advertisementImage != null) {
+                    action = action.addFile(advertisementImage, "image.png");
+                }
+                action.queue();
             }
         }
     }
