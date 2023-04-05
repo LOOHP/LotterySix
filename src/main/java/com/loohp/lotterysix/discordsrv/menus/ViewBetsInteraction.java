@@ -20,6 +20,7 @@
 
 package com.loohp.lotterysix.discordsrv.menus;
 
+import com.loohp.lotterysix.LotterySixPlugin;
 import com.loohp.lotterysix.discordsrv.DiscordInteraction;
 import com.loohp.lotterysix.game.lottery.PlayableLotterySixGame;
 import com.loohp.lotterysix.game.objects.PlayerBets;
@@ -28,9 +29,11 @@ import com.loohp.lotterysix.utils.StringUtils;
 import github.scarsz.discordsrv.DiscordSRV;
 import github.scarsz.discordsrv.dependencies.jda.api.EmbedBuilder;
 import github.scarsz.discordsrv.dependencies.jda.api.entities.Emoji;
+import github.scarsz.discordsrv.dependencies.jda.api.entities.Message;
 import github.scarsz.discordsrv.dependencies.jda.api.events.interaction.GenericComponentInteractionCreateEvent;
 import github.scarsz.discordsrv.dependencies.jda.api.interactions.components.ActionRow;
 import github.scarsz.discordsrv.dependencies.jda.api.interactions.components.Button;
+import github.scarsz.discordsrv.dependencies.jda.api.requests.restaction.WebhookMessageUpdateAction;
 import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
@@ -105,7 +108,16 @@ public class ViewBetsInteraction extends DiscordInteraction {
                     .setTitle(ChatColor.stripColor(LotteryUtils.formatPlaceholders(player, instance.discordSRVSlashCommandsViewCurrentBetsTitle, instance, game)))
                     .setDescription(description)
                     .setThumbnail(instance.discordSRVSlashCommandsViewCurrentBetsThumbnailURL);
-            event.getHook().editOriginalEmbeds(builder.build()).setActionRows().queue();
+
+            byte[] advertisementImage = LotterySixPlugin.discordSRVHook.getAdvertisementImage();
+            if (advertisementImage != null) {
+                builder.setImage("attachment://image.png");
+            }
+            WebhookMessageUpdateAction<Message> action = event.getHook().editOriginalEmbeds(builder.build()).setActionRows();
+            if (advertisementImage != null) {
+                action = action.addFile(advertisementImage, "image.png");
+            }
+            action.queue();
         }
     }
 
