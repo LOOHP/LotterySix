@@ -72,7 +72,7 @@ public class ViewBetsInteraction extends DiscordInteraction {
 
         PlayableLotterySixGame game = instance.getCurrentGame();
         if (game == null) {
-            event.getHook().editOriginal(instance.discordSRVSlashCommandsViewCurrentBetsNoGame).setActionRows().setEmbeds().queue();
+            event.getHook().editOriginal(instance.discordSRVSlashCommandsViewCurrentBetsNoGame).setActionRows().setEmbeds().retainFiles(Collections.emptyList()).queue();
         } else {
             OfflinePlayer player = uuid == null ? null : Bukkit.getOfflinePlayer(uuid);
             StringBuilder sb = new StringBuilder();
@@ -113,7 +113,7 @@ public class ViewBetsInteraction extends DiscordInteraction {
             if (advertisementImage != null) {
                 builder.setImage("attachment://image.png");
             }
-            WebhookMessageUpdateAction<Message> action = event.getHook().editOriginalEmbeds(builder.build()).setActionRows();
+            WebhookMessageUpdateAction<Message> action = event.getHook().editOriginalEmbeds(builder.build()).setActionRows().retainFiles(Collections.emptyList());
             if (advertisementImage != null) {
                 action = action.addFile(advertisementImage, "image.png");
             }

@@ -182,12 +182,12 @@ public class PlaceBetInteraction extends DiscordInteraction {
         String discordUserId = event.getUser().getId();
         UUID uuid = DiscordSRV.getPlugin().getAccountLinkManager().getUuid(discordUserId);
         if (uuid == null) {
-            event.getHook().editOriginal(instance.discordSRVSlashCommandsGlobalMessagesNotLinked).setActionRows().setEmbeds().queue();
+            event.getHook().editOriginal(instance.discordSRVSlashCommandsGlobalMessagesNotLinked).setActionRows().setEmbeds().retainFiles(Collections.emptyList()).queue();
             return;
         }
         PlayableLotterySixGame game = instance.getCurrentGame();
         if (game == null) {
-            event.getHook().editOriginal(instance.discordSRVSlashCommandsPlaceBetNoGame).setActionRows().setEmbeds().queue();
+            event.getHook().editOriginal(instance.discordSRVSlashCommandsPlaceBetNoGame).setActionRows().setEmbeds().retainFiles(Collections.emptyList()).queue();
             return;
         }
         OfflinePlayer player = Bukkit.getOfflinePlayer(uuid);
@@ -214,7 +214,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
                     .setColor(Color.ORANGE)
                     .setDescription(description);
 
-            event.getHook().editOriginalEmbeds(embed.build()).setActionRows(ActionRow.of(single, multiple, banker, random)).queue();
+            event.getHook().editOriginalEmbeds(embed.build()).setActionRows(ActionRow.of(single, multiple, banker, random)).retainFiles(Collections.emptyList()).queue();
         } else if (componentId.equals(SINGLE_ENTRY_LABEL)) {
             EmbedBuilder embed = new EmbedBuilder()
                     .setTitle(ChatColor.stripColor(instance.betNumbersTypeNames.get(BetNumbersType.SINGLE)))
@@ -231,7 +231,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
             Button confirmButton = Button.secondary(SINGLE_ENTRY_CONFIRM_LABEL + selectionId, instance.discordSRVSlashCommandsComponentsNotYetFinish).withEmoji(Emoji.fromUnicode("\u2B1C")).asDisabled();
             actionRows.add(ActionRow.of(confirmButton));
 
-            event.getHook().editOriginalEmbeds(embed.build()).setActionRows(actionRows).queue();
+            event.getHook().editOriginalEmbeds(embed.build()).setActionRows(actionRows).retainFiles(Collections.emptyList()).queue();
         } else if (componentId.startsWith(SINGLE_ENTRY_SELECTION_RANDOM_LABEL)) {
             UUID selectionId = UUID.fromString(componentId.substring(SINGLE_ENTRY_SELECTION_RANDOM_LABEL.length()));
             BetNumbersBuilder builder = chosenNumbers.computeIfAbsent(selectionId, k -> BetNumbersBuilder.single(1, instance.numberOfChoices).setValidateCompleteOnAdd(false));
@@ -284,7 +284,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
                     .setColor(Color.ORANGE)
                     .setDescription(description);
 
-            event.getHook().editOriginalComponents().setEmbeds(embed.build()).setActionRows(actionRows).queue();
+            event.getHook().editOriginalComponents().setEmbeds(embed.build()).setActionRows(actionRows).retainFiles(Collections.emptyList()).queue();
         } else if (componentId.startsWith(SINGLE_ENTRY_SELECTION_LABEL)) {
             UUID selectionId = UUID.fromString(componentId.substring(SINGLE_ENTRY_SELECTION_LABEL.length(), componentId.lastIndexOf("_")));
             BetNumbersBuilder builder = chosenNumbers.computeIfAbsent(selectionId, k -> BetNumbersBuilder.single(1, instance.numberOfChoices).setValidateCompleteOnAdd(false));
@@ -342,12 +342,12 @@ public class PlaceBetInteraction extends DiscordInteraction {
                     .setColor(Color.ORANGE)
                     .setDescription(description);
 
-            event.getHook().editOriginalComponents().setEmbeds(embed.build()).setActionRows(actionRows).queue();
+            event.getHook().editOriginalComponents().setEmbeds(embed.build()).setActionRows(actionRows).retainFiles(Collections.emptyList()).queue();
         } else if (componentId.startsWith(SINGLE_ENTRY_CONFIRM_LABEL)) {
             UUID selectionId = UUID.fromString(componentId.substring(SINGLE_ENTRY_CONFIRM_LABEL.length()));
             BetNumbersBuilder builder = chosenNumbers.remove(selectionId);
             if (builder == null) {
-                event.getHook().editOriginal(instance.discordSRVSlashCommandsGlobalMessagesTimeOut).setActionRows().setEmbeds().queue();
+                event.getHook().editOriginal(instance.discordSRVSlashCommandsGlobalMessagesTimeOut).setActionRows().setEmbeds().retainFiles(Collections.emptyList()).queue();
                 return;
             }
             handleConfirm(event, player, BetNumbersType.SINGLE, Collections.singletonList(builder.build()));
@@ -368,7 +368,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
             Button confirmButton = Button.secondary(MULTIPLE_ENTRY_CONFIRM_LABEL + selectionId, instance.discordSRVSlashCommandsComponentsNotYetFinish).withEmoji(Emoji.fromUnicode("\u2B1C")).asDisabled();
             actionRows.add(ActionRow.of(confirmButton));
 
-            event.getHook().editOriginalEmbeds(embed.build()).setActionRows(actionRows).queue();
+            event.getHook().editOriginalEmbeds(embed.build()).setActionRows(actionRows).retainFiles(Collections.emptyList()).queue();
         } else if (componentId.startsWith(MULTIPLE_ENTRY_SELECTION_SELECT_ALL_LABEL)) {
             UUID selectionId = UUID.fromString(componentId.substring(MULTIPLE_ENTRY_SELECTION_SELECT_ALL_LABEL.length()));
             BetNumbersBuilder builder = chosenNumbers.computeIfAbsent(selectionId, k -> BetNumbersBuilder.multiple(1, instance.numberOfChoices).setValidateCompleteOnAdd(false));
@@ -438,7 +438,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
                     .setColor(OFFSET_WHITE)
                     .setDescription(description);
 
-            event.getHook().editOriginalComponents().setEmbeds(embed.build()).setActionRows(actionRows).queue();
+            event.getHook().editOriginalComponents().setEmbeds(embed.build()).setActionRows(actionRows).retainFiles(Collections.emptyList()).queue();
         } else if (componentId.startsWith(MULTIPLE_ENTRY_SELECTION_RANDOM_LABEL)) {
             UUID selectionId = UUID.fromString(componentId.substring(MULTIPLE_ENTRY_SELECTION_RANDOM_LABEL.length()));
             BetNumbersBuilder builder = chosenNumbers.computeIfAbsent(selectionId, k -> BetNumbersBuilder.multiple(1, instance.numberOfChoices).setValidateCompleteOnAdd(false));
@@ -504,7 +504,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
                     .setColor(OFFSET_WHITE)
                     .setDescription(description);
 
-            event.getHook().editOriginalComponents().setEmbeds(embed.build()).setActionRows(actionRows).queue();
+            event.getHook().editOriginalComponents().setEmbeds(embed.build()).setActionRows(actionRows).retainFiles(Collections.emptyList()).queue();
         } else if (componentId.startsWith(MULTIPLE_ENTRY_SELECTION_LABEL)) {
             UUID selectionId = UUID.fromString(componentId.substring(MULTIPLE_ENTRY_SELECTION_LABEL.length(), componentId.lastIndexOf("_")));
             BetNumbersBuilder builder = chosenNumbers.computeIfAbsent(selectionId, k -> BetNumbersBuilder.multiple(1, instance.numberOfChoices).setValidateCompleteOnAdd(false));
@@ -572,12 +572,12 @@ public class PlaceBetInteraction extends DiscordInteraction {
                     .setColor(OFFSET_WHITE)
                     .setDescription(description);
 
-            event.getHook().editOriginalComponents().setEmbeds(embed.build()).setActionRows(actionRows).queue();
+            event.getHook().editOriginalComponents().setEmbeds(embed.build()).setActionRows(actionRows).retainFiles(Collections.emptyList()).queue();
         } else if (componentId.startsWith(MULTIPLE_ENTRY_CONFIRM_LABEL)) {
             UUID selectionId = UUID.fromString(componentId.substring(MULTIPLE_ENTRY_CONFIRM_LABEL.length()));
             BetNumbersBuilder builder = chosenNumbers.remove(selectionId);
             if (builder == null) {
-                event.getHook().editOriginal(instance.discordSRVSlashCommandsGlobalMessagesTimeOut).setActionRows().setEmbeds().queue();
+                event.getHook().editOriginal(instance.discordSRVSlashCommandsGlobalMessagesTimeOut).setActionRows().setEmbeds().retainFiles(Collections.emptyList()).queue();
                 return;
             }
             handleConfirm(event, player, BetNumbersType.MULTIPLE, Collections.singletonList(builder.build()));
@@ -598,7 +598,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
             Button confirmButton = Button.secondary(BANKER_ENTRY_CONFIRM_LABEL + selectionId, instance.discordSRVSlashCommandsComponentsNotYetFinish).withEmoji(Emoji.fromUnicode("\u2B1C")).asDisabled();
             actionRows.add(ActionRow.of(confirmButton));
 
-            event.getHook().editOriginalEmbeds(embed.build()).setActionRows(actionRows).queue();
+            event.getHook().editOriginalEmbeds(embed.build()).setActionRows(actionRows).retainFiles(Collections.emptyList()).queue();
         } else if (componentId.startsWith(BANKER_ENTRY_SELECTION_SELECT_ALL_LABEL)) {
             UUID selectionId = UUID.fromString(componentId.substring(BANKER_ENTRY_SELECTION_SELECT_ALL_LABEL.length()));
             BetNumbersBuilder.BankerBuilder builder = (BetNumbersBuilder.BankerBuilder) chosenNumbers.computeIfAbsent(selectionId, k -> BetNumbersBuilder.banker(1, instance.numberOfChoices).setValidateCompleteOnAdd(false));
@@ -678,7 +678,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
                     .setColor(Color.YELLOW)
                     .setDescription(description);
 
-            event.getHook().editOriginalComponents().setEmbeds(embed.build()).setActionRows(actionRows).queue();
+            event.getHook().editOriginalComponents().setEmbeds(embed.build()).setActionRows(actionRows).retainFiles(Collections.emptyList()).queue();
         } else if (componentId.startsWith(BANKER_ENTRY_SELECTION_RANDOM_LABEL)) {
             UUID selectionId = UUID.fromString(componentId.substring(BANKER_ENTRY_SELECTION_RANDOM_LABEL.length()));
             BetNumbersBuilder.BankerBuilder builder = (BetNumbersBuilder.BankerBuilder) chosenNumbers.computeIfAbsent(selectionId, k -> BetNumbersBuilder.banker(1, instance.numberOfChoices).setValidateCompleteOnAdd(false));
@@ -737,7 +737,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
                         .setColor(Color.YELLOW)
                         .setDescription(description);
 
-                event.getHook().editOriginalComponents().setEmbeds(embed.build()).setActionRows(actionRows).queue();
+                event.getHook().editOriginalComponents().setEmbeds(embed.build()).setActionRows(actionRows).retainFiles(Collections.emptyList()).queue();
             } else {
                 List<ActionRow> oldActionRows = new ArrayList<>(event.getMessage().getActionRows());
                 List<ActionRow> actionRows = new ArrayList<>(oldActionRows.size());
@@ -809,7 +809,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
                         .setColor(Color.YELLOW)
                         .setDescription(description);
 
-                event.getHook().editOriginalComponents().setEmbeds(embed.build()).setActionRows(actionRows).queue();
+                event.getHook().editOriginalComponents().setEmbeds(embed.build()).setActionRows(actionRows).retainFiles(Collections.emptyList()).queue();
             }
         } else if (componentId.startsWith(BANKER_ENTRY_SELECTION_LABEL)) {
             UUID selectionId = UUID.fromString(componentId.substring(BANKER_ENTRY_SELECTION_LABEL.length(), componentId.lastIndexOf("_")));
@@ -872,7 +872,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
                         .setColor(Color.YELLOW)
                         .setDescription(description);
 
-                event.getHook().editOriginalComponents().setEmbeds(embed.build()).setActionRows(actionRows).queue();
+                event.getHook().editOriginalComponents().setEmbeds(embed.build()).setActionRows(actionRows).retainFiles(Collections.emptyList()).queue();
             } else {
                 List<SelectOption> options = ((SelectionMenu) event.getComponent()).getOptions();
                 options.stream().map(s -> Integer.parseInt(s.getValue().substring(BANKER_ENTRY_SELECTION_OPTION_LABEL.length()))).forEach(i -> builder.removeNumber(i));
@@ -948,13 +948,13 @@ public class PlaceBetInteraction extends DiscordInteraction {
                         .setColor(Color.YELLOW)
                         .setDescription(description);
 
-                event.getHook().editOriginalComponents().setEmbeds(embed.build()).setActionRows(actionRows).queue();
+                event.getHook().editOriginalComponents().setEmbeds(embed.build()).setActionRows(actionRows).retainFiles(Collections.emptyList()).queue();
             }
         } else if (componentId.startsWith(BANKER_ENTRY_CONFIRM_LABEL)) {
             UUID selectionId = UUID.fromString(componentId.substring(BANKER_ENTRY_CONFIRM_LABEL.length()));
             BetNumbersBuilder.BankerBuilder builder = (BetNumbersBuilder.BankerBuilder) chosenNumbers.get(selectionId);
             if (builder == null) {
-                event.getHook().editOriginal(instance.discordSRVSlashCommandsGlobalMessagesTimeOut).setActionRows().setEmbeds().queue();
+                event.getHook().editOriginal(instance.discordSRVSlashCommandsGlobalMessagesTimeOut).setActionRows().setEmbeds().retainFiles(Collections.emptyList()).queue();
                 return;
             }
             if (!builder.inSelectionPhase()) {
@@ -979,7 +979,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
                 Button confirmButton = Button.secondary(BANKER_ENTRY_CONFIRM_LABEL + selectionId, instance.discordSRVSlashCommandsComponentsNotYetFinish).withEmoji(Emoji.fromUnicode("\u2B1C")).asDisabled();
                 actionRows.add(ActionRow.of(confirmButton));
 
-                event.getHook().editOriginalEmbeds(embed.build()).setActionRows(actionRows).queue();
+                event.getHook().editOriginalEmbeds(embed.build()).setActionRows(actionRows).retainFiles(Collections.emptyList()).queue();
             } else {
                 handleConfirm(event, player, BetNumbersType.BANKER, Collections.singletonList(builder.build()));
             }
@@ -993,7 +993,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
                     .setColor(Color.RED)
                     .setDescription(ChatColor.stripColor(LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryTitle, instance)));
 
-            event.getHook().editOriginalEmbeds(embed.build()).setActionRows(ActionRow.of(single, multiple, banker)).queue();
+            event.getHook().editOriginalEmbeds(embed.build()).setActionRows(ActionRow.of(single, multiple, banker)).retainFiles(Collections.emptyList()).queue();
         } else if (componentId.equals(SINGLE_RANDOM_ENTRY_LABEL)) {
             EmbedBuilder embed = new EmbedBuilder()
                     .setTitle(instance.discordSRVSlashCommandsPlaceBetTitle)
@@ -1009,7 +1009,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
             Button b50 = Button.danger(SINGLE_RANDOM_ENTRY_CONFIRM_LABEL + "50", "50");
             Button b100 = Button.danger(SINGLE_RANDOM_ENTRY_CONFIRM_LABEL + "100", "100");
 
-            event.getHook().editOriginalEmbeds(embed.build()).setActionRows(ActionRow.of(b1, b2, b5, b10), ActionRow.of(b20, b40, b50, b100)).queue();
+            event.getHook().editOriginalEmbeds(embed.build()).setActionRows(ActionRow.of(b1, b2, b5, b10), ActionRow.of(b20, b40, b50, b100)).retainFiles(Collections.emptyList()).queue();
         } else if (componentId.startsWith(SINGLE_RANDOM_ENTRY_CONFIRM_LABEL)) {
             int count = Integer.parseInt(componentId.substring(SINGLE_RANDOM_ENTRY_CONFIRM_LABEL.length()));
             handleConfirm(event, player, BetNumbersType.RANDOM, BetNumbersBuilder.random(1, instance.numberOfChoices, count).map(b -> b.build()).collect(Collectors.toList()));
@@ -1033,7 +1033,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
 
             actionRows.add(ActionRow.of(b1, b2, b5, b10));
 
-            event.getHook().editOriginalEmbeds(embed.build()).setActionRows(actionRows).queue();
+            event.getHook().editOriginalEmbeds(embed.build()).setActionRows(actionRows).retainFiles(Collections.emptyList()).queue();
         } else if (componentId.startsWith(MULTIPLE_RANDOM_ENTRY_SIZE_LABEL)) {
             UUID selectionId = UUID.fromString(componentId.substring(MULTIPLE_RANDOM_ENTRY_SIZE_LABEL.length(), componentId.lastIndexOf("_")));
             int size = Integer.parseInt(((SelectionMenuEvent) event).getValues().get(0).substring(MULTIPLE_RANDOM_ENTRY_SIZE_OPTION_LABEL.length()));
@@ -1058,7 +1058,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
 
             actionRows.add(ActionRow.of(b1, b2, b5, b10));
 
-            event.getHook().editOriginalComponents().setActionRows(actionRows).queue();
+            event.getHook().editOriginalComponents().setActionRows(actionRows).retainFiles(Collections.emptyList()).queue();
         } else if (componentId.startsWith(MULTIPLE_RANDOM_ENTRY_CONFIRM_LABEL)) {
             int count = Integer.parseInt(componentId.substring(MULTIPLE_RANDOM_ENTRY_CONFIRM_LABEL.length(), componentId.lastIndexOf("_")));
             UUID selectionId = UUID.fromString(componentId.substring(componentId.lastIndexOf("_") + 1));
@@ -1089,7 +1089,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
 
             actionRows.add(ActionRow.of(b1, b2, b5, b10));
 
-            event.getHook().editOriginalEmbeds(embed.build()).setActionRows(actionRows).queue();
+            event.getHook().editOriginalEmbeds(embed.build()).setActionRows(actionRows).retainFiles(Collections.emptyList()).queue();
         } else if (componentId.startsWith(BANKER_RANDOM_ENTRY_BANKER_LABEL)) {
             UUID selectionId = UUID.fromString(componentId.substring(BANKER_RANDOM_ENTRY_BANKER_LABEL.length(), componentId.lastIndexOf("_")));
             int[] data = randomSizeSelection.get(selectionId);
@@ -1134,7 +1134,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
 
             actionRows.add(ActionRow.of(b1, b2, b5, b10));
 
-            event.getHook().editOriginalComponents().setActionRows(actionRows).queue();
+            event.getHook().editOriginalComponents().setActionRows(actionRows).retainFiles(Collections.emptyList()).queue();
         } else if (componentId.startsWith(BANKER_RANDOM_ENTRY_SIZE_LABEL)) {
             UUID selectionId = UUID.fromString(componentId.substring(BANKER_RANDOM_ENTRY_SIZE_LABEL.length(), componentId.lastIndexOf("_")));
             int[] data = randomSizeSelection.get(selectionId);
@@ -1173,7 +1173,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
 
             actionRows.add(ActionRow.of(b1, b2, b5, b10));
 
-            event.getHook().editOriginalComponents().setActionRows(actionRows).queue();
+            event.getHook().editOriginalComponents().setActionRows(actionRows).retainFiles(Collections.emptyList()).queue();
         } else if (componentId.startsWith(BANKER_RANDOM_ENTRY_CONFIRM_LABEL)) {
             int count = Integer.parseInt(componentId.substring(BANKER_RANDOM_ENTRY_CONFIRM_LABEL.length(), componentId.lastIndexOf("_")));
             UUID selectionId = UUID.fromString(componentId.substring(componentId.lastIndexOf("_") + 1));
@@ -1184,9 +1184,9 @@ public class PlaceBetInteraction extends DiscordInteraction {
         } else {
             Matcher matcher = PLACE_BET_CONFIRM_LABEL_PATTERN.matcher(componentId);
             if (matcher.find()) {
-                event.getHook().editOriginalComponents(ActionRow.of(event.getMessage().getButtons().stream().map(b -> b.asDisabled()).collect(Collectors.toList()))).queue();
+                event.getHook().editOriginalComponents(ActionRow.of(event.getMessage().getButtons().stream().map(b -> b.asDisabled()).collect(Collectors.toList()))).retainFiles(Collections.emptyList()).queue();
                 if (instance.backendBungeecordMode && Bukkit.getOnlinePlayers().isEmpty()) {
-                    event.getHook().editOriginal(instance.discordSRVSlashCommandsGlobalMessagesNoOneOnline).setActionRows().setEmbeds().queue();
+                    event.getHook().editOriginal(instance.discordSRVSlashCommandsGlobalMessagesNoOneOnline).setActionRows().setEmbeds().retainFiles(Collections.emptyList()).queue();
                     return;
                 }
                 UUID betNumbersId = UUID.fromString(matcher.group(1));
@@ -1236,7 +1236,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
                             break;
                         }
                     }
-                    event.getHook().editOriginal(ChatColor.stripColor(message)).setActionRows().setEmbeds().queue();
+                    event.getHook().editOriginal(ChatColor.stripColor(message)).setActionRows().setEmbeds().retainFiles(Collections.emptyList()).queue();
                 }
             }
         }
@@ -1288,7 +1288,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
                             Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetUnitInvestmentConfirm, instance, game))
                                     .map(each -> ChatColor.stripColor(each.replace("{Price}", StringUtils.formatComma(price)).replace("{PricePartial}", StringUtils.formatComma(partial)))).collect(Collectors.joining("\n")))));
         }
-        action.setActionRows(actionRows).queue();
+        action.setActionRows(actionRows).retainFiles(Collections.emptyList()).queue();
     }
 
 }

@@ -234,7 +234,7 @@ public class DiscordSRVHook extends ListenerAdapter implements Listener, SlashCo
                         break;
                     }
                 }
-                hook.editOriginal(message).setActionRows().setEmbeds().queue();
+                hook.editOriginal(message).setActionRows().setEmbeds().retainFiles(Collections.emptyList()).queue();
             }
         }
     }
@@ -258,7 +258,7 @@ public class DiscordSRVHook extends ListenerAdapter implements Listener, SlashCo
         if (label.equals(SLASH_COMMAND_LABEL)) {
             event.deferReply(true).queue();
             if (LotterySixPlugin.getInstance().isGameLocked()) {
-                event.getHook().editOriginal(ChatColor.stripColor(LotterySixPlugin.getInstance().messageGameLocked)).setEmbeds().setActionRows().queue();
+                event.getHook().editOriginal(ChatColor.stripColor(LotterySixPlugin.getInstance().messageGameLocked)).setEmbeds().setActionRows().retainFiles(Collections.emptyList()).queue();
             } else {
                 String discordUserId = event.getUser().getId();
                 String description;
@@ -290,7 +290,7 @@ public class DiscordSRVHook extends ListenerAdapter implements Listener, SlashCo
         public void onGenericComponentInteractionCreate(GenericComponentInteractionCreateEvent event) {
             event.deferEdit().queue();
             if (LotterySixPlugin.getInstance().isGameLocked()) {
-                event.getHook().editOriginal(ChatColor.stripColor(LotterySixPlugin.getInstance().messageGameLocked)).setEmbeds().setActionRows().queue();
+                event.getHook().editOriginal(ChatColor.stripColor(LotterySixPlugin.getInstance().messageGameLocked)).setEmbeds().setActionRows().retainFiles(Collections.emptyList()).queue();
             } else {
                 try {
                     for (DiscordInteraction interaction : interactionMap.values()) {
@@ -302,7 +302,7 @@ public class DiscordSRVHook extends ListenerAdapter implements Listener, SlashCo
                 } catch (Throwable e) {
                     e.printStackTrace();
                 }
-                event.getHook().editOriginal(LotterySixPlugin.getInstance().discordSRVSlashCommandsGlobalMessagesUnknownError).setEmbeds().setActionRows().queue();
+                event.getHook().editOriginal(LotterySixPlugin.getInstance().discordSRVSlashCommandsGlobalMessagesUnknownError).setEmbeds().setActionRows().retainFiles(Collections.emptyList()).queue();
             }
         }
 

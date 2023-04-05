@@ -95,13 +95,13 @@ public class PastDrawInteraction extends DiscordInteraction {
                 try {
                     selectedGame = instance.getCompletedGames().get(GameNumber.fromString(gameNumber));
                 } catch (Exception e) {
-                    event.getHook().editOriginal(instance.discordSRVSlashCommandsViewPastDrawNoResults).setActionRows().setEmbeds().queue();
+                    event.getHook().editOriginal(instance.discordSRVSlashCommandsViewPastDrawNoResults).setActionRows().setEmbeds().retainFiles(Collections.emptyList()).queue();
                     return;
                 }
             }
 
             if (instance.getCompletedGames().isEmpty() && selectedGame == null) {
-                event.getHook().editOriginal(instance.discordSRVSlashCommandsViewPastDrawNoResults).setActionRows().setEmbeds().queue();
+                event.getHook().editOriginal(instance.discordSRVSlashCommandsViewPastDrawNoResults).setActionRows().setEmbeds().retainFiles(Collections.emptyList()).queue();
             } else {
                 Scheduler.runTaskAsynchronously(LotterySixPlugin.plugin, () -> {
                     SyncUtils.blockUntilTrue(() -> !instance.isGameLocked());
