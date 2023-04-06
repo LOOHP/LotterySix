@@ -126,13 +126,13 @@ public class Commands implements CommandExecutor, TabCompleter {
                             if (pair == null) {
                                 player.sendMessage(LotterySixPlugin.getInstance().messageInvalidBetNumbers);
                             } else {
-                                LotterySixPlugin.getGuiProvider().getNumberConfirm(player, game, pair.getFirst().map(e -> e.build()).collect(Collectors.toList()), pair.getSecond()).show(player);
+                                Scheduler.runTask(LotterySixPlugin.plugin, () -> LotterySixPlugin.getGuiProvider().getNumberConfirm(player, game, pair.getFirst().map(e -> e.build()).collect(Collectors.toList()), pair.getSecond()).show(player), player);
                             }
                         } else {
                             player.sendMessage(LotterySixPlugin.getInstance().messageNoGameRunning);
                         }
                     } else {
-                        LotterySixPlugin.getGuiProvider().getMainMenu(player).show(player);
+                        Scheduler.runTask(LotterySixPlugin.plugin, () -> LotterySixPlugin.getGuiProvider().getMainMenu(player).show(player), player);
                     }
                 } else {
                     sender.sendMessage(LotterySixPlugin.getInstance().messageNoConsole);
