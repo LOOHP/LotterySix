@@ -20,6 +20,8 @@
 
 package com.loohp.lotterysix.discordsrv;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.loohp.lotterysix.LotterySixPlugin;
 import com.loohp.lotterysix.discordsrv.menus.BettingAccountInteraction;
 import com.loohp.lotterysix.discordsrv.menus.NumberStatisticsInteraction;
@@ -71,9 +73,11 @@ import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 public class DiscordSRVHook extends ListenerAdapter implements Listener, SlashCommandProvider {
 
@@ -113,12 +117,15 @@ public class DiscordSRVHook extends ListenerAdapter implements Listener, SlashCo
 
     private final Map<UUID, InteractionHook> bungeecordPendingAddBet;
     private final Map<String, DiscordInteraction> interactionMap;
+    private final Map<String, InteractionHookData> activeInteractionHooks;
     private byte[] advertisementImage;
     private boolean init;
 
     public DiscordSRVHook() {
         this.bungeecordPendingAddBet = new ConcurrentHashMap<>();
         this.interactionMap = new LinkedHashMap<>();
+        Cache<String, InteractionHookData> activeInteractionHooks = CacheBuilder.newBuilder().expireAfterAccess(1, TimeUnit.HOURS).build();
+        this.activeInteractionHooks = activeInteractionHooks.asMap();
         this.advertisementImage = null;
 
         registerInteraction(new BettingAccountInteraction());
@@ -194,6 +201,13 @@ public class DiscordSRVHook extends ListenerAdapter implements Listener, SlashCo
                 action.queue();
             }
         }
+        for (InteractionHookData data : activeInteractionHooks.values()) {
+            InteractionHook interactionHook = data.getInteractionHook();
+            if (!interactionHook.isExpired()) {
+                interactionHook.editOriginal(LotterySixPlugin.getInstance().discordSRVSlashCommandsGlobalMessagesTimeOut).setActionRows().setEmbeds().retainFiles(Collections.emptyList()).queue();
+            }
+            activeInteractionHooks.remove(data.getMessageId());
+        }
     }
 
     @EventHandler
@@ -267,16 +281,17 @@ public class DiscordSRVHook extends ListenerAdapter implements Listener, SlashCo
             if (LotterySixPlugin.getInstance().isGameLocked()) {
                 event.getHook().editOriginal(ChatColor.stripColor(LotterySixPlugin.getInstance().messageGameLocked)).setEmbeds().setActionRows().retainFiles(Collections.emptyList()).queue();
             } else {
-                handle(event);
+                handle(event, true);
             }
         }
     }
 
-    private void handle(GenericInteractionCreateEvent event) {
+    private void handle(GenericInteractionCreateEvent event, boolean entryPoint) {
         LotterySix lotterySix = LotterySixPlugin.getInstance();
         String discordUserId = event.getUser().getId();
         String description;
-        if (lotterySix.getCurrentGame() == null) {
+        PlayableLotterySixGame game = lotterySix.getCurrentGame();
+        if (game == null) {
             description = ChatColor.stripColor(LotteryUtils.formatPlaceholders(null, lotterySix.discordSRVSlashCommandsGlobalSubTitleNoGame, lotterySix, lotterySix.getCurrentGame()));
         } else {
             description = ChatColor.stripColor(LotteryUtils.formatPlaceholders(null, lotterySix.discordSRVSlashCommandsGlobalSubTitleActiveGame, lotterySix, lotterySix.getCurrentGame()));
@@ -286,14 +301,18 @@ public class DiscordSRVHook extends ListenerAdapter implements Listener, SlashCo
                 .setDescription(description)
                 .setColor(Color.YELLOW)
                 .setThumbnail(lotterySix.discordSRVSlashCommandsGlobalThumbnailURL);
-        if (advertisementImage != null && lotterySix.getCurrentGame() != null) {
+        if (advertisementImage != null && game != null) {
             builder.setImage("attachment://image.png");
         }
         WebhookMessageUpdateAction<Message> action = event.getHook().editOriginalEmbeds(builder.build()).setActionRows(buildActionRows(interactionMap.values(), discordUserId)).retainFiles(Collections.emptyList());
-        if (advertisementImage != null && lotterySix.getCurrentGame() != null) {
+        if (advertisementImage != null && game != null) {
             action = action.addFile(advertisementImage, "image.png");
         }
-        action.queue();
+        if (entryPoint) {
+            action.queue(message -> activeInteractionHooks.put(message.getId(), new InteractionHookData(message.getId(), game, event.getHook())));
+        } else {
+            action.queue();
+        }
     }
 
     public class JDAEvents extends ListenerAdapter {
@@ -304,10 +323,17 @@ public class DiscordSRVHook extends ListenerAdapter implements Listener, SlashCo
             if (LotterySixPlugin.getInstance().isGameLocked()) {
                 event.getHook().editOriginal(ChatColor.stripColor(LotterySixPlugin.getInstance().messageGameLocked)).setEmbeds().setActionRows().retainFiles(Collections.emptyList()).queue();
             } else {
+                PlayableLotterySixGame game = LotterySixPlugin.getInstance().getCurrentGame();
+                InteractionHookData data = activeInteractionHooks.get(event.getMessageId());
+                if (data == null || !data.compareCurrentGame(game)) {
+                    event.getHook().editOriginal(LotterySixPlugin.getInstance().discordSRVSlashCommandsGlobalMessagesTimeOut).setActionRows().setEmbeds().retainFiles(Collections.emptyList()).queue();
+                    return;
+                }
+                data.setInteractionHook(event.getHook());
                 try {
                     String id = event.getComponent().getId();
                     if (id.startsWith(MAIN_MENU_LABEL)) {
-                        handle(event);
+                        handle(event, false);
                         return;
                     }
                     for (DiscordInteraction interaction : interactionMap.values()) {
@@ -323,6 +349,39 @@ public class DiscordSRVHook extends ListenerAdapter implements Listener, SlashCo
             }
         }
 
+    }
+
+    public static class InteractionHookData {
+
+        private final String messageId;
+        private final UUID currentGameId;
+        private InteractionHook interactionHook;
+
+        public InteractionHookData(String messageId, PlayableLotterySixGame currentGame, InteractionHook interactionHook) {
+            this.messageId = messageId;
+            this.currentGameId = currentGame == null ? null : currentGame.getGameId();
+            this.interactionHook = interactionHook;
+        }
+
+        public String getMessageId() {
+            return messageId;
+        }
+
+        public UUID getCurrentGameId() {
+            return currentGameId;
+        }
+
+        public boolean compareCurrentGame(PlayableLotterySixGame game) {
+            return Objects.equals(game == null ? null : game.getGameId(), currentGameId);
+        }
+
+        public InteractionHook getInteractionHook() {
+            return interactionHook;
+        }
+
+        public void setInteractionHook(InteractionHook interactionHook) {
+            this.interactionHook = interactionHook;
+        }
     }
 
 }
