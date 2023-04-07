@@ -57,6 +57,7 @@ import github.scarsz.discordsrv.dependencies.jda.api.interactions.commands.build
 import github.scarsz.discordsrv.dependencies.jda.api.interactions.components.ActionRow;
 import github.scarsz.discordsrv.dependencies.jda.api.interactions.components.Button;
 import github.scarsz.discordsrv.dependencies.jda.api.interactions.components.Component;
+import github.scarsz.discordsrv.dependencies.jda.api.requests.RestAction;
 import github.scarsz.discordsrv.dependencies.jda.api.requests.restaction.MessageAction;
 import github.scarsz.discordsrv.dependencies.jda.api.requests.restaction.WebhookMessageUpdateAction;
 import net.md_5.bungee.api.ChatColor;
@@ -179,6 +180,22 @@ public class DiscordSRVHook extends ListenerAdapter implements Listener, SlashCo
         }
     }
 
+    public void expireAllHooks(boolean immediately) {
+        List<RestAction<?>> actions = new ArrayList<>();
+        for (InteractionHookData data : activeInteractionHooks.values()) {
+            InteractionHook interactionHook = data.getInteractionHook();
+            if (!interactionHook.isExpired()) {
+                actions.add(interactionHook.editOriginal(LotterySixPlugin.getInstance().discordSRVSlashCommandsGlobalMessagesTimeOut).setActionRows().setEmbeds().retainFiles(Collections.emptyList()).setCheck(() -> !interactionHook.isExpired()));
+            }
+            activeInteractionHooks.remove(data.getMessageId());
+        }
+        if (immediately) {
+            RestAction.allOf(actions).complete();
+        } else {
+            RestAction.allOf(actions).queue();
+        }
+    }
+
     @EventHandler
     public void onLotteryAction(LotterySixEvent event) {
         if (event.getAction().equals(LotterySixAction.RUN_LOTTERY_FINISH)) {
@@ -201,13 +218,7 @@ public class DiscordSRVHook extends ListenerAdapter implements Listener, SlashCo
                 action.queue();
             }
         }
-        for (InteractionHookData data : activeInteractionHooks.values()) {
-            InteractionHook interactionHook = data.getInteractionHook();
-            if (!interactionHook.isExpired()) {
-                interactionHook.editOriginal(LotterySixPlugin.getInstance().discordSRVSlashCommandsGlobalMessagesTimeOut).setActionRows().setEmbeds().retainFiles(Collections.emptyList()).queue();
-            }
-            activeInteractionHooks.remove(data.getMessageId());
-        }
+        expireAllHooks(false);
     }
 
     @EventHandler

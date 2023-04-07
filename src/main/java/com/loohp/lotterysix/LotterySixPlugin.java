@@ -246,6 +246,9 @@ public class LotterySixPlugin extends JavaPlugin implements Listener {
     @Override
     public void onDisable() {
         instance.close();
+        if (discordSRVHook != null) {
+            discordSRVHook.expireAllHooks(true);
+        }
         getServer().getConsoleSender().sendMessage(ChatColor.RED + "[LotterySix] LotterySix has been Disabled!");
     }
 
