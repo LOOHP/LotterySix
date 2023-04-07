@@ -277,6 +277,7 @@ public class LotterySix implements AutoCloseable {
     public String discordSRVSlashCommandsGlobalMessagesNoOneOnline;
     public String discordSRVSlashCommandsGlobalMessagesTimeOut;
     public String discordSRVSlashCommandsGlobalMessagesUnknownError;
+    public String discordSRVSlashCommandsGlobalComponentsBack;
     public String discordSRVSlashCommandsBetAccountTitle;
     public String[] discordSRVSlashCommandsBetAccountSubTitle;
     public String discordSRVSlashCommandsBetAccountThumbnailURL;
@@ -966,6 +967,7 @@ public class LotterySix implements AutoCloseable {
         discordSRVSlashCommandsGlobalMessagesNoOneOnline = config.getConfiguration().getString("DiscordSRV.SlashCommands.Global.Messages.NoOneOnline");
         discordSRVSlashCommandsGlobalMessagesTimeOut = config.getConfiguration().getString("DiscordSRV.SlashCommands.Global.Messages.TimeOut");
         discordSRVSlashCommandsGlobalMessagesUnknownError = config.getConfiguration().getString("DiscordSRV.SlashCommands.Global.Messages.UnknownError");
+        discordSRVSlashCommandsGlobalComponentsBack = config.getConfiguration().getString("DiscordSRV.SlashCommands.Global.Components.Back");
         discordSRVSlashCommandsBetAccountTitle = config.getConfiguration().getString("DiscordSRV.SlashCommands.BetAccount.Title");
         discordSRVSlashCommandsBetAccountSubTitle = config.getConfiguration().getStringList("DiscordSRV.SlashCommands.BetAccount.SubTitle").toArray(new String[0]);
         discordSRVSlashCommandsBetAccountThumbnailURL = config.getConfiguration().getString("DiscordSRV.SlashCommands.BetAccount.ThumbnailURL");

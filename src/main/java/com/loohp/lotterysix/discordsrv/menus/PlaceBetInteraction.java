@@ -38,6 +38,7 @@ import github.scarsz.discordsrv.DiscordSRV;
 import github.scarsz.discordsrv.dependencies.jda.api.EmbedBuilder;
 import github.scarsz.discordsrv.dependencies.jda.api.entities.Emoji;
 import github.scarsz.discordsrv.dependencies.jda.api.entities.Message;
+import github.scarsz.discordsrv.dependencies.jda.api.entities.MessageEmbed;
 import github.scarsz.discordsrv.dependencies.jda.api.events.interaction.GenericComponentInteractionCreateEvent;
 import github.scarsz.discordsrv.dependencies.jda.api.events.interaction.SelectionMenuEvent;
 import github.scarsz.discordsrv.dependencies.jda.api.interactions.components.ActionRow;
@@ -69,6 +70,8 @@ import java.util.stream.Stream;
 public class PlaceBetInteraction extends DiscordInteraction {
 
     public static final String INTERACTION_LABEL = "ls_place_bet";
+
+    public static final String CONFIRM_SCREEN_BACK = "ls_place_bet_confirm_screen_back_";
 
     public static final String SINGLE_ENTRY_LABEL = "ls_place_bet_single";
     public static final String MULTIPLE_ENTRY_LABEL = "ls_place_bet_multiple";
@@ -116,15 +119,18 @@ public class PlaceBetInteraction extends DiscordInteraction {
     private final Map<UUID, BetNumbersBuilder> chosenNumbers;
     private final Map<UUID, List<BetNumbers>> confirmNumbers;
     private final Map<UUID, int[]> randomSizeSelection;
+    private final Map<UUID, ConfirmBackData> confirmBack;
 
     public PlaceBetInteraction() {
         super(INTERACTION_LABEL, true);
-        Cache<UUID, BetNumbersBuilder> chosenNumbers = CacheBuilder.newBuilder().expireAfterAccess(15, TimeUnit.MINUTES).build();
+        Cache<UUID, BetNumbersBuilder> chosenNumbers = CacheBuilder.newBuilder().expireAfterAccess(1, TimeUnit.HOURS).build();
         this.chosenNumbers = chosenNumbers.asMap();
-        Cache<UUID, List<BetNumbers>> confirmNumbers = CacheBuilder.newBuilder().expireAfterAccess(15, TimeUnit.MINUTES).build();
+        Cache<UUID, List<BetNumbers>> confirmNumbers = CacheBuilder.newBuilder().expireAfterAccess(1, TimeUnit.HOURS).build();
         this.confirmNumbers = confirmNumbers.asMap();
-        Cache<UUID, int[]> randomSizeSelection = CacheBuilder.newBuilder().expireAfterAccess(15, TimeUnit.MINUTES).build();
+        Cache<UUID, int[]> randomSizeSelection = CacheBuilder.newBuilder().expireAfterAccess(1, TimeUnit.HOURS).build();
         this.randomSizeSelection = randomSizeSelection.asMap();
+        Cache<UUID, ConfirmBackData> confirmBack = CacheBuilder.newBuilder().expireAfterAccess(1, TimeUnit.HOURS).build();
+        this.confirmBack = confirmBack.asMap();
     }
 
     public List<SelectionMenu.Builder> createNumberSelectionMenu(String menuId, String optionsId) {
@@ -214,7 +220,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
                     .setColor(Color.ORANGE)
                     .setDescription(description);
 
-            event.getHook().editOriginalEmbeds(embed.build()).setActionRows(ActionRow.of(single, multiple, banker, random)).retainFiles(Collections.emptyList()).queue();
+            event.getHook().editOriginalEmbeds(embed.build()).setActionRows(ActionRow.of(single, multiple, banker, random), ActionRow.of(getMainMenuButton())).retainFiles(Collections.emptyList()).queue();
         } else if (componentId.equals(SINGLE_ENTRY_LABEL)) {
             EmbedBuilder embed = new EmbedBuilder()
                     .setTitle(ChatColor.stripColor(instance.betNumbersTypeNames.get(BetNumbersType.SINGLE)))
@@ -230,6 +236,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
             actionRows.add(ActionRow.of(randomButton));
             Button confirmButton = Button.secondary(SINGLE_ENTRY_CONFIRM_LABEL + selectionId, instance.discordSRVSlashCommandsComponentsNotYetFinish).withEmoji(Emoji.fromUnicode("\u2B1C")).asDisabled();
             actionRows.add(ActionRow.of(confirmButton));
+            actionRows.add(ActionRow.of(getMainMenuButton().withId(INTERACTION_LABEL)));
 
             event.getHook().editOriginalEmbeds(embed.build()).setActionRows(actionRows).retainFiles(Collections.emptyList()).queue();
         } else if (componentId.startsWith(SINGLE_ENTRY_SELECTION_RANDOM_LABEL)) {
@@ -237,10 +244,8 @@ public class PlaceBetInteraction extends DiscordInteraction {
             BetNumbersBuilder builder = chosenNumbers.computeIfAbsent(selectionId, k -> BetNumbersBuilder.single(1, instance.numberOfChoices).setValidateCompleteOnAdd(false));
             builder.addRandomNumber();
 
-            List<ActionRow> oldActionRows = new ArrayList<>(event.getMessage().getActionRows());
+            List<ActionRow> oldActionRows = new ArrayList<>(event.getMessage().getActionRows().subList(0, 2));
             List<ActionRow> actionRows = new ArrayList<>(oldActionRows.size());
-            oldActionRows.remove(oldActionRows.size() - 1);
-            oldActionRows.remove(oldActionRows.size() - 1);
             outer:
             for (ActionRow actionRow : oldActionRows) {
                 for (Component component : actionRow) {
@@ -278,6 +283,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
                 Button confirmButton = Button.secondary(SINGLE_ENTRY_CONFIRM_LABEL + selectionId, instance.discordSRVSlashCommandsComponentsNotYetFinish).withEmoji(Emoji.fromUnicode("\u2B1C")).asDisabled();
                 actionRows.add(ActionRow.of(confirmButton));
             }
+            actionRows.add(ActionRow.of(getMainMenuButton().withId(INTERACTION_LABEL)));
 
             EmbedBuilder embed = new EmbedBuilder()
                     .setTitle(ChatColor.stripColor(instance.betNumbersTypeNames.get(BetNumbersType.SINGLE)))
@@ -292,10 +298,8 @@ public class PlaceBetInteraction extends DiscordInteraction {
             options.stream().map(s -> Integer.parseInt(s.getValue().substring(SINGLE_ENTRY_SELECTION_OPTION_LABEL.length()))).forEach(i -> builder.removeNumber(i));
             ((SelectionMenuEvent) event).getValues().stream().map(s -> Integer.parseInt(s.substring(SINGLE_ENTRY_SELECTION_OPTION_LABEL.length()))).forEach(i -> builder.addNumber(i));
 
-            List<ActionRow> oldActionRows = new ArrayList<>(event.getMessage().getActionRows());
+            List<ActionRow> oldActionRows = new ArrayList<>(event.getMessage().getActionRows().subList(0, 2));
             List<ActionRow> actionRows = new ArrayList<>(oldActionRows.size());
-            oldActionRows.remove(oldActionRows.size() - 1);
-            oldActionRows.remove(oldActionRows.size() - 1);
             outer:
             for (ActionRow actionRow : oldActionRows) {
                 for (Component component : actionRow) {
@@ -336,6 +340,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
                 Button confirmButton = Button.secondary(SINGLE_ENTRY_CONFIRM_LABEL + selectionId, instance.discordSRVSlashCommandsComponentsNotYetFinish).withEmoji(Emoji.fromUnicode("\u2B1C")).asDisabled();
                 actionRows.add(ActionRow.of(confirmButton));
             }
+            actionRows.add(ActionRow.of(getMainMenuButton().withId(INTERACTION_LABEL)));
 
             EmbedBuilder embed = new EmbedBuilder()
                     .setTitle(ChatColor.stripColor(instance.betNumbersTypeNames.get(BetNumbersType.SINGLE)))
@@ -350,7 +355,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
                 event.getHook().editOriginal(instance.discordSRVSlashCommandsGlobalMessagesTimeOut).setActionRows().setEmbeds().retainFiles(Collections.emptyList()).queue();
                 return;
             }
-            handleConfirm(event, player, BetNumbersType.SINGLE, Collections.singletonList(builder.build()));
+            handleConfirm(event, player, BetNumbersType.SINGLE, Collections.singletonList(builder.build()), () -> chosenNumbers.put(selectionId, builder));
         } else if (componentId.equals(MULTIPLE_ENTRY_LABEL)) {
             EmbedBuilder embed = new EmbedBuilder()
                     .setTitle(ChatColor.stripColor(instance.betNumbersTypeNames.get(BetNumbersType.MULTIPLE)))
@@ -367,6 +372,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
             actionRows.add(ActionRow.of(selectAllButton, randomButton));
             Button confirmButton = Button.secondary(MULTIPLE_ENTRY_CONFIRM_LABEL + selectionId, instance.discordSRVSlashCommandsComponentsNotYetFinish).withEmoji(Emoji.fromUnicode("\u2B1C")).asDisabled();
             actionRows.add(ActionRow.of(confirmButton));
+            actionRows.add(ActionRow.of(getMainMenuButton().withId(INTERACTION_LABEL)));
 
             event.getHook().editOriginalEmbeds(embed.build()).setActionRows(actionRows).retainFiles(Collections.emptyList()).queue();
         } else if (componentId.startsWith(MULTIPLE_ENTRY_SELECTION_SELECT_ALL_LABEL)) {
@@ -378,10 +384,8 @@ public class PlaceBetInteraction extends DiscordInteraction {
                 }
             }
 
-            List<ActionRow> oldActionRows = new ArrayList<>(event.getMessage().getActionRows());
+            List<ActionRow> oldActionRows = new ArrayList<>(event.getMessage().getActionRows().subList(0, 2));
             List<ActionRow> actionRows = new ArrayList<>(oldActionRows.size());
-            oldActionRows.remove(oldActionRows.size() - 1);
-            oldActionRows.remove(oldActionRows.size() - 1);
             outer:
             for (ActionRow actionRow : oldActionRows) {
                 for (Component component : actionRow) {
@@ -432,6 +436,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
                 Button confirmButton = Button.secondary(MULTIPLE_ENTRY_CONFIRM_LABEL + selectionId, instance.discordSRVSlashCommandsComponentsNotYetFinish).withEmoji(Emoji.fromUnicode("\u2B1C")).asDisabled();
                 actionRows.add(ActionRow.of(confirmButton));
             }
+            actionRows.add(ActionRow.of(getMainMenuButton().withId(INTERACTION_LABEL)));
 
             EmbedBuilder embed = new EmbedBuilder()
                     .setTitle(ChatColor.stripColor(instance.betNumbersTypeNames.get(BetNumbersType.MULTIPLE)))
@@ -444,10 +449,8 @@ public class PlaceBetInteraction extends DiscordInteraction {
             BetNumbersBuilder builder = chosenNumbers.computeIfAbsent(selectionId, k -> BetNumbersBuilder.multiple(1, instance.numberOfChoices).setValidateCompleteOnAdd(false));
             builder.addRandomNumber();
 
-            List<ActionRow> oldActionRows = new ArrayList<>(event.getMessage().getActionRows());
+            List<ActionRow> oldActionRows = new ArrayList<>(event.getMessage().getActionRows().subList(0, 2));
             List<ActionRow> actionRows = new ArrayList<>(oldActionRows.size());
-            oldActionRows.remove(oldActionRows.size() - 1);
-            oldActionRows.remove(oldActionRows.size() - 1);
             outer:
             for (ActionRow actionRow : oldActionRows) {
                 for (Component component : actionRow) {
@@ -498,6 +501,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
                 Button confirmButton = Button.secondary(MULTIPLE_ENTRY_CONFIRM_LABEL + selectionId, instance.discordSRVSlashCommandsComponentsNotYetFinish).withEmoji(Emoji.fromUnicode("\u2B1C")).asDisabled();
                 actionRows.add(ActionRow.of(confirmButton));
             }
+            actionRows.add(ActionRow.of(getMainMenuButton().withId(INTERACTION_LABEL)));
 
             EmbedBuilder embed = new EmbedBuilder()
                     .setTitle(ChatColor.stripColor(instance.betNumbersTypeNames.get(BetNumbersType.MULTIPLE)))
@@ -512,10 +516,8 @@ public class PlaceBetInteraction extends DiscordInteraction {
             options.stream().map(s -> Integer.parseInt(s.getValue().substring(MULTIPLE_ENTRY_SELECTION_OPTION_LABEL.length()))).forEach(i -> builder.removeNumber(i));
             ((SelectionMenuEvent) event).getValues().stream().map(s -> Integer.parseInt(s.substring(MULTIPLE_ENTRY_SELECTION_OPTION_LABEL.length()))).forEach(i -> builder.addNumber(i));
 
-            List<ActionRow> oldActionRows = new ArrayList<>(event.getMessage().getActionRows());
+            List<ActionRow> oldActionRows = new ArrayList<>(event.getMessage().getActionRows().subList(0, 2));
             List<ActionRow> actionRows = new ArrayList<>(oldActionRows.size());
-            oldActionRows.remove(oldActionRows.size() - 1);
-            oldActionRows.remove(oldActionRows.size() - 1);
             outer:
             for (ActionRow actionRow : oldActionRows) {
                 for (Component component : actionRow) {
@@ -566,6 +568,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
                 Button confirmButton = Button.secondary(MULTIPLE_ENTRY_CONFIRM_LABEL + selectionId, instance.discordSRVSlashCommandsComponentsNotYetFinish).withEmoji(Emoji.fromUnicode("\u2B1C")).asDisabled();
                 actionRows.add(ActionRow.of(confirmButton));
             }
+            actionRows.add(ActionRow.of(getMainMenuButton().withId(INTERACTION_LABEL)));
 
             EmbedBuilder embed = new EmbedBuilder()
                     .setTitle(ChatColor.stripColor(instance.betNumbersTypeNames.get(BetNumbersType.MULTIPLE)))
@@ -580,7 +583,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
                 event.getHook().editOriginal(instance.discordSRVSlashCommandsGlobalMessagesTimeOut).setActionRows().setEmbeds().retainFiles(Collections.emptyList()).queue();
                 return;
             }
-            handleConfirm(event, player, BetNumbersType.MULTIPLE, Collections.singletonList(builder.build()));
+            handleConfirm(event, player, BetNumbersType.MULTIPLE, Collections.singletonList(builder.build()), () -> chosenNumbers.put(selectionId, builder));
         } else if (componentId.equals(BANKER_ENTRY_LABEL)) {
             EmbedBuilder embed = new EmbedBuilder()
                     .setTitle(ChatColor.stripColor(instance.betNumbersTypeNames.get(BetNumbersType.BANKER)))
@@ -597,6 +600,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
             actionRows.add(ActionRow.of(selectAllButton, randomButton));
             Button confirmButton = Button.secondary(BANKER_ENTRY_CONFIRM_LABEL + selectionId, instance.discordSRVSlashCommandsComponentsNotYetFinish).withEmoji(Emoji.fromUnicode("\u2B1C")).asDisabled();
             actionRows.add(ActionRow.of(confirmButton));
+            actionRows.add(ActionRow.of(getMainMenuButton().withId(INTERACTION_LABEL)));
 
             event.getHook().editOriginalEmbeds(embed.build()).setActionRows(actionRows).retainFiles(Collections.emptyList()).queue();
         } else if (componentId.startsWith(BANKER_ENTRY_SELECTION_SELECT_ALL_LABEL)) {
@@ -608,10 +612,8 @@ public class PlaceBetInteraction extends DiscordInteraction {
                 }
             }
 
-            List<ActionRow> oldActionRows = new ArrayList<>(event.getMessage().getActionRows());
+            List<ActionRow> oldActionRows = new ArrayList<>(event.getMessage().getActionRows().subList(0, 2));
             List<ActionRow> actionRows = new ArrayList<>(oldActionRows.size());
-            oldActionRows.remove(oldActionRows.size() - 1);
-            oldActionRows.remove(oldActionRows.size() - 1);
             outer:
             for (ActionRow actionRow : oldActionRows) {
                 for (Component component : actionRow) {
@@ -672,6 +674,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
                 }
                 description += "\n\n**" + bankerStr + "**";
             }
+            actionRows.add(ActionRow.of(getMainMenuButton().withId(INTERACTION_LABEL)));
 
             EmbedBuilder embed = new EmbedBuilder()
                     .setTitle(ChatColor.stripColor(instance.betNumbersTypeNames.get(BetNumbersType.BANKER)))
@@ -684,10 +687,8 @@ public class PlaceBetInteraction extends DiscordInteraction {
             BetNumbersBuilder.BankerBuilder builder = (BetNumbersBuilder.BankerBuilder) chosenNumbers.computeIfAbsent(selectionId, k -> BetNumbersBuilder.banker(1, instance.numberOfChoices).setValidateCompleteOnAdd(false));
             builder.addRandomNumber();
             if (!builder.inSelectionPhase()) {
-                List<ActionRow> oldActionRows = new ArrayList<>(event.getMessage().getActionRows());
+                List<ActionRow> oldActionRows = new ArrayList<>(event.getMessage().getActionRows().subList(0, 2));
                 List<ActionRow> actionRows = new ArrayList<>(oldActionRows.size());
-                oldActionRows.remove(oldActionRows.size() - 1);
-                oldActionRows.remove(oldActionRows.size() - 1);
                 outer:
                 for (ActionRow actionRow : oldActionRows) {
                     for (Component component : actionRow) {
@@ -731,6 +732,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
                     Button confirmButton = Button.secondary(BANKER_ENTRY_CONFIRM_LABEL + selectionId, instance.discordSRVSlashCommandsComponentsNotYetFinish).withEmoji(Emoji.fromUnicode("\u2B1C")).asDisabled();
                     actionRows.add(ActionRow.of(confirmButton));
                 }
+                actionRows.add(ActionRow.of(getMainMenuButton().withId(INTERACTION_LABEL)));
 
                 EmbedBuilder embed = new EmbedBuilder()
                         .setTitle(ChatColor.stripColor(instance.betNumbersTypeNames.get(BetNumbersType.BANKER)))
@@ -739,10 +741,8 @@ public class PlaceBetInteraction extends DiscordInteraction {
 
                 event.getHook().editOriginalComponents().setEmbeds(embed.build()).setActionRows(actionRows).retainFiles(Collections.emptyList()).queue();
             } else {
-                List<ActionRow> oldActionRows = new ArrayList<>(event.getMessage().getActionRows());
+                List<ActionRow> oldActionRows = new ArrayList<>(event.getMessage().getActionRows().subList(0, 2));
                 List<ActionRow> actionRows = new ArrayList<>(oldActionRows.size());
-                oldActionRows.remove(oldActionRows.size() - 1);
-                oldActionRows.remove(oldActionRows.size() - 1);
                 outer:
                 for (ActionRow actionRow : oldActionRows) {
                     for (Component component : actionRow) {
@@ -803,6 +803,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
                     }
                     description += "\n\n**" + bankerStr + "**";
                 }
+                actionRows.add(ActionRow.of(getMainMenuButton().withId(INTERACTION_LABEL)));
 
                 EmbedBuilder embed = new EmbedBuilder()
                         .setTitle(ChatColor.stripColor(instance.betNumbersTypeNames.get(BetNumbersType.BANKER)))
@@ -819,10 +820,8 @@ public class PlaceBetInteraction extends DiscordInteraction {
                 options.stream().map(s -> Integer.parseInt(s.getValue().substring(BANKER_ENTRY_SELECTION_OPTION_LABEL.length()))).forEach(i -> builder.removeNumber(i));
                 ((SelectionMenuEvent) event).getValues().stream().map(s -> Integer.parseInt(s.substring(BANKER_ENTRY_SELECTION_OPTION_LABEL.length()))).forEach(i -> builder.addNumber(i));
 
-                List<ActionRow> oldActionRows = new ArrayList<>(event.getMessage().getActionRows());
+                List<ActionRow> oldActionRows = new ArrayList<>(event.getMessage().getActionRows().subList(0, 2));
                 List<ActionRow> actionRows = new ArrayList<>(oldActionRows.size());
-                oldActionRows.remove(oldActionRows.size() - 1);
-                oldActionRows.remove(oldActionRows.size() - 1);
                 outer:
                 for (ActionRow actionRow : oldActionRows) {
                     for (Component component : actionRow) {
@@ -866,6 +865,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
                     Button confirmButton = Button.secondary(BANKER_ENTRY_CONFIRM_LABEL + selectionId, instance.discordSRVSlashCommandsComponentsNotYetFinish).withEmoji(Emoji.fromUnicode("\u2B1C")).asDisabled();
                     actionRows.add(ActionRow.of(confirmButton));
                 }
+                actionRows.add(ActionRow.of(getMainMenuButton().withId(INTERACTION_LABEL)));
 
                 EmbedBuilder embed = new EmbedBuilder()
                         .setTitle(ChatColor.stripColor(instance.betNumbersTypeNames.get(BetNumbersType.BANKER)))
@@ -878,10 +878,8 @@ public class PlaceBetInteraction extends DiscordInteraction {
                 options.stream().map(s -> Integer.parseInt(s.getValue().substring(BANKER_ENTRY_SELECTION_OPTION_LABEL.length()))).forEach(i -> builder.removeNumber(i));
                 ((SelectionMenuEvent) event).getValues().stream().map(s -> Integer.parseInt(s.substring(BANKER_ENTRY_SELECTION_OPTION_LABEL.length()))).forEach(i -> builder.addNumber(i));
 
-                List<ActionRow> oldActionRows = new ArrayList<>(event.getMessage().getActionRows());
+                List<ActionRow> oldActionRows = new ArrayList<>(event.getMessage().getActionRows().subList(0, 2));
                 List<ActionRow> actionRows = new ArrayList<>(oldActionRows.size());
-                oldActionRows.remove(oldActionRows.size() - 1);
-                oldActionRows.remove(oldActionRows.size() - 1);
                 outer:
                 for (ActionRow actionRow : oldActionRows) {
                     for (Component component : actionRow) {
@@ -942,6 +940,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
                     }
                     description += "\n\n**" + bankerStr + "**";
                 }
+                actionRows.add(ActionRow.of(getMainMenuButton().withId(INTERACTION_LABEL)));
 
                 EmbedBuilder embed = new EmbedBuilder()
                         .setTitle(ChatColor.stripColor(instance.betNumbersTypeNames.get(BetNumbersType.BANKER)))
@@ -978,10 +977,11 @@ public class PlaceBetInteraction extends DiscordInteraction {
                 actionRows.add(ActionRow.of(selectAllButton, randomButton));
                 Button confirmButton = Button.secondary(BANKER_ENTRY_CONFIRM_LABEL + selectionId, instance.discordSRVSlashCommandsComponentsNotYetFinish).withEmoji(Emoji.fromUnicode("\u2B1C")).asDisabled();
                 actionRows.add(ActionRow.of(confirmButton));
+                actionRows.add(ActionRow.of(getMainMenuButton().withId(INTERACTION_LABEL)));
 
                 event.getHook().editOriginalEmbeds(embed.build()).setActionRows(actionRows).retainFiles(Collections.emptyList()).queue();
             } else {
-                handleConfirm(event, player, BetNumbersType.BANKER, Collections.singletonList(builder.build()));
+                handleConfirm(event, player, BetNumbersType.BANKER, Collections.singletonList(builder.build()), () -> chosenNumbers.put(selectionId, builder));
             }
         } else if (componentId.equals(RANDOM_ENTRY_LABEL)) {
             Button single = Button.secondary(SINGLE_RANDOM_ENTRY_LABEL, ChatColor.stripColor(instance.betNumbersTypeNames.get(BetNumbersType.SINGLE)));
@@ -993,12 +993,21 @@ public class PlaceBetInteraction extends DiscordInteraction {
                     .setColor(Color.RED)
                     .setDescription(ChatColor.stripColor(LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryTitle, instance)));
 
-            event.getHook().editOriginalEmbeds(embed.build()).setActionRows(ActionRow.of(single, multiple, banker)).retainFiles(Collections.emptyList()).queue();
+            event.getHook().editOriginalEmbeds(embed.build()).setActionRows(ActionRow.of(single, multiple, banker), ActionRow.of(getMainMenuButton().withId(INTERACTION_LABEL))).retainFiles(Collections.emptyList()).queue();
         } else if (componentId.equals(SINGLE_RANDOM_ENTRY_LABEL)) {
             EmbedBuilder embed = new EmbedBuilder()
                     .setTitle(instance.discordSRVSlashCommandsPlaceBetTitle)
                     .setColor(Color.RED)
                     .setDescription("**" + ChatColor.stripColor(instance.betNumbersTypeNames.get(BetNumbersType.RANDOM)) + "**");
+
+            embed.addField("1", ChatColor.stripColor(String.join("\n", LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBetCountValueSimple, instance)).replace("{Count}", "1").replace("{BetUnits}", "1").replace("{Price}", StringUtils.formatComma(instance.pricePerBet))), true);
+            embed.addField("2", ChatColor.stripColor(String.join("\n", LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBetCountValueSimple, instance)).replace("{Count}", "2").replace("{BetUnits}", "2").replace("{Price}", StringUtils.formatComma(instance.pricePerBet * 2))), true);
+            embed.addField("5", ChatColor.stripColor(String.join("\n", LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBetCountValueSimple, instance)).replace("{Count}", "5").replace("{BetUnits}", "5").replace("{Price}", StringUtils.formatComma(instance.pricePerBet * 5))), true);
+            embed.addField("10", ChatColor.stripColor(String.join("\n", LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBetCountValueSimple, instance)).replace("{Count}", "10").replace("{BetUnits}", "10").replace("{Price}", StringUtils.formatComma(instance.pricePerBet * 10))), true);
+            embed.addField("20", ChatColor.stripColor(String.join("\n", LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBetCountValueSimple, instance)).replace("{Count}", "20").replace("{BetUnits}", "20").replace("{Price}", StringUtils.formatComma(instance.pricePerBet * 20))), true);
+            embed.addField("40", ChatColor.stripColor(String.join("\n", LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBetCountValueSimple, instance)).replace("{Count}", "40").replace("{BetUnits}", "40").replace("{Price}", StringUtils.formatComma(instance.pricePerBet * 40))), true);
+            embed.addField("50", ChatColor.stripColor(String.join("\n", LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBetCountValueSimple, instance)).replace("{Count}", "50").replace("{BetUnits}", "50").replace("{Price}", StringUtils.formatComma(instance.pricePerBet * 50))), true);
+            embed.addField("100", ChatColor.stripColor(String.join("\n", LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBetCountValueSimple, instance)).replace("{Count}", "100").replace("{BetUnits}", "100").replace("{Price}", StringUtils.formatComma(instance.pricePerBet * 100))), true);
 
             Button b1 = Button.danger(SINGLE_RANDOM_ENTRY_CONFIRM_LABEL + "1", "1");
             Button b2 = Button.danger(SINGLE_RANDOM_ENTRY_CONFIRM_LABEL + "2", "2");
@@ -1009,10 +1018,10 @@ public class PlaceBetInteraction extends DiscordInteraction {
             Button b50 = Button.danger(SINGLE_RANDOM_ENTRY_CONFIRM_LABEL + "50", "50");
             Button b100 = Button.danger(SINGLE_RANDOM_ENTRY_CONFIRM_LABEL + "100", "100");
 
-            event.getHook().editOriginalEmbeds(embed.build()).setActionRows(ActionRow.of(b1, b2, b5, b10), ActionRow.of(b20, b40, b50, b100)).retainFiles(Collections.emptyList()).queue();
+            event.getHook().editOriginalEmbeds(embed.build()).setActionRows(ActionRow.of(b1, b2, b5, b10), ActionRow.of(b20, b40, b50, b100), ActionRow.of(getMainMenuButton().withId(RANDOM_ENTRY_LABEL))).retainFiles(Collections.emptyList()).queue();
         } else if (componentId.startsWith(SINGLE_RANDOM_ENTRY_CONFIRM_LABEL)) {
             int count = Integer.parseInt(componentId.substring(SINGLE_RANDOM_ENTRY_CONFIRM_LABEL.length()));
-            handleConfirm(event, player, BetNumbersType.RANDOM, BetNumbersBuilder.random(1, instance.numberOfChoices, count).map(b -> b.build()).collect(Collectors.toList()));
+            handleConfirm(event, player, BetNumbersType.RANDOM, BetNumbersBuilder.random(1, instance.numberOfChoices, count).map(b -> b.build()).collect(Collectors.toList()), null);
         } else if (componentId.equals(MULTIPLE_RANDOM_ENTRY_LABEL)) {
             EmbedBuilder embed = new EmbedBuilder()
                     .setTitle(instance.discordSRVSlashCommandsPlaceBetTitle)
@@ -1026,18 +1035,30 @@ public class PlaceBetInteraction extends DiscordInteraction {
             List<ActionRow> actionRows = sizeMenu.stream().map(m -> ActionRow.of(m.setMinValues(1).setMaxValues(1).build())).collect(Collectors.toList());
             randomSizeSelection.put(selectionId, new int[] {7});
 
+            long price = LotteryUtils.calculatePrice(7, 0, instance.pricePerBet);
+            embed.addField("1", ChatColor.stripColor(String.join("\n", LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBetCountValueComplex, instance)).replace("{Count}", "1").replace("{BetUnits}", StringUtils.formatComma(price / instance.pricePerBet)).replace("{Price}", StringUtils.formatComma(price)).replace("{PricePartial}", StringUtils.formatComma(price / BetUnitType.PARTIAL.getDivisor()))), true);
+            embed.addField("2", ChatColor.stripColor(String.join("\n", LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBetCountValueComplex, instance)).replace("{Count}", "2").replace("{BetUnits}", StringUtils.formatComma(price * 2 / instance.pricePerBet)).replace("{Price}", StringUtils.formatComma(price * 2)).replace("{PricePartial}", StringUtils.formatComma(price * 2 / BetUnitType.PARTIAL.getDivisor()))), true);
+            embed.addField("5", ChatColor.stripColor(String.join("\n", LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBetCountValueComplex, instance)).replace("{Count}", "5").replace("{BetUnits}", StringUtils.formatComma(price * 5 / instance.pricePerBet)).replace("{Price}", StringUtils.formatComma(price * 5)).replace("{PricePartial}", StringUtils.formatComma(price * 5 / BetUnitType.PARTIAL.getDivisor()))), true);
+            embed.addField("10", ChatColor.stripColor(String.join("\n", LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBetCountValueComplex, instance)).replace("{Count}", "10").replace("{BetUnits}", StringUtils.formatComma(price * 10 / instance.pricePerBet)).replace("{Price}", StringUtils.formatComma(price * 10)).replace("{PricePartial}", StringUtils.formatComma(price * 10 / BetUnitType.PARTIAL.getDivisor()))), true);
+
             Button b1 = Button.danger(MULTIPLE_RANDOM_ENTRY_CONFIRM_LABEL + "1_" + selectionId, "1");
             Button b2 = Button.danger(MULTIPLE_RANDOM_ENTRY_CONFIRM_LABEL + "2_" + selectionId, "2");
             Button b5 = Button.danger(MULTIPLE_RANDOM_ENTRY_CONFIRM_LABEL + "5_" + selectionId, "5");
             Button b10 = Button.danger(MULTIPLE_RANDOM_ENTRY_CONFIRM_LABEL + "10_" + selectionId, "10");
 
             actionRows.add(ActionRow.of(b1, b2, b5, b10));
+            actionRows.add(ActionRow.of(getMainMenuButton().withId(RANDOM_ENTRY_LABEL)));
 
             event.getHook().editOriginalEmbeds(embed.build()).setActionRows(actionRows).retainFiles(Collections.emptyList()).queue();
         } else if (componentId.startsWith(MULTIPLE_RANDOM_ENTRY_SIZE_LABEL)) {
             UUID selectionId = UUID.fromString(componentId.substring(MULTIPLE_RANDOM_ENTRY_SIZE_LABEL.length(), componentId.lastIndexOf("_")));
             int size = Integer.parseInt(((SelectionMenuEvent) event).getValues().get(0).substring(MULTIPLE_RANDOM_ENTRY_SIZE_OPTION_LABEL.length()));
             randomSizeSelection.get(selectionId)[0] = size;
+
+            EmbedBuilder embed = new EmbedBuilder()
+                    .setTitle(instance.discordSRVSlashCommandsPlaceBetTitle)
+                    .setColor(Color.RED)
+                    .setDescription("**" + ChatColor.stripColor(instance.betNumbersTypeNames.get(BetNumbersType.MULTIPLE_RANDOM)) + "**");
 
             String menuId = MULTIPLE_RANDOM_ENTRY_SIZE_LABEL + selectionId + "_";
             List<SelectionMenu.Builder> sizeMenu = createSizeSelectionMenu(menuId, MULTIPLE_RANDOM_ENTRY_SIZE_OPTION_LABEL, 7, instance.numberOfChoices, instance.discordSRVSlashCommandsComponentsMultipleRandomSize);
@@ -1051,19 +1072,27 @@ public class PlaceBetInteraction extends DiscordInteraction {
             }
             List<ActionRow> actionRows = sizeMenu.stream().map(m -> ActionRow.of(m.setMinValues(1).setMaxValues(1).build())).collect(Collectors.toList());
 
+            long price = LotteryUtils.calculatePrice(size, 0, instance.pricePerBet);
+            embed.addField("1", ChatColor.stripColor(String.join("\n", LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBetCountValueComplex, instance)).replace("{Count}", "1").replace("{BetUnits}", StringUtils.formatComma(price / instance.pricePerBet)).replace("{Price}", StringUtils.formatComma(price)).replace("{PricePartial}", StringUtils.formatComma(price / BetUnitType.PARTIAL.getDivisor()))), true);
+            embed.addField("2", ChatColor.stripColor(String.join("\n", LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBetCountValueComplex, instance)).replace("{Count}", "2").replace("{BetUnits}", StringUtils.formatComma(price * 2 / instance.pricePerBet)).replace("{Price}", StringUtils.formatComma(price * 2)).replace("{PricePartial}", StringUtils.formatComma(price * 2 / BetUnitType.PARTIAL.getDivisor()))), true);
+            embed.addField("5", ChatColor.stripColor(String.join("\n", LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBetCountValueComplex, instance)).replace("{Count}", "5").replace("{BetUnits}", StringUtils.formatComma(price * 5 / instance.pricePerBet)).replace("{Price}", StringUtils.formatComma(price * 5)).replace("{PricePartial}", StringUtils.formatComma(price * 5 / BetUnitType.PARTIAL.getDivisor()))), true);
+            embed.addField("10", ChatColor.stripColor(String.join("\n", LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBetCountValueComplex, instance)).replace("{Count}", "10").replace("{BetUnits}", StringUtils.formatComma(price * 10 / instance.pricePerBet)).replace("{Price}", StringUtils.formatComma(price * 10)).replace("{PricePartial}", StringUtils.formatComma(price * 10 / BetUnitType.PARTIAL.getDivisor()))), true);
+
             Button b1 = Button.danger(MULTIPLE_RANDOM_ENTRY_CONFIRM_LABEL + "1_" + selectionId, "1");
             Button b2 = Button.danger(MULTIPLE_RANDOM_ENTRY_CONFIRM_LABEL + "2_" + selectionId, "2");
             Button b5 = Button.danger(MULTIPLE_RANDOM_ENTRY_CONFIRM_LABEL + "5_" + selectionId, "5");
             Button b10 = Button.danger(MULTIPLE_RANDOM_ENTRY_CONFIRM_LABEL + "10_" + selectionId, "10");
 
             actionRows.add(ActionRow.of(b1, b2, b5, b10));
+            actionRows.add(ActionRow.of(getMainMenuButton().withId(RANDOM_ENTRY_LABEL)));
 
-            event.getHook().editOriginalComponents().setActionRows(actionRows).retainFiles(Collections.emptyList()).queue();
+            event.getHook().editOriginalComponents().setActionRows(actionRows).setEmbeds(embed.build()).retainFiles(Collections.emptyList()).queue();
         } else if (componentId.startsWith(MULTIPLE_RANDOM_ENTRY_CONFIRM_LABEL)) {
             int count = Integer.parseInt(componentId.substring(MULTIPLE_RANDOM_ENTRY_CONFIRM_LABEL.length(), componentId.lastIndexOf("_")));
             UUID selectionId = UUID.fromString(componentId.substring(componentId.lastIndexOf("_") + 1));
-            int size = randomSizeSelection.remove(selectionId)[0];
-            handleConfirm(event, player, BetNumbersType.MULTIPLE_RANDOM, BetNumbersBuilder.multipleRandom(1, instance.numberOfChoices, size, count).map(b -> b.build()).collect(Collectors.toList()));
+            int[] data = randomSizeSelection.remove(selectionId);
+            int size = data[0];
+            handleConfirm(event, player, BetNumbersType.MULTIPLE_RANDOM, BetNumbersBuilder.multipleRandom(1, instance.numberOfChoices, size, count).map(b -> b.build()).collect(Collectors.toList()), () -> randomSizeSelection.put(selectionId, data));
         } else if (componentId.equals(BANKER_RANDOM_ENTRY_LABEL)) {
             EmbedBuilder embed = new EmbedBuilder()
                     .setTitle(instance.discordSRVSlashCommandsPlaceBetTitle)
@@ -1082,12 +1111,19 @@ public class PlaceBetInteraction extends DiscordInteraction {
             List<ActionRow> actionRows = Stream.concat(bankerMenu.stream(), sizeMenu.stream()).map(m -> ActionRow.of(m.setMinValues(1).setMaxValues(1).build())).collect(Collectors.toList());
             randomSizeSelection.put(selectionId, new int[]{1, 6});
 
+            long price = LotteryUtils.calculatePrice(6, 1, instance.pricePerBet);
+            embed.addField("1", ChatColor.stripColor(String.join("\n", LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBetCountValueComplex, instance)).replace("{Count}", "1").replace("{BetUnits}", StringUtils.formatComma(price / instance.pricePerBet)).replace("{Price}", StringUtils.formatComma(price)).replace("{PricePartial}", StringUtils.formatComma(price / BetUnitType.PARTIAL.getDivisor()))), true);
+            embed.addField("2", ChatColor.stripColor(String.join("\n", LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBetCountValueComplex, instance)).replace("{Count}", "2").replace("{BetUnits}", StringUtils.formatComma(price * 2 / instance.pricePerBet)).replace("{Price}", StringUtils.formatComma(price * 2)).replace("{PricePartial}", StringUtils.formatComma(price * 2 / BetUnitType.PARTIAL.getDivisor()))), true);
+            embed.addField("5", ChatColor.stripColor(String.join("\n", LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBetCountValueComplex, instance)).replace("{Count}", "5").replace("{BetUnits}", StringUtils.formatComma(price * 5 / instance.pricePerBet)).replace("{Price}", StringUtils.formatComma(price * 5)).replace("{PricePartial}", StringUtils.formatComma(price * 5 / BetUnitType.PARTIAL.getDivisor()))), true);
+            embed.addField("10", ChatColor.stripColor(String.join("\n", LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBetCountValueComplex, instance)).replace("{Count}", "10").replace("{BetUnits}", StringUtils.formatComma(price * 10 / instance.pricePerBet)).replace("{Price}", StringUtils.formatComma(price * 10)).replace("{PricePartial}", StringUtils.formatComma(price * 10 / BetUnitType.PARTIAL.getDivisor()))), true);
+
             Button b1 = Button.danger(BANKER_RANDOM_ENTRY_CONFIRM_LABEL + "1_" + selectionId, "1");
             Button b2 = Button.danger(BANKER_RANDOM_ENTRY_CONFIRM_LABEL + "2_" + selectionId, "2");
             Button b5 = Button.danger(BANKER_RANDOM_ENTRY_CONFIRM_LABEL + "5_" + selectionId, "5");
             Button b10 = Button.danger(BANKER_RANDOM_ENTRY_CONFIRM_LABEL + "10_" + selectionId, "10");
 
             actionRows.add(ActionRow.of(b1, b2, b5, b10));
+            actionRows.add(ActionRow.of(getMainMenuButton().withId(RANDOM_ENTRY_LABEL)));
 
             event.getHook().editOriginalEmbeds(embed.build()).setActionRows(actionRows).retainFiles(Collections.emptyList()).queue();
         } else if (componentId.startsWith(BANKER_RANDOM_ENTRY_BANKER_LABEL)) {
@@ -1103,6 +1139,11 @@ public class PlaceBetInteraction extends DiscordInteraction {
             data[0] = banker;
             data[1] = size;
 
+            EmbedBuilder embed = new EmbedBuilder()
+                    .setTitle(instance.discordSRVSlashCommandsPlaceBetTitle)
+                    .setColor(Color.RED)
+                    .setDescription("**" + ChatColor.stripColor(instance.betNumbersTypeNames.get(BetNumbersType.BANKER_RANDOM)) + "**");
+
             String bankerMenuId = BANKER_RANDOM_ENTRY_BANKER_LABEL + selectionId + "_";
             List<SelectionMenu.Builder> bankerMenu = createSizeSelectionMenu(bankerMenuId, BANKER_RANDOM_ENTRY_BANKER_OPTION_LABEL, 1, 5, instance.discordSRVSlashCommandsComponentsBankerRandomBankerSize);
             outer: for (SelectionMenu.Builder menu : bankerMenu) {
@@ -1127,14 +1168,21 @@ public class PlaceBetInteraction extends DiscordInteraction {
 
             List<ActionRow> actionRows = Stream.concat(bankerMenu.stream(), sizeMenu.stream()).map(m -> ActionRow.of(m.setMinValues(1).setMaxValues(1).build())).collect(Collectors.toList());
 
+            long price = LotteryUtils.calculatePrice(size, banker, instance.pricePerBet);
+            embed.addField("1", ChatColor.stripColor(String.join("\n", LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBetCountValueComplex, instance)).replace("{Count}", "1").replace("{BetUnits}", StringUtils.formatComma(price / instance.pricePerBet)).replace("{Price}", StringUtils.formatComma(price)).replace("{PricePartial}", StringUtils.formatComma(price / BetUnitType.PARTIAL.getDivisor()))), true);
+            embed.addField("2", ChatColor.stripColor(String.join("\n", LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBetCountValueComplex, instance)).replace("{Count}", "2").replace("{BetUnits}", StringUtils.formatComma(price * 2 / instance.pricePerBet)).replace("{Price}", StringUtils.formatComma(price * 2)).replace("{PricePartial}", StringUtils.formatComma(price * 2 / BetUnitType.PARTIAL.getDivisor()))), true);
+            embed.addField("5", ChatColor.stripColor(String.join("\n", LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBetCountValueComplex, instance)).replace("{Count}", "5").replace("{BetUnits}", StringUtils.formatComma(price * 5 / instance.pricePerBet)).replace("{Price}", StringUtils.formatComma(price * 5)).replace("{PricePartial}", StringUtils.formatComma(price * 5 / BetUnitType.PARTIAL.getDivisor()))), true);
+            embed.addField("10", ChatColor.stripColor(String.join("\n", LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBetCountValueComplex, instance)).replace("{Count}", "10").replace("{BetUnits}", StringUtils.formatComma(price * 10 / instance.pricePerBet)).replace("{Price}", StringUtils.formatComma(price * 10)).replace("{PricePartial}", StringUtils.formatComma(price * 10 / BetUnitType.PARTIAL.getDivisor()))), true);
+
             Button b1 = Button.danger(BANKER_RANDOM_ENTRY_CONFIRM_LABEL + "1_" + selectionId, "1");
             Button b2 = Button.danger(BANKER_RANDOM_ENTRY_CONFIRM_LABEL + "2_" + selectionId, "2");
             Button b5 = Button.danger(BANKER_RANDOM_ENTRY_CONFIRM_LABEL + "5_" + selectionId, "5");
             Button b10 = Button.danger(BANKER_RANDOM_ENTRY_CONFIRM_LABEL + "10_" + selectionId, "10");
 
             actionRows.add(ActionRow.of(b1, b2, b5, b10));
+            actionRows.add(ActionRow.of(getMainMenuButton().withId(RANDOM_ENTRY_LABEL)));
 
-            event.getHook().editOriginalComponents().setActionRows(actionRows).retainFiles(Collections.emptyList()).queue();
+            event.getHook().editOriginalComponents().setActionRows(actionRows).setEmbeds(embed.build()).retainFiles(Collections.emptyList()).queue();
         } else if (componentId.startsWith(BANKER_RANDOM_ENTRY_SIZE_LABEL)) {
             UUID selectionId = UUID.fromString(componentId.substring(BANKER_RANDOM_ENTRY_SIZE_LABEL.length(), componentId.lastIndexOf("_")));
             int[] data = randomSizeSelection.get(selectionId);
@@ -1142,6 +1190,11 @@ public class PlaceBetInteraction extends DiscordInteraction {
             int banker = data[0];
             data[1] = size;
 
+            EmbedBuilder embed = new EmbedBuilder()
+                    .setTitle(instance.discordSRVSlashCommandsPlaceBetTitle)
+                    .setColor(Color.RED)
+                    .setDescription("**" + ChatColor.stripColor(instance.betNumbersTypeNames.get(BetNumbersType.BANKER_RANDOM)) + "**");
+
             String bankerMenuId = BANKER_RANDOM_ENTRY_BANKER_LABEL + selectionId + "_";
             List<SelectionMenu.Builder> bankerMenu = createSizeSelectionMenu(bankerMenuId, BANKER_RANDOM_ENTRY_BANKER_OPTION_LABEL, 1, 5, instance.discordSRVSlashCommandsComponentsBankerRandomBankerSize);
             outer: for (SelectionMenu.Builder menu : bankerMenu) {
@@ -1166,21 +1219,37 @@ public class PlaceBetInteraction extends DiscordInteraction {
 
             List<ActionRow> actionRows = Stream.concat(bankerMenu.stream(), sizeMenu.stream()).map(m -> ActionRow.of(m.setMinValues(1).setMaxValues(1).build())).collect(Collectors.toList());
 
+            long price = LotteryUtils.calculatePrice(size, banker, instance.pricePerBet);
+            embed.addField("1", ChatColor.stripColor(String.join("\n", LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBetCountValueComplex, instance)).replace("{Count}", "1").replace("{BetUnits}", StringUtils.formatComma(price / instance.pricePerBet)).replace("{Price}", StringUtils.formatComma(price)).replace("{PricePartial}", StringUtils.formatComma(price / BetUnitType.PARTIAL.getDivisor()))), true);
+            embed.addField("2", ChatColor.stripColor(String.join("\n", LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBetCountValueComplex, instance)).replace("{Count}", "2").replace("{BetUnits}", StringUtils.formatComma(price * 2 / instance.pricePerBet)).replace("{Price}", StringUtils.formatComma(price * 2)).replace("{PricePartial}", StringUtils.formatComma(price * 2 / BetUnitType.PARTIAL.getDivisor()))), true);
+            embed.addField("5", ChatColor.stripColor(String.join("\n", LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBetCountValueComplex, instance)).replace("{Count}", "5").replace("{BetUnits}", StringUtils.formatComma(price * 5 / instance.pricePerBet)).replace("{Price}", StringUtils.formatComma(price * 5)).replace("{PricePartial}", StringUtils.formatComma(price * 5 / BetUnitType.PARTIAL.getDivisor()))), true);
+            embed.addField("10", ChatColor.stripColor(String.join("\n", LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBetCountValueComplex, instance)).replace("{Count}", "10").replace("{BetUnits}", StringUtils.formatComma(price * 10 / instance.pricePerBet)).replace("{Price}", StringUtils.formatComma(price * 10)).replace("{PricePartial}", StringUtils.formatComma(price * 10 / BetUnitType.PARTIAL.getDivisor()))), true);
+
             Button b1 = Button.danger(BANKER_RANDOM_ENTRY_CONFIRM_LABEL + "1_" + selectionId, "1");
             Button b2 = Button.danger(BANKER_RANDOM_ENTRY_CONFIRM_LABEL + "2_" + selectionId, "2");
             Button b5 = Button.danger(BANKER_RANDOM_ENTRY_CONFIRM_LABEL + "5_" + selectionId, "5");
             Button b10 = Button.danger(BANKER_RANDOM_ENTRY_CONFIRM_LABEL + "10_" + selectionId, "10");
 
             actionRows.add(ActionRow.of(b1, b2, b5, b10));
+            actionRows.add(ActionRow.of(getMainMenuButton().withId(RANDOM_ENTRY_LABEL)));
 
-            event.getHook().editOriginalComponents().setActionRows(actionRows).retainFiles(Collections.emptyList()).queue();
+            event.getHook().editOriginalComponents().setActionRows(actionRows).setEmbeds(embed.build()).retainFiles(Collections.emptyList()).queue();
         } else if (componentId.startsWith(BANKER_RANDOM_ENTRY_CONFIRM_LABEL)) {
             int count = Integer.parseInt(componentId.substring(BANKER_RANDOM_ENTRY_CONFIRM_LABEL.length(), componentId.lastIndexOf("_")));
             UUID selectionId = UUID.fromString(componentId.substring(componentId.lastIndexOf("_") + 1));
             int[] data = randomSizeSelection.remove(selectionId);
             int banker = data[0];
             int size = data[1];
-            handleConfirm(event, player, BetNumbersType.BANKER_RANDOM, BetNumbersBuilder.bankerRandom(1, instance.numberOfChoices, banker, size, count).map(b -> b.build()).collect(Collectors.toList()));
+            handleConfirm(event, player, BetNumbersType.BANKER_RANDOM, BetNumbersBuilder.bankerRandom(1, instance.numberOfChoices, banker, size, count).map(b -> b.build()).collect(Collectors.toList()), () -> randomSizeSelection.put(selectionId, data));
+        } else if (componentId.startsWith(CONFIRM_SCREEN_BACK)) {
+            UUID backId = UUID.fromString(componentId.substring(CONFIRM_SCREEN_BACK.length()));
+            ConfirmBackData data = confirmBack.remove(backId);
+            if (data == null) {
+                event.getHook().editOriginal(instance.discordSRVSlashCommandsGlobalMessagesTimeOut).setActionRows().setEmbeds().retainFiles(Collections.emptyList()).queue();
+                return;
+            }
+            data.repopulateData();
+            event.getHook().editOriginalComponents().setActionRows(data.getActionRows()).setEmbeds(data.getMessageEmbeds()).retainFiles(Collections.emptyList()).queue();
         } else {
             Matcher matcher = PLACE_BET_CONFIRM_LABEL_PATTERN.matcher(componentId);
             if (matcher.find()) {
@@ -1242,7 +1311,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
         }
     }
     
-    private void handleConfirm(GenericComponentInteractionCreateEvent event, OfflinePlayer player, BetNumbersType type, List<BetNumbers> betNumbers) {
+    private void handleConfirm(GenericComponentInteractionCreateEvent event, OfflinePlayer player, BetNumbersType type, List<BetNumbers> betNumbers, Runnable repopulateData) {
         PlayableLotterySixGame game = instance.getCurrentGame();
         long price = betNumbers.stream().mapToLong(each -> LotteryUtils.calculatePrice(each, instance)).sum();
         long partial = price / BetUnitType.PARTIAL.getDivisor();
@@ -1288,7 +1357,40 @@ public class PlaceBetInteraction extends DiscordInteraction {
                             Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetUnitInvestmentConfirm, instance, game))
                                     .map(each -> ChatColor.stripColor(each.replace("{Price}", StringUtils.formatComma(price)).replace("{PricePartial}", StringUtils.formatComma(partial)))).collect(Collectors.joining("\n")))));
         }
+
+        UUID backId = UUID.randomUUID();
+        Message message = event.getMessage();
+        confirmBack.put(backId, new ConfirmBackData(message.getActionRows(), message.getEmbeds(), repopulateData));
+        actionRows.add(ActionRow.of(getMainMenuButton().withId(CONFIRM_SCREEN_BACK + backId)));
+
         action.setActionRows(actionRows).retainFiles(Collections.emptyList()).queue();
+    }
+    
+    public static class ConfirmBackData {
+        
+        private final List<ActionRow> actionRows;
+        private final List<MessageEmbed> messageEmbeds;
+        private final Runnable repopulateData;
+
+        public ConfirmBackData(List<ActionRow> actionRows, List<MessageEmbed> messageEmbeds, Runnable repopulateData) {
+            this.actionRows = actionRows;
+            this.messageEmbeds = messageEmbeds;
+            this.repopulateData = repopulateData;
+        }
+
+        public List<ActionRow> getActionRows() {
+            return actionRows;
+        }
+
+        public List<MessageEmbed> getMessageEmbeds() {
+            return messageEmbeds;
+        }
+
+        public void repopulateData() {
+            if (repopulateData != null) {
+                repopulateData.run();
+            }
+        }
     }
 
 }

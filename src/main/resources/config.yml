@@ -553,6 +553,8 @@ DiscordSRV:
         NoOneOnline: "A player must be online on the local server for this command to function."
         TimeOut: "Action timed out! Please start over again."
         UnknownError: "An unknown error occurred!"
+      Components:
+        Back: "Back"
     BetAccount:
       Title: "%player_name%'s Betting Account"
       SubTitle:

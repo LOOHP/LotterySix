@@ -113,7 +113,7 @@ public class ViewBetsInteraction extends DiscordInteraction {
             if (advertisementImage != null) {
                 builder.setImage("attachment://image.png");
             }
-            WebhookMessageUpdateAction<Message> action = event.getHook().editOriginalEmbeds(builder.build()).setActionRows().retainFiles(Collections.emptyList());
+            WebhookMessageUpdateAction<Message> action = event.getHook().editOriginalEmbeds(builder.build()).setActionRows(ActionRow.of(getMainMenuButton())).retainFiles(Collections.emptyList());
             if (advertisementImage != null) {
                 action = action.addFile(advertisementImage, "image.png");
             }

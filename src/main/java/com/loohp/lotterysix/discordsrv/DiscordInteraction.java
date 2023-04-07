@@ -26,6 +26,7 @@ import com.loohp.lotterysix.utils.LotteryUtils;
 import github.scarsz.discordsrv.DiscordSRV;
 import github.scarsz.discordsrv.dependencies.jda.api.events.interaction.GenericComponentInteractionCreateEvent;
 import github.scarsz.discordsrv.dependencies.jda.api.interactions.components.ActionRow;
+import github.scarsz.discordsrv.dependencies.jda.api.interactions.components.Button;
 import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
@@ -38,6 +39,10 @@ public abstract class DiscordInteraction {
     protected static final LotterySix instance = LotterySixPlugin.getInstance();
     protected static final LotterySixPlugin plugin = LotterySixPlugin.plugin;
     protected static final DiscordSRV discordSRV = DiscordSRV.getPlugin();
+
+    protected static Button getMainMenuButton() {
+        return LotterySixPlugin.discordSRVHook.getMainMenuButton();
+    }
 
     protected final String interactionLabelStartWith;
     protected final boolean requireAccountLinked;

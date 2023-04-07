@@ -71,7 +71,7 @@ public class NumberStatisticsInteraction extends DiscordInteraction {
                     + ChatColor.stripColor(LotteryUtils.formatPlaceholders(null, instance.guiNumberStatisticsTimesDrawn.replace("{Number}", String.valueOf(i)), instance, game)) + "\n");
         }
 
-        event.getHook().editOriginalEmbeds(builder.setDescription(String.join("\n", numbers)).build()).setActionRows().retainFiles(Collections.emptyList()).queue();
+        event.getHook().editOriginalEmbeds(builder.setDescription(String.join("\n", numbers)).build()).setActionRows(ActionRow.of(getMainMenuButton())).retainFiles(Collections.emptyList()).queue();
     }
 
 }

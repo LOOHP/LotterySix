@@ -238,7 +238,7 @@ public class PastDrawInteraction extends DiscordInteraction {
                         older = older.asDisabled();
                     }
 
-                    event.getHook().editOriginalEmbeds(builder.build()).setActionRows(ActionRow.of(menuBuilder.build()), ActionRow.of(newer, older)).queue();
+                    event.getHook().editOriginalEmbeds(builder.build()).setActionRows(ActionRow.of(menuBuilder.build()), ActionRow.of(newer, older), ActionRow.of(getMainMenuButton())).retainFiles(Collections.emptyList()).queue();
                 });
             }
         } else {
@@ -271,7 +271,7 @@ public class PastDrawInteraction extends DiscordInteraction {
                 older = older.asDisabled();
             }
 
-            event.getHook().editOriginalComponents().setActionRows(ActionRow.of(menuBuilder.build()), ActionRow.of(newer, older)).queue();
+            event.getHook().editOriginalComponents().setActionRows(ActionRow.of(menuBuilder.build()), ActionRow.of(newer, older), ActionRow.of(getMainMenuButton())).queue();
         }
         return;
     }

@@ -81,7 +81,7 @@ public class BettingAccountInteraction extends DiscordInteraction {
                 .setDescription(description)
                 .setThumbnail(instance.discordSRVSlashCommandsBetAccountThumbnailURL);
 
-        event.getHook().editOriginalEmbeds(builder.build()).setActionRows().retainFiles(Collections.emptyList()).queue();
+        event.getHook().editOriginalEmbeds(builder.build()).setActionRows(ActionRow.of(getMainMenuButton())).retainFiles(Collections.emptyList()).queue();
     }
 
 }
