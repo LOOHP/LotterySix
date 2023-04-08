@@ -1305,7 +1305,8 @@ public class PlaceBetInteraction extends DiscordInteraction {
                             break;
                         }
                     }
-                    event.getHook().editOriginal(ChatColor.stripColor(message)).setActionRows().setEmbeds().retainFiles(Collections.emptyList()).queue();
+                    EmbedBuilder builder = new EmbedBuilder().setColor(Color.YELLOW).setAuthor(ChatColor.stripColor(message));
+                    event.getHook().editOriginalComponents().setActionRows(ActionRow.of(getMainMenuButton())).setEmbeds(builder.build()).retainFiles(Collections.emptyList()).queue();
                 }
             }
         }
