@@ -232,6 +232,7 @@ public class CompletedLotterySixGame implements IDedGame {
             LotteryPlayerManager lotteryPlayerManager = instance.getLotteryPlayerManager();
             Map<UUID, Long> transactions = new HashMap<>();
             Map<UUID, PrizeTier> prizeTiers = new HashMap<>();
+            Map<UUID, List<PlayerBets>> multipleDrawBets = new HashMap<>();
             Set<UUID> affected = new HashSet<>();
             for (PlayerWinnings winning : winners) {
                 LotteryPlayer lotteryPlayer = lotteryPlayerManager.getLotteryPlayer(winning.getPlayer());
@@ -240,6 +241,19 @@ public class CompletedLotterySixGame implements IDedGame {
                 transactions.merge(winning.getPlayer(), winning.getWinnings(), (a, b) -> a + b);
                 prizeTiers.merge(winning.getPlayer(), winning.getTier(), (a, b) -> a.ordinal() < b.ordinal() ? a : b);
                 affected.add(winning.getPlayer());
+            }
+            for (PlayerBets bet : bets.values()) {
+                List<PlayerBets> playerBets = multipleDrawBets.computeIfAbsent(bet.getPlayer(), k -> new ArrayList<>());
+                if (bet.isMultipleDraw()) {
+                    PlayerBets decremented = bet.decrementDrawsRemaining();
+                    if (decremented.getDrawsRemaining() > 0) {
+                        playerBets.add(decremented);
+                    }
+                }
+            }
+            for (Map.Entry<UUID, List<PlayerBets>> entry : multipleDrawBets.entrySet()) {
+                LotteryPlayer lotteryPlayer = instance.getLotteryPlayerManager().getLotteryPlayer(entry.getKey());
+                lotteryPlayer.setMultipleDrawPlayerBets(entry.getValue());
             }
             for (Map.Entry<UUID, Long> entry : transactions.entrySet()) {
                 LotteryPlayer lotteryPlayer = instance.getLotteryPlayerManager().getLotteryPlayer(entry.getKey());

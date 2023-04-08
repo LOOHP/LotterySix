@@ -34,15 +34,23 @@ public class PlayerBets {
     private final long bet;
     private final BetUnitType type;
     private final BetNumbers chosenNumbers;
+    private final int multipleDraw;
+    private final int drawsRemaining;
 
-    public PlayerBets(String name, UUID player, long timePlaced, long bet, BetUnitType type, BetNumbers chosenNumbers) {
+    private PlayerBets(String name, UUID player, long timePlaced, long bet, BetUnitType type, BetNumbers chosenNumbers, int multipleDraw, int drawsRemaining) {
         this.name = name;
         this.timePlaced = timePlaced;
+        this.multipleDraw = multipleDraw;
+        this.drawsRemaining = drawsRemaining;
         this.betId = UUID.randomUUID();
         this.player = player;
         this.bet = bet;
         this.type = type;
         this.chosenNumbers = chosenNumbers;
+    }
+
+    public PlayerBets(String name, UUID player, long timePlaced, long bet, BetUnitType type, BetNumbers chosenNumbers, int multipleDraw) {
+        this(name, player, timePlaced, bet, type, chosenNumbers, multipleDraw, multipleDraw);
     }
 
     public UUID getBetId() {
@@ -73,16 +81,38 @@ public class PlayerBets {
         return chosenNumbers;
     }
 
+    public boolean isMultipleDraw() {
+        return multipleDraw > 1;
+    }
+
+    public int getMultipleDraw() {
+        return isMultipleDraw() ? multipleDraw : 1;
+    }
+
+    public int getDrawsRemaining() {
+        return isMultipleDraw() ? drawsRemaining : 1;
+    }
+
+    public PlayerBets decrementDrawsRemaining() {
+        if (isMultipleDraw()) {
+            int decremented = Math.max(0, drawsRemaining - 1);
+            if (decremented < drawsRemaining) {
+                return new PlayerBets(name, player, timePlaced, bet, type, chosenNumbers, multipleDraw, decremented);
+            }
+        }
+        return this;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         PlayerBets that = (PlayerBets) o;
-        return bet == that.bet && betId.equals(that.betId) && player.equals(that.player) && chosenNumbers.equals(that.chosenNumbers);
+        return timePlaced == that.timePlaced && bet == that.bet && multipleDraw == that.multipleDraw && drawsRemaining == that.drawsRemaining && Objects.equals(betId, that.betId) && Objects.equals(name, that.name) && Objects.equals(player, that.player) && type == that.type && Objects.equals(chosenNumbers, that.chosenNumbers);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(betId, player, bet, chosenNumbers);
+        return Objects.hash(betId, name, player, timePlaced, bet, type, chosenNumbers, multipleDraw, drawsRemaining);
     }
 }

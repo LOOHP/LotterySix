@@ -74,9 +74,9 @@ public class PlayableLotterySixGame implements IDedGame {
         return (V) LOCKS_AND_FLAGS.computeIfAbsent(owner, k -> new ConcurrentHashMap<>()).computeIfAbsent(key, k -> constructor.get());
     }
 
-    public static PlayableLotterySixGame createNewGame(LotterySix instance, long scheduledDateTime, String specialName, Map<Integer, NumberStatistics> numberStatistics, long carryOverFund, long lowestTopPlacesPrize) {
+    public static PlayableLotterySixGame createNewGame(LotterySix instance, long scheduledDateTime, String specialName, Map<Integer, NumberStatistics> numberStatistics, long carryOverFund, long lowestTopPlacesPrize, List<PlayerBets> placedBets) {
         GameNumber gameNumber = instance == null ? new GameNumber(Year.now(), 1) : instance.dateToGameNumber(scheduledDateTime);
-        return new PlayableLotterySixGame(instance, UUID.randomUUID(), scheduledDateTime, gameNumber, specialName, numberStatistics, lowestTopPlacesPrize, carryOverFund, true);
+        return new PlayableLotterySixGame(instance, UUID.randomUUID(), scheduledDateTime, gameNumber, specialName, numberStatistics, placedBets, lowestTopPlacesPrize, carryOverFund, true);
     }
 
     private transient LotterySix instance;
@@ -92,7 +92,7 @@ public class PlayableLotterySixGame implements IDedGame {
     private volatile boolean valid;
     private volatile long lastSaved;
 
-    private PlayableLotterySixGame(LotterySix instance, UUID gameId, long scheduledDateTime, GameNumber gameNumber, String specialName, Map<Integer, NumberStatistics> numberStatistics, long lowestTopPlacesPrize, long carryOverFund, boolean valid) {
+    private PlayableLotterySixGame(LotterySix instance, UUID gameId, long scheduledDateTime, GameNumber gameNumber, String specialName, Map<Integer, NumberStatistics> numberStatistics, List<PlayerBets> placedBets, long lowestTopPlacesPrize, long carryOverFund, boolean valid) {
         this.instance = instance;
         this.gameId = gameId;
         this.scheduledDateTime = scheduledDateTime;
@@ -100,6 +100,9 @@ public class PlayableLotterySixGame implements IDedGame {
         this.numberStatistics = new ConcurrentHashMap<>(numberStatistics);
         this.gameNumber = gameNumber;
         this.bets = new LinkedHashMap<>();
+        for (PlayerBets bet : placedBets) {
+            this.bets.put(bet.getBetId(), bet);
+        }
         this.carryOverFund = carryOverFund;
         this.lowestTopPlacesPrize = lowestTopPlacesPrize;
         this.valid = valid;
@@ -214,18 +217,28 @@ public class PlayableLotterySixGame implements IDedGame {
         this.valid = false;
         if (instance != null && !instance.backendBungeecordMode) {
             getBetsReadWriteLock().readLock().lock();
+            Map<UUID, List<PlayerBets>> multipleDrawBets = new HashMap<>();
             Set<UUID> affected = new HashSet<>();
             try {
                 LotteryPlayerManager lotteryPlayerManager = instance.getLotteryPlayerManager();
                 for (PlayerBets bet : bets.values()) {
-                    LotteryPlayer lotteryPlayer = lotteryPlayerManager.getLotteryPlayer(bet.getPlayer());
-                    lotteryPlayer.updateStats(PlayerStatsKey.TOTAL_BETS_PLACED, long.class, i -> i - bet.getBet());
-                    lotteryPlayer.updateStats(PlayerStatsKey.ACCOUNT_BALANCE, long.class, i -> i + bet.getBet());
-                    lotteryPlayer.updateStats(PlayerStatsKey.NOTIFY_BALANCE_CHANGE, long.class, i -> i + bet.getBet());
-                    affected.add(bet.getPlayer());
+                    List<PlayerBets> playerBets = multipleDrawBets.computeIfAbsent(bet.getPlayer(), k -> new ArrayList<>());
+                    if (bet.isMultipleDraw()) {
+                        playerBets.add(bet);
+                    } else {
+                        LotteryPlayer lotteryPlayer = lotteryPlayerManager.getLotteryPlayer(bet.getPlayer());
+                        lotteryPlayer.updateStats(PlayerStatsKey.TOTAL_BETS_PLACED, long.class, i -> i - bet.getBet());
+                        lotteryPlayer.updateStats(PlayerStatsKey.ACCOUNT_BALANCE, long.class, i -> i + bet.getBet());
+                        lotteryPlayer.updateStats(PlayerStatsKey.NOTIFY_BALANCE_CHANGE, long.class, i -> i + bet.getBet());
+                        affected.add(bet.getPlayer());
+                    }
                 }
             } finally {
                 getBetsReadWriteLock().readLock().unlock();
+            }
+            for (Map.Entry<UUID, List<PlayerBets>> entry : multipleDrawBets.entrySet()) {
+                LotteryPlayer lotteryPlayer = instance.getLotteryPlayerManager().getLotteryPlayer(entry.getKey());
+                lotteryPlayer.setMultipleDrawPlayerBets(entry.getValue());
             }
             for (UUID player : affected) {
                 instance.notifyBalanceChangeConsumer(player);
@@ -233,7 +246,7 @@ public class PlayableLotterySixGame implements IDedGame {
         }
     }
 
-    public synchronized void invalidateBetsIf(Predicate<PlayerBets> predicate) {
+    public synchronized void invalidateBetsIf(Predicate<PlayerBets> predicate, boolean clearMultipleDraw) {
         List<PlayerBets> removedBets = new ArrayList<>();
         getBetsReadWriteLock().writeLock().lock();
         try {
@@ -254,13 +267,17 @@ public class PlayableLotterySixGame implements IDedGame {
             LotteryPlayerManager lotteryPlayerManager = instance.getLotteryPlayerManager();
             Set<UUID> affected = new HashSet<>();
             for (PlayerBets bet : removedBets) {
+                long total = clearMultipleDraw ? bet.getBet() * bet.getDrawsRemaining() : bet.getBet();
                 LotteryPlayer lotteryPlayer = lotteryPlayerManager.getLotteryPlayer(bet.getPlayer());
-                lotteryPlayer.updateStats(PlayerStatsKey.TOTAL_BETS_PLACED, long.class, i -> i - bet.getBet());
-                lotteryPlayer.updateStats(PlayerStatsKey.ACCOUNT_BALANCE, long.class, i -> i + bet.getBet());
-                lotteryPlayer.updateStats(PlayerStatsKey.NOTIFY_BALANCE_CHANGE, long.class, i -> i + bet.getBet());
+                lotteryPlayer.updateStats(PlayerStatsKey.TOTAL_BETS_PLACED, long.class, i -> i - total);
+                lotteryPlayer.updateStats(PlayerStatsKey.ACCOUNT_BALANCE, long.class, i -> i + total);
+                lotteryPlayer.updateStats(PlayerStatsKey.NOTIFY_BALANCE_CHANGE, long.class, i -> i + total);
                 affected.add(bet.getPlayer());
             }
             for (UUID player : affected) {
+                if (clearMultipleDraw) {
+                    lotteryPlayerManager.getLotteryPlayer(player).setMultipleDrawPlayerBets(Collections.emptyList());
+                }
                 instance.notifyBalanceChangeConsumer(player);
             }
             instance.getPlayerBetsInvalidateListener().accept(removedBets);
@@ -285,16 +302,16 @@ public class PlayableLotterySixGame implements IDedGame {
         }
     }
 
-    public AddBetResult addBet(String name, UUID player, long bet, BetUnitType unitType, BetNumbers chosenNumbers) {
-        return addBet(new PlayerBets(name, player, System.currentTimeMillis(), bet, unitType, chosenNumbers));
+    public AddBetResult addBet(String name, UUID player, long bet, BetUnitType unitType, BetNumbers chosenNumbers, int multipleDraw) {
+        return addBet(new PlayerBets(name, player, System.currentTimeMillis(), bet, unitType, chosenNumbers, multipleDraw));
     }
 
-    public AddBetResult addBet(String name, UUID player, long betPerUnit, BetUnitType unitType, Collection<BetNumbers> chosenNumbers) {
+    public AddBetResult addBet(String name, UUID player, long betPerUnit, BetUnitType unitType, Collection<BetNumbers> chosenNumbers, int multipleDraw) {
         if (chosenNumbers.isEmpty()) {
             throw new IllegalArgumentException("chosenNumbers cannot be empty");
         }
         long now = System.currentTimeMillis();
-        return addBet(name, player, chosenNumbers.stream().map(each -> new PlayerBets(name, player, now, betPerUnit, unitType, each)).collect(Collectors.toList()));
+        return addBet(name, player, chosenNumbers.stream().map(each -> new PlayerBets(name, player, now, betPerUnit, unitType, each, multipleDraw)).collect(Collectors.toList()));
     }
 
     public AddBetResult addBet(PlayerBets bet) {
@@ -302,7 +319,7 @@ public class PlayableLotterySixGame implements IDedGame {
     }
 
     private synchronized AddBetResult addBet(String name, UUID player, Collection<PlayerBets> bets) {
-        long price = bets.stream().mapToLong(each -> each.getBet()).sum();
+        long price = bets.stream().mapToLong(each -> each.getBet() * each.getMultipleDraw()).sum();
         if (instance != null && instance.isGameLocked()) {
             return betResult0(player, price, bets, AddBetResult.GAME_LOCKED);
         }
@@ -359,8 +376,9 @@ public class PlayableLotterySixGame implements IDedGame {
             if (result.isSuccess()) {
                 for (PlayerBets playerBet : bets) {
                     instance.getConsoleMessageConsumer().accept(
-                            playerBet.getName() + " (" + playerBet.getPlayer() + ") placed a bet worth $" + playerBet.getBet() + " (" + playerBet.getType() + ") with type " +
-                                    playerBet.getChosenNumbers().getType() + " [" + playerBet.getChosenNumbers().toString() + "] to game " + gameNumber + " (" + gameId + ")");
+                            playerBet.getName() + " (" + playerBet.getPlayer() + ") placed a bet worth $" + playerBet.getBet() * playerBet.getMultipleDraw() + " (" + playerBet.getType() + ") with type " +
+                                    playerBet.getChosenNumbers().getType() + " [" + playerBet.getChosenNumbers().toString() + "] to game " + gameNumber + " (" + gameId + ") for " +
+                                    playerBet.getMultipleDraw() + " games");
                 }
             }
         }

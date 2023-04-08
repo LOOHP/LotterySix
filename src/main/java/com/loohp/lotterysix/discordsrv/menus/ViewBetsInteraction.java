@@ -89,9 +89,17 @@ public class ViewBetsInteraction extends DiscordInteraction {
                 } else {
                     for (PlayerBets bet : bets) {
                         StringBuilder str = new StringBuilder();
-                        str.append("**").append(bet.getChosenNumbers().toString().replace("/ ", "/\n")).append("**\n").append(ChatColor.stripColor(instance.ticketDescription
-                                .replace("{Price}", StringUtils.formatComma(bet.getBet()))
-                                .replace("{UnitPrice}", StringUtils.formatComma(instance.pricePerBet / bet.getType().getDivisor())))).append("\n\n");
+                        if (bet.isMultipleDraw()) {
+                            str.append("**").append(bet.getChosenNumbers().toString().replace("/ ", "/\n")).append("**\n").append(ChatColor.stripColor(instance.ticketDescriptionMultipleDraw
+                                    .replace("{Price}", StringUtils.formatComma(bet.getBet()))
+                                    .replace("{UnitPrice}", StringUtils.formatComma(instance.pricePerBet / bet.getType().getDivisor()))
+                                    .replace("{DrawsRemaining}", StringUtils.formatComma(bet.getDrawsRemaining()))
+                                    .replace("{MultipleDraw}", StringUtils.formatComma(bet.getMultipleDraw())))).append("\n\n");
+                        } else {
+                            str.append("**").append(bet.getChosenNumbers().toString().replace("/ ", "/\n")).append("**\n").append(ChatColor.stripColor(instance.ticketDescription
+                                    .replace("{Price}", StringUtils.formatComma(bet.getBet()))
+                                    .replace("{UnitPrice}", StringUtils.formatComma(instance.pricePerBet / bet.getType().getDivisor())))).append("\n\n");
+                        }
                         if (str.length() + sb.length() < 4090) {
                             sb.append(str);
                         } else {

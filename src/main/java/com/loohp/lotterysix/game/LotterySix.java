@@ -62,6 +62,7 @@ import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.time.Year;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -134,6 +135,7 @@ public class LotterySix implements AutoCloseable {
     public String falseFormat;
     public Map<PrizeTier, String> tierNames;
     public String ticketDescription;
+    public String ticketDescriptionMultipleDraw;
     public String winningsDescription;
     public String multipleWinningsDescription;
     public String bulkWinningsDescription;
@@ -209,6 +211,9 @@ public class LotterySix implements AutoCloseable {
     public String guiConfirmNewBetTitle;
     public String[] guiConfirmNewBetLotteryInfo;
     public String[] guiConfirmNewBetBulkRandom;
+    public String[] guiConfirmNewBetMultipleDrawValue;
+    public String[] guiConfirmNewBetIncrementButton;
+    public String[] guiConfirmNewBetDecrementButton;
     public String[] guiConfirmNewBetUnitInvestmentConfirm;
     public String[] guiConfirmNewBetPartialInvestmentConfirm;
     public String[] guiConfirmNewBetCancel;
@@ -291,6 +296,7 @@ public class LotterySix implements AutoCloseable {
     public String discordSRVSlashCommandsComponentsMultipleRandomSize;
     public String discordSRVSlashCommandsComponentsBankerRandomBankerSize;
     public String discordSRVSlashCommandsComponentsBankerRandomSelectionSize;
+    public String discordSRVSlashCommandsComponentsMultipleDrawSelection;
     public String discordSRVSlashCommandsPlaceBetThumbnailURL;
     public String discordSRVSlashCommandsViewPastDrawTitle;
     public String discordSRVSlashCommandsViewPastDrawNoResults;
@@ -543,7 +549,11 @@ public class LotterySix implements AutoCloseable {
         }
         nextWinningNumbers = null;
         CompletedLotterySixGame lastGame = completedGames.isEmpty() ? null : completedGames.get(0);
-        currentGame = PlayableLotterySixGame.createNewGame(this, Math.max(dateTime, System.currentTimeMillis()), null, lastGame == null ? Collections.emptyMap() : lastGame.getNumberStatistics(), lastGame == null ? 0 : lastGame.getRemainingFunds(), lowestTopPlacesPrize);
+        List<PlayerBets> placedBets = new ArrayList<>();
+        for (UUID uuid : lotteryPlayerManager.getAllLotteryPlayerUUIDs()) {
+            placedBets.addAll(lotteryPlayerManager.getLotteryPlayer(uuid).getMultipleDrawPlayerBets());
+        }
+        currentGame = PlayableLotterySixGame.createNewGame(this, Math.max(dateTime, System.currentTimeMillis()), null, lastGame == null ? Collections.emptyMap() : lastGame.getNumberStatistics(), lastGame == null ? 0 : lastGame.getRemainingFunds(), lowestTopPlacesPrize, placedBets);
         saveData(true);
         actionListener.accept(LotterySixAction.START);
         return currentGame;
@@ -819,6 +829,7 @@ public class LotterySix implements AutoCloseable {
         }
 
         ticketDescription = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Formatting.TicketDescription"));
+        ticketDescriptionMultipleDraw = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Formatting.TicketDescriptionMultipleDraw"));
         winningsDescription = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Formatting.WinningsDescription"));
         multipleWinningsDescription = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Formatting.MultipleWinningsDescription"));
         bulkWinningsDescription = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Formatting.BulkWinningsDescription"));
@@ -899,6 +910,9 @@ public class LotterySix implements AutoCloseable {
         guiConfirmNewBetTitle = config.getConfiguration().getString("GUI.ConfirmNewBet.Title");
         guiConfirmNewBetLotteryInfo = config.getConfiguration().getStringList("GUI.ConfirmNewBet.LotteryInfo").toArray(new String[0]);
         guiConfirmNewBetBulkRandom = config.getConfiguration().getStringList("GUI.ConfirmNewBet.BulkRandom").toArray(new String[0]);
+        guiConfirmNewBetMultipleDrawValue = config.getConfiguration().getStringList("GUI.ConfirmNewBet.MultipleDrawValue").toArray(new String[0]);
+        guiConfirmNewBetIncrementButton = config.getConfiguration().getStringList("GUI.ConfirmNewBet.IncrementButton").toArray(new String[0]);
+        guiConfirmNewBetDecrementButton = config.getConfiguration().getStringList("GUI.ConfirmNewBet.DecrementButton").toArray(new String[0]);
         guiConfirmNewBetUnitInvestmentConfirm = config.getConfiguration().getStringList("GUI.ConfirmNewBet.UnitInvestmentConfirm").toArray(new String[0]);
         guiConfirmNewBetPartialInvestmentConfirm = config.getConfiguration().getStringList("GUI.ConfirmNewBet.PartialInvestmentConfirm").toArray(new String[0]);
         guiConfirmNewBetCancel = config.getConfiguration().getStringList("GUI.ConfirmNewBet.Cancel").toArray(new String[0]);
@@ -981,6 +995,7 @@ public class LotterySix implements AutoCloseable {
         discordSRVSlashCommandsComponentsMultipleRandomSize = config.getConfiguration().getString("DiscordSRV.SlashCommands.PlaceBet.Components.MultipleRandomSize");
         discordSRVSlashCommandsComponentsBankerRandomBankerSize = config.getConfiguration().getString("DiscordSRV.SlashCommands.PlaceBet.Components.BankerRandomBankerSize");
         discordSRVSlashCommandsComponentsBankerRandomSelectionSize = config.getConfiguration().getString("DiscordSRV.SlashCommands.PlaceBet.Components.BankerRandomSelectionSize");
+        discordSRVSlashCommandsComponentsMultipleDrawSelection = config.getConfiguration().getString("DiscordSRV.SlashCommands.PlaceBet.Components.MultipleDrawSelection");
         discordSRVSlashCommandsPlaceBetThumbnailURL = config.getConfiguration().getString("DiscordSRV.SlashCommands.PlaceBet.ThumbnailURL");
         discordSRVSlashCommandsViewPastDrawTitle = config.getConfiguration().getString("DiscordSRV.SlashCommands.ViewPastDraw.Title");
         discordSRVSlashCommandsViewPastDrawNoResults = config.getConfiguration().getString("DiscordSRV.SlashCommands.ViewPastDraw.NoResults");

@@ -404,18 +404,22 @@ public class Commands implements CommandExecutor, TabCompleter {
             return true;
         } else if (args[0].equalsIgnoreCase("invalidatebets")) {
             if (sender.hasPermission("lotterysix.invalidatebets")) {
-                if (args.length > 1) {
+                if (args.length > 2) {
                     if (LotterySixPlugin.getInstance().getCurrentGame() == null) {
                         sender.sendMessage(LotterySixPlugin.getInstance().messageNoGameRunning);
                     } else {
-                        UUID uuid;
-                        try {
-                            uuid = UUID.fromString(args[1]);
-                        } catch (IllegalArgumentException e) {
-                            uuid = Bukkit.getOfflinePlayer(args[1]).getUniqueId();
+                        if (args[1].equals("*")) {
+                            LotterySixPlugin.getInstance().getCurrentGame().invalidateBetsIf(bet -> true, Boolean.parseBoolean(args[2]));
+                        } else {
+                            UUID uuid;
+                            try {
+                                uuid = UUID.fromString(args[1]);
+                            } catch (IllegalArgumentException e) {
+                                uuid = Bukkit.getOfflinePlayer(args[1]).getUniqueId();
+                            }
+                            UUID finalUuid = uuid;
+                            LotterySixPlugin.getInstance().getCurrentGame().invalidateBetsIf(bet -> bet.getPlayer().equals(finalUuid), Boolean.parseBoolean(args[2]));
                         }
-                        UUID finalUuid = uuid;
-                        LotterySixPlugin.getInstance().getCurrentGame().invalidateBetsIf(bet -> bet.getPlayer().equals(finalUuid));
                         sender.sendMessage(LotterySixPlugin.getInstance().messageGameSettingsUpdated);
                     }
                 } else {
@@ -622,6 +626,9 @@ public class Commands implements CommandExecutor, TabCompleter {
                                 tab.add(player.getName());
                             }
                         }
+                        if ("*".startsWith(args[1].toLowerCase())) {
+                            tab.add("*");
+                        }
                     }
                 }
                 return tab;
@@ -648,6 +655,15 @@ public class Commands implements CommandExecutor, TabCompleter {
                                     tab.add(value);
                                 }
                             }
+                        }
+                    }
+                }
+                if (sender.hasPermission("lotterysix.invalidatebets")) {
+                    if ("invalidatebets".equalsIgnoreCase(args[0])) {
+                        if ("true".startsWith(args[2].toLowerCase())) {
+                            tab.add("true");
+                        } else if ("false".startsWith(args[2].toLowerCase())) {
+                            tab.add("false");
                         }
                     }
                 }

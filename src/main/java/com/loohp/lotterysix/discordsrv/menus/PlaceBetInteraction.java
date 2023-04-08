@@ -111,6 +111,8 @@ public class PlaceBetInteraction extends DiscordInteraction {
     public static final String BANKER_RANDOM_ENTRY_SIZE_OPTION_LABEL = "ls_place_bet_banker_random_size_";
     public static final String BANKER_RANDOM_ENTRY_CONFIRM_LABEL = "ls_place_bet_banker_random_";
 
+    public static final String PLACE_BET_CONFIRM_MULTIPLE_DRAW_LABEL = "ls_place_bet_multiple_draw_selection_";
+    public static final String PLACE_BET_CONFIRM_MULTIPLE_DRAW_OPTION_LABEL = "ls_place_bet_multiple_draw_option_";
     public static final String PLACE_BET_CONFIRM_LABEL = "ls_place_bet_{Number}_{Unit}";
     public static final Pattern PLACE_BET_CONFIRM_LABEL_PATTERN = Pattern.compile("^ls_place_bet_([^_]+)_(.+)$");
 
@@ -119,6 +121,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
     private final Map<UUID, BetNumbersBuilder> chosenNumbers;
     private final Map<UUID, List<BetNumbers>> confirmNumbers;
     private final Map<UUID, int[]> randomSizeSelection;
+    private final Map<UUID, long[]> multipleDrawSelection;
     private final Map<UUID, ConfirmBackData> confirmBack;
 
     public PlaceBetInteraction() {
@@ -129,6 +132,8 @@ public class PlaceBetInteraction extends DiscordInteraction {
         this.confirmNumbers = confirmNumbers.asMap();
         Cache<UUID, int[]> randomSizeSelection = CacheBuilder.newBuilder().expireAfterAccess(1, TimeUnit.HOURS).build();
         this.randomSizeSelection = randomSizeSelection.asMap();
+        Cache<UUID, long[]> multipleDrawSelection = CacheBuilder.newBuilder().expireAfterAccess(1, TimeUnit.HOURS).build();
+        this.multipleDrawSelection = multipleDrawSelection.asMap();
         Cache<UUID, ConfirmBackData> confirmBack = CacheBuilder.newBuilder().expireAfterAccess(1, TimeUnit.HOURS).build();
         this.confirmBack = confirmBack.asMap();
     }
@@ -1053,7 +1058,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
         } else if (componentId.startsWith(MULTIPLE_RANDOM_ENTRY_SIZE_LABEL)) {
             UUID selectionId = UUID.fromString(componentId.substring(MULTIPLE_RANDOM_ENTRY_SIZE_LABEL.length(), componentId.lastIndexOf("_")));
             int size = Integer.parseInt(((SelectionMenuEvent) event).getValues().get(0).substring(MULTIPLE_RANDOM_ENTRY_SIZE_OPTION_LABEL.length()));
-            randomSizeSelection.get(selectionId)[0] = size;
+            randomSizeSelection.computeIfAbsent(selectionId, k -> new int[] {7})[0] = size;
 
             EmbedBuilder embed = new EmbedBuilder()
                     .setTitle(instance.discordSRVSlashCommandsPlaceBetTitle)
@@ -1128,7 +1133,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
             event.getHook().editOriginalEmbeds(embed.build()).setActionRows(actionRows).retainFiles(Collections.emptyList()).queue();
         } else if (componentId.startsWith(BANKER_RANDOM_ENTRY_BANKER_LABEL)) {
             UUID selectionId = UUID.fromString(componentId.substring(BANKER_RANDOM_ENTRY_BANKER_LABEL.length(), componentId.lastIndexOf("_")));
-            int[] data = randomSizeSelection.get(selectionId);
+            int[] data = randomSizeSelection.computeIfAbsent(selectionId, k -> new int[] {1, 6});
             int banker = Integer.parseInt(((SelectionMenuEvent) event).getValues().get(0).substring(BANKER_RANDOM_ENTRY_BANKER_OPTION_LABEL.length()));
             int size = data[1];
             if (banker + size < 7) {
@@ -1185,7 +1190,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
             event.getHook().editOriginalComponents().setActionRows(actionRows).setEmbeds(embed.build()).retainFiles(Collections.emptyList()).queue();
         } else if (componentId.startsWith(BANKER_RANDOM_ENTRY_SIZE_LABEL)) {
             UUID selectionId = UUID.fromString(componentId.substring(BANKER_RANDOM_ENTRY_SIZE_LABEL.length(), componentId.lastIndexOf("_")));
-            int[] data = randomSizeSelection.get(selectionId);
+            int[] data = randomSizeSelection.computeIfAbsent(selectionId, k -> new int[] {1, 6});
             int size = Integer.parseInt(((SelectionMenuEvent) event).getValues().get(0).substring(BANKER_RANDOM_ENTRY_SIZE_OPTION_LABEL.length()));
             int banker = data[0];
             data[1] = size;
@@ -1241,6 +1246,40 @@ public class PlaceBetInteraction extends DiscordInteraction {
             int banker = data[0];
             int size = data[1];
             handleConfirm(event, player, BetNumbersType.BANKER_RANDOM, BetNumbersBuilder.bankerRandom(1, instance.numberOfChoices, banker, size, count).map(b -> b.build()).collect(Collectors.toList()), () -> randomSizeSelection.put(selectionId, data));
+        } else if (componentId.startsWith(PLACE_BET_CONFIRM_MULTIPLE_DRAW_LABEL)) {
+            UUID betNumbersId = UUID.fromString(componentId.substring(PLACE_BET_CONFIRM_MULTIPLE_DRAW_LABEL.length(), componentId.lastIndexOf("_")));
+            List<String> selectedValues = ((SelectionMenuEvent) event).getValues();
+            int multipleDraw = Integer.parseInt(selectedValues.get(0).substring(PLACE_BET_CONFIRM_MULTIPLE_DRAW_OPTION_LABEL.length()));
+            long[] data = multipleDrawSelection.get(betNumbersId);
+            if (data == null) {
+                event.getHook().editOriginal(instance.discordSRVSlashCommandsGlobalMessagesTimeOut).setActionRows().setEmbeds().retainFiles(Collections.emptyList()).queue();
+                return;
+            }
+            data[0] = multipleDraw;
+            long price = data[1] * multipleDraw;
+            long partial = price / BetUnitType.PARTIAL.getDivisor();
+
+            String id = PLACE_BET_CONFIRM_LABEL.replace("{Number}", betNumbersId.toString());
+            List<ActionRow> actionRows = new ArrayList<>(event.getMessage().getActionRows());
+            SelectionMenu selectionMenu = (SelectionMenu) actionRows.get(0).getComponents().get(0);
+            actionRows.set(0, ActionRow.of(selectionMenu.createCopy().setDefaultValues(selectedValues).build()));
+
+            if (actionRows.get(1).getComponents().size() == 2) {
+                actionRows.set(1, ActionRow.of(
+                        Button.secondary(id.replace("{Unit}", BetUnitType.PARTIAL.name()),
+                                Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetPartialInvestmentConfirm, instance, game))
+                                        .map(each -> ChatColor.stripColor(each.replace("{Price}", StringUtils.formatComma(price)).replace("{PricePartial}", StringUtils.formatComma(partial)))).collect(Collectors.joining("\n"))),
+                        Button.primary(id.replace("{Unit}", BetUnitType.FULL.name()),
+                                Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetUnitInvestmentConfirm, instance, game))
+                                        .map(each -> ChatColor.stripColor(each.replace("{Price}", StringUtils.formatComma(price)).replace("{PricePartial}", StringUtils.formatComma(partial)))).collect(Collectors.joining("\n")))));
+            } else {
+                actionRows.set(1, ActionRow.of(
+                        Button.primary(id.replace("{Unit}", BetUnitType.FULL.name()),
+                                Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetUnitInvestmentConfirm, instance, game))
+                                        .map(each -> ChatColor.stripColor(each.replace("{Price}", StringUtils.formatComma(price)).replace("{PricePartial}", StringUtils.formatComma(partial)))).collect(Collectors.joining("\n")))));
+            }
+
+            event.getHook().editOriginalComponents().setActionRows(actionRows).setEmbeds(event.getMessage().getEmbeds()).retainFiles(Collections.emptyList()).queue();
         } else if (componentId.startsWith(CONFIRM_SCREEN_BACK)) {
             UUID backId = UUID.fromString(componentId.substring(CONFIRM_SCREEN_BACK.length()));
             ConfirmBackData data = confirmBack.remove(backId);
@@ -1259,6 +1298,8 @@ public class PlaceBetInteraction extends DiscordInteraction {
                     return;
                 }
                 UUID betNumbersId = UUID.fromString(matcher.group(1));
+                long[] data = multipleDrawSelection.remove(betNumbersId);
+                int multipleDraw = data == null ? 1 : (int) data[0];
                 List<BetNumbers> betNumbers = confirmNumbers.remove(betNumbersId);
                 if (betNumbers == null) {
                     throw new RuntimeException();
@@ -1267,13 +1308,13 @@ public class PlaceBetInteraction extends DiscordInteraction {
                 if (betNumbers.isEmpty()) {
                     throw new RuntimeException();
                 }
-                long price = betNumbers.stream().mapToLong(each -> LotteryUtils.calculatePrice(each, instance)).sum() / unitType.getDivisor();
+                long price = betNumbers.stream().mapToLong(each -> LotteryUtils.calculatePrice(each, instance)).sum() * multipleDraw / unitType.getDivisor();
                 if (instance.backendBungeecordMode) {
-                    LotterySixPlugin.getPluginMessageHandler().requestAddBet(player.getName(), player.getUniqueId(), price / betNumbers.size(), unitType, betNumbers);
+                    LotterySixPlugin.getPluginMessageHandler().requestAddBet(player.getName(), player.getUniqueId(), price / multipleDraw / betNumbers.size(), unitType, betNumbers, multipleDraw);
                     LotterySixPlugin.discordSRVHook.addBungeecordPendingBets(uuid, event.getHook());
                 } else {
                     String message = "";
-                    AddBetResult result = game.addBet(player.getName(), player.getUniqueId(), price / betNumbers.size(), unitType, betNumbers);
+                    AddBetResult result = game.addBet(player.getName(), player.getUniqueId(), price / multipleDraw / betNumbers.size(), unitType, betNumbers, multipleDraw);
                     switch (result) {
                         case SUCCESS: {
                             message = instance.messageBetPlaced.replace("{Price}", StringUtils.formatComma(price));
@@ -1344,6 +1385,15 @@ public class PlaceBetInteraction extends DiscordInteraction {
         confirmNumbers.put(betNumbersId, betNumbers);
         WebhookMessageUpdateAction<Message> action = event.getHook().editOriginalEmbeds(builder.build());
         List<ActionRow> actionRows = new ArrayList<>();
+
+        String menuId = PLACE_BET_CONFIRM_MULTIPLE_DRAW_LABEL + betNumbersId + "_";
+        List<SelectionMenu.Builder> multipleDrawMenu = createSizeSelectionMenu(menuId, PLACE_BET_CONFIRM_MULTIPLE_DRAW_OPTION_LABEL, 1, 20, instance.discordSRVSlashCommandsComponentsMultipleDrawSelection);
+        multipleDrawMenu.get(0).setDefaultValues(Collections.singleton(multipleDrawMenu.get(0).getOptions().get(0).getValue()));
+        for (SelectionMenu.Builder menu : multipleDrawMenu) {
+            actionRows.add(ActionRow.of(menu.setMaxValues(1).setMinValues(1).build()));
+        }
+        multipleDrawSelection.put(betNumbersId, new long[] {1, price});
+
         if (type.isMultipleCombination()) {
             actionRows.add(ActionRow.of(
                     Button.secondary(id.replace("{Unit}", BetUnitType.PARTIAL.name()),

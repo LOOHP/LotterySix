@@ -21,7 +21,6 @@
 package com.loohp.lotterysix.pluginmessaging;
 
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.InstanceCreator;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -35,14 +34,15 @@ import com.loohp.lotterysix.game.lottery.IDedGame;
 import com.loohp.lotterysix.game.lottery.PlayableLotterySixGame;
 import com.loohp.lotterysix.game.objects.AddBetResult;
 import com.loohp.lotterysix.game.objects.BetUnitType;
-import com.loohp.lotterysix.game.objects.Pair;
-import com.loohp.lotterysix.game.objects.betnumbers.BetNumbersBuilder;
-import com.loohp.lotterysix.game.objects.betnumbers.BetNumbersType;
-import com.loohp.lotterysix.game.player.LotteryPlayer;
 import com.loohp.lotterysix.game.objects.LotterySixAction;
+import com.loohp.lotterysix.game.objects.Pair;
+import com.loohp.lotterysix.game.objects.PlayerBets;
 import com.loohp.lotterysix.game.objects.PlayerPreferenceKey;
 import com.loohp.lotterysix.game.objects.PlayerStatsKey;
 import com.loohp.lotterysix.game.objects.betnumbers.BetNumbers;
+import com.loohp.lotterysix.game.objects.betnumbers.BetNumbersBuilder;
+import com.loohp.lotterysix.game.objects.betnumbers.BetNumbersType;
+import com.loohp.lotterysix.game.player.LotteryPlayer;
 import com.loohp.lotterysix.objects.Scheduler;
 import com.loohp.lotterysix.utils.ArrayUtils;
 import com.loohp.lotterysix.utils.ChatColorUtils;
@@ -66,12 +66,14 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
@@ -79,7 +81,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -90,7 +91,7 @@ public class PluginMessageHandler implements PluginMessageListener {
     private static final byte[] EMPTY_DATA_ARRAY = new byte[0];
 
     private static <T> Gson gsonOfInstance(T instance) {
-        return new GsonBuilder().registerTypeAdapter(instance.getClass(), (InstanceCreator<T>) type -> instance).create();
+        return GSON.newBuilder().registerTypeAdapter(instance.getClass(), (InstanceCreator<T>) type -> instance).create();
     }
 
     private final LotterySix instance;
@@ -396,7 +397,10 @@ public class PluginMessageHandler implements PluginMessageListener {
                                 }
                             }
 
-                            lotteryPlayer.bulkSet(preferences, stats);
+                            @SuppressWarnings("unchecked")
+                            List<PlayerBets> multipleDrawPlayerBets = GSON.fromJson(json.getAsJsonArray("multipleDrawPlayerBets"), ArrayList.class);
+
+                            lotteryPlayer.bulkSet(preferences, stats, multipleDrawPlayerBets);
                             break;
                         }
                         case 0x10: { // Call Updater
@@ -478,11 +482,11 @@ public class PluginMessageHandler implements PluginMessageListener {
         });
     }
 
-    public void requestAddBet(String name, UUID player, long bet, BetUnitType unitType, BetNumbers chosenNumbers) {
-        requestAddBet(name, player, bet, unitType, Collections.singleton(chosenNumbers));
+    public void requestAddBet(String name, UUID player, long bet, BetUnitType unitType, BetNumbers chosenNumbers, int multipleDraw) {
+        requestAddBet(name, player, bet, unitType, Collections.singleton(chosenNumbers), multipleDraw);
     }
 
-    public void requestAddBet(String name, UUID player, long bet, BetUnitType unitType, Collection<BetNumbers> chosenNumbers) {
+    public void requestAddBet(String name, UUID player, long bet, BetUnitType unitType, Collection<BetNumbers> chosenNumbers, int multipleDraw) {
         try {
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             DataOutputStream out = new DataOutputStream(outputStream);
@@ -494,6 +498,7 @@ public class PluginMessageHandler implements PluginMessageListener {
             for (BetNumbers numbers : chosenNumbers) {
                 DataTypeIO.writeString(out, GSON.toJson(numbers), StandardCharsets.UTF_8);
             }
+            out.writeInt(multipleDraw);
             sendData(0x00, outputStream.toByteArray());
         } catch (IOException e) {
             e.printStackTrace();

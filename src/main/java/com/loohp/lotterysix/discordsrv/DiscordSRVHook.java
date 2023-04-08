@@ -189,10 +189,12 @@ public class DiscordSRVHook extends ListenerAdapter implements Listener, SlashCo
             }
             activeInteractionHooks.remove(data.getMessageId());
         }
-        if (immediately) {
-            RestAction.allOf(actions).complete();
-        } else {
-            RestAction.allOf(actions).queue();
+        if (!actions.isEmpty()) {
+            if (immediately) {
+                RestAction.allOf(actions).complete();
+            } else {
+                RestAction.allOf(actions).queue();
+            }
         }
     }
 

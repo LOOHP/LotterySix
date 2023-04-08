@@ -52,6 +52,7 @@ Formatting:
     SIXTH: "6th"
     SEVENTH: "7th"
   TicketDescription: "&6${Price} (${UnitPrice})"
+  TicketDescriptionMultipleDraw: "&6${Price} (${UnitPrice}) &9[{DrawsRemaining}/{MultipleDraw} Draws]"
   WinningsDescription: "&6{Tier} ${Winnings} (${UnitPrice})"
   MultipleWinningsDescription: "&6{Tier} ${Winnings} &7x{Times}"
   BulkWinningsDescription: "&6{HighestTier}+ ${Winnings} (${UnitPrice})"
@@ -333,6 +334,14 @@ GUI:
     BulkRandom:
       - "&cYou are about to purchase"
       - "&e{EntriesTotal} &cRandom Bet Entries"
+    MultipleDrawValue:
+      - "&eMultiple Draw: &a{Count}"
+    IncrementButton:
+      - "&7Left Click: &a+1"
+      - "&7Right Click: &a+5"
+    DecrementButton:
+      - "&7Left Click: &c-1"
+      - "&7Right Click: &c-5"
     UnitInvestmentConfirm:
       - "&aConfirm Unit Investment &7(${PricePerBet})"
       - "&eTotal Amount: &a${Price}"
@@ -580,6 +589,7 @@ DiscordSRV:
         MultipleRandomSize: "Number of Selections: {Count}"
         BankerRandomBankerSize: "Number of Bankers: {Count}"
         BankerRandomSelectionSize: "Number of Selections: {Count}"
+        MultipleDrawSelection: "Multiple Draw: {Count}"
       ThumbnailURL: "https://resources.loohpjames.com/spigot/plugins/lotterysix/icon.png"
     ViewPastDraw:
       Title: "LotterySix Draw Results"

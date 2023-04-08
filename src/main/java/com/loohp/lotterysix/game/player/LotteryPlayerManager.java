@@ -21,10 +21,10 @@
 package com.loohp.lotterysix.game.player;
 
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.loohp.lotterysix.game.LotterySix;
+import com.loohp.lotterysix.game.objects.PlayerBets;
 import com.loohp.lotterysix.game.objects.PlayerPreferenceKey;
 import com.loohp.lotterysix.game.objects.PlayerStatsKey;
 
@@ -37,7 +37,12 @@ import java.io.PrintWriter;
 import java.lang.ref.WeakReference;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.EnumMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -45,7 +50,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class LotteryPlayerManager {
 
-    public static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+    public static final Gson GSON = LotterySix.GSON;
 
     private final LotterySix instance;
     private final Map<UUID, WeakReference<LotteryPlayer>> loadedPlayers;
@@ -75,6 +80,24 @@ public class LotteryPlayerManager {
             return null;
         }
         return preference.get();
+    }
+
+    public Collection<UUID> getAllLotteryPlayerUUIDs() {
+        File playerFolder = new File(instance.getDataFolder(), "player");
+        playerFolder.mkdirs();
+        File[] files = playerFolder.listFiles();
+        Set<UUID> lotteryPlayers = new HashSet<>(files.length + loadedPlayers.size());
+        lotteryPlayers.addAll(loadedPlayers.keySet());
+        for (File file : files) {
+            String fileName = file.getName();
+            if (fileName.endsWith(".json")) {
+                try {
+                    lotteryPlayers.add(UUID.fromString(fileName.substring(0, fileName.lastIndexOf("."))));
+                } catch (IllegalArgumentException ignore) {
+                }
+            }
+        }
+        return lotteryPlayers;
     }
 
     public boolean isLotteryPlayerLoaded(UUID player) {
@@ -120,7 +143,10 @@ public class LotteryPlayerManager {
                     }
                 }
 
-                LotteryPlayer lotteryPlayer = new LotteryPlayer(this, UUID.fromString(json.get("player").getAsString()), preferences, stats);
+                @SuppressWarnings("unchecked")
+                List<PlayerBets> multipleDrawPlayerBets = GSON.fromJson(json.getAsJsonArray("multipleDrawPlayerBets"), ArrayList.class);
+
+                LotteryPlayer lotteryPlayer = new LotteryPlayer(this, UUID.fromString(json.get("player").getAsString()), preferences, stats, multipleDrawPlayerBets == null ? Collections.emptyList() : multipleDrawPlayerBets);
 
                 lotteryPlayer.setManager(this);
                 loadedPlayers.put(player, new WeakReference<>(lotteryPlayer));

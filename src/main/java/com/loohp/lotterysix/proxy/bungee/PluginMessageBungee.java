@@ -142,7 +142,8 @@ public class PluginMessageBungee implements Listener {
                                 for (int i = 0; i < size; i++) {
                                     betNumbers.add(GSON.fromJson(DataTypeIO.readString(in, StandardCharsets.UTF_8), BetNumbers.class));
                                 }
-                                game.addBet(name, player, bet, type, betNumbers);
+                                int multipleDraw = in.readInt();
+                                game.addBet(name, player, bet, type, betNumbers, multipleDraw);
                             }
                             break;
                         }
