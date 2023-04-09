@@ -20,6 +20,7 @@
 
 package com.loohp.lotterysix.game.objects.betnumbers;
 
+import com.loohp.lotterysix.game.LotteryRegistry;
 import com.loohp.lotterysix.game.objects.Pair;
 
 import java.util.ArrayList;
@@ -72,7 +73,7 @@ public abstract class BetNumbersBuilder implements Iterable<Integer> {
             }
             String group3 = matcher.group(3);
             if (group3 == null) {
-                if (size < 7) {
+                if (size < LotteryRegistry.NUMBERS_PER_BET + 1) {
                     return null;
                 }
                 try {
@@ -87,10 +88,10 @@ public abstract class BetNumbersBuilder implements Iterable<Integer> {
             } catch (NumberFormatException e) {
                 return null;
             }
-            if (size > 5) {
+            if (size > LotteryRegistry.NUMBERS_PER_BET - 1) {
                 return null;
             }
-            if (selection + size < 7) {
+            if (selection + size < LotteryRegistry.NUMBERS_PER_BET + 1) {
                 return null;
             }
             try {
@@ -105,7 +106,7 @@ public abstract class BetNumbersBuilder implements Iterable<Integer> {
             for (String section : sections) {
                 if (!section.isEmpty()) {
                     if (section.equals(">")) {
-                        if (numbers.isEmpty() || numbers.size() > 5) {
+                        if (numbers.isEmpty() || numbers.size() > LotteryRegistry.NUMBERS_PER_BET - 1) {
                             return null;
                         } else {
                             bankers = numbers;
@@ -128,9 +129,9 @@ public abstract class BetNumbersBuilder implements Iterable<Integer> {
             }
             if (bankers == null) {
                 BetNumbersBuilder builder;
-                if (numbers.size() < 6) {
+                if (numbers.size() < LotteryRegistry.NUMBERS_PER_BET) {
                     return null;
-                } else if (numbers.size() == 6) {
+                } else if (numbers.size() == LotteryRegistry.NUMBERS_PER_BET) {
                     builder = new SingleBuilder(minNumber, maxNumber);
                 } else {
                     builder = new MultipleBuilder(minNumber, maxNumber);
@@ -140,7 +141,7 @@ public abstract class BetNumbersBuilder implements Iterable<Integer> {
                 }
                 return Pair.of(Stream.of(builder), builder.getType());
             } else {
-                if (numbers.isEmpty() || bankers.size() + numbers.size() < 7) {
+                if (numbers.isEmpty() || bankers.size() + numbers.size() < LotteryRegistry.NUMBERS_PER_BET + 1) {
                     return null;
                 }
                 BankerBuilder builder = new BankerBuilder(minNumber, maxNumber);
@@ -276,7 +277,7 @@ public abstract class BetNumbersBuilder implements Iterable<Integer> {
 
         private SingleBuilder(int minNumber, int maxNumber) {
             super(minNumber, maxNumber, BetNumbersType.SINGLE);
-            this.max = 6;
+            this.max = LotteryRegistry.NUMBERS_PER_BET;
             this.numbers = new ArrayList<>(max);
         }
 
@@ -351,7 +352,7 @@ public abstract class BetNumbersBuilder implements Iterable<Integer> {
 
         private MultipleBuilder(int minNumber, int maxNumber) {
             super(minNumber, maxNumber, BetNumbersType.MULTIPLE);
-            this.min = 7;
+            this.min = LotteryRegistry.NUMBERS_PER_BET + 1;
             this.numbers = new ArrayList<>();
         }
 
@@ -422,7 +423,7 @@ public abstract class BetNumbersBuilder implements Iterable<Integer> {
 
         private BankerBuilder(int minNumber, int maxNumber) {
             super(minNumber, maxNumber, BetNumbersType.BANKER);
-            this.maxBankers = 5;
+            this.maxBankers = LotteryRegistry.NUMBERS_PER_BET - 1;
             this.bankers = new ArrayList<>();
             this.selections = new ArrayList<>();
             this.bankersComplete = false;
@@ -497,7 +498,7 @@ public abstract class BetNumbersBuilder implements Iterable<Integer> {
         }
 
         public int getMinSelectionsNeeded() {
-            return Math.max(1, 6 - bankers.size());
+            return Math.max(1, LotteryRegistry.NUMBERS_PER_BET - bankers.size());
         }
 
         public List<Integer> getBankers() {
@@ -519,7 +520,7 @@ public abstract class BetNumbersBuilder implements Iterable<Integer> {
 
         @Override
         public boolean completed() {
-            return (bankers.size() + selections.size()) > 6;
+            return (bankers.size() + selections.size()) > LotteryRegistry.NUMBERS_PER_BET;
         }
 
         @Override
@@ -567,7 +568,7 @@ public abstract class BetNumbersBuilder implements Iterable<Integer> {
 
         @Override
         public int size() {
-            return 6;
+            return LotteryRegistry.NUMBERS_PER_BET;
         }
 
         @Override
@@ -592,7 +593,7 @@ public abstract class BetNumbersBuilder implements Iterable<Integer> {
 
         @Override
         public BetNumbers build() {
-            List<Collection<Integer>> numbers = IntStream.range(0, count).mapToObj(i -> ThreadLocalRandom.current().ints(minNumber, maxNumber + 1).distinct().limit(6).boxed().collect(Collectors.toList())).collect(Collectors.toList());
+            List<Collection<Integer>> numbers = IntStream.range(0, count).mapToObj(i -> ThreadLocalRandom.current().ints(minNumber, maxNumber + 1).distinct().limit(LotteryRegistry.NUMBERS_PER_BET).boxed().collect(Collectors.toList())).collect(Collectors.toList());
             return new BetNumbers(numbers, BetNumbersType.RANDOM);
         }
 

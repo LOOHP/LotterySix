@@ -23,9 +23,9 @@ package com.loohp.lotterysix.utils;
 import java.math.BigInteger;
 import java.util.stream.LongStream;
 
-public class MathUtils {
+import static com.loohp.lotterysix.game.LotteryRegistry.NUMBERS_PER_BET;
 
-    public static final BigInteger SIX_FACTORIAL = BigInteger.valueOf(720);
+public class MathUtils {
 
     public static long followRound(long follow, long value) {
         return followRound(follow, value, true);
@@ -104,18 +104,18 @@ public class MathUtils {
 
     public static long combinationsCount(int size, int bankerSize) {
         if (bankerSize <= 0) {
-            if (size < 6) {
+            if (size < NUMBERS_PER_BET) {
                 return 0;
-            } else if (size == 6) {
+            } else if (size == NUMBERS_PER_BET) {
                 return 1;
             } else {
-                return factorial(size).divide((factorial(size - 6).multiply(SIX_FACTORIAL))).longValue();
+                return factorial(size).divide((factorial(size - NUMBERS_PER_BET).multiply(factorial(NUMBERS_PER_BET)))).longValue();
             }
         } else {
-            if (size + bankerSize < 7) {
+            if (size + bankerSize < NUMBERS_PER_BET + 1) {
                 return 0;
             } else {
-                return factorial(size).divide(factorial(size - (6 - bankerSize)).multiply(factorial(6 - bankerSize))).longValue();
+                return factorial(size).divide(factorial(size - (NUMBERS_PER_BET - bankerSize)).multiply(factorial(NUMBERS_PER_BET - bankerSize))).longValue();
             }
         }
     }

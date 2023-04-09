@@ -20,17 +20,20 @@
 
 package com.loohp.lotterysix.game.objects;
 
+import com.loohp.lotterysix.game.LotteryRegistry;
+
 import static com.loohp.lotterysix.utils.MathUtils.probabilityFormula;
+import static com.loohp.lotterysix.game.LotteryRegistry.NUMBERS_PER_BET;
 
 public enum PrizeTier {
 
-    FIRST("1st", new WinningCriteria(6, false), 7680, 2, true),
-    SECOND("2nd", new WinningCriteria(5, true), 3840, 2, true),
-    THIRD("3rd", new WinningCriteria(5, false), 1920, 2, true),
-    FOURTH("4th", new WinningCriteria(4, true), 960, 15),
-    FIFTH("5th", new WinningCriteria(4, false), 64, 2),
-    SIXTH("6th", new WinningCriteria(3, true), 32, 8),
-    SEVENTH("7th", new WinningCriteria(3, false), 4, 1);
+    FIRST("1st", new WinningCriteria(NUMBERS_PER_BET, false), 7680, 2, true),
+    SECOND("2nd", new WinningCriteria(NUMBERS_PER_BET - 1, true), 3840, 2, true),
+    THIRD("3rd", new WinningCriteria(NUMBERS_PER_BET - 1, false), 1920, 2, true),
+    FOURTH("4th", new WinningCriteria(NUMBERS_PER_BET - 2, true), 960, 15),
+    FIFTH("5th", new WinningCriteria(NUMBERS_PER_BET - 2, false), 64, 2),
+    SIXTH("6th", new WinningCriteria(NUMBERS_PER_BET - 3, true), 32, 8),
+    SEVENTH("7th", new WinningCriteria(NUMBERS_PER_BET - 3, false), 4, 1);
 
     private final String shortHand;
     private final WinningCriteria winningCriteria;
@@ -100,8 +103,8 @@ public enum PrizeTier {
         }
 
         public double probability(int numberOfChoices) {
-            int notMatched = (requireSpecialNumber ? 5 : 6) - matchNumbers;
-            return probabilityFormula(6, matchNumbers) * probabilityFormula(numberOfChoices - 7, notMatched) / probabilityFormula(numberOfChoices, 6);
+            int notMatched = (requireSpecialNumber ? LotteryRegistry.NUMBERS_PER_BET - 1 : LotteryRegistry.NUMBERS_PER_BET) - matchNumbers;
+            return probabilityFormula(LotteryRegistry.NUMBERS_PER_BET, matchNumbers) * probabilityFormula(numberOfChoices - LotteryRegistry.NUMBERS_PER_BET + 1, notMatched) / probabilityFormula(numberOfChoices, LotteryRegistry.NUMBERS_PER_BET);
         }
 
         public double oneOverProbability(int numberOfChoices) {

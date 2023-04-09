@@ -21,6 +21,7 @@
 package com.loohp.lotterysix;
 
 import com.cryptomorin.xseries.XMaterial;
+import com.loohp.lotterysix.game.LotteryRegistry;
 import com.loohp.lotterysix.game.LotterySix;
 import com.loohp.lotterysix.game.lottery.CompletedLotterySixGame;
 import com.loohp.lotterysix.game.lottery.CompletedLotterySixGameIndex;
@@ -913,10 +914,10 @@ public class LotteryPluginGUI implements Listener {
             gui.addElement(new StaticGuiElement('j', new ItemStack(Material.AIR), ChatColor.LIGHT_PURPLE.toString()));
             gui.addElement(new StaticGuiElement('k', new ItemStack(Material.AIR), ChatColor.LIGHT_PURPLE.toString()));
 
-            AtomicInteger size = new AtomicInteger(7);
+            AtomicInteger size = new AtomicInteger(LotteryRegistry.NUMBERS_PER_BET + 1);
             gui.addElement(new StaticGuiElement('g', XMaterial.ARROW.parseItem(), click -> {
                 int decrement = click.getType().isRightClick() ? 10 : 1;
-                size.updateAndGet(i -> Math.max(7, i - decrement));
+                size.updateAndGet(i -> Math.max(LotteryRegistry.NUMBERS_PER_BET + 1, i - decrement));
                 gui.draw(player);
                 return true;
             }, LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryDecrementButton, instance)));
@@ -977,18 +978,18 @@ public class LotteryPluginGUI implements Listener {
             gui.addElement(new StaticGuiElement('h', new ItemStack(Material.AIR), ChatColor.LIGHT_PURPLE.toString()));
 
             AtomicInteger bankerSize = new AtomicInteger(1);
-            AtomicInteger selectionSize = new AtomicInteger(6);
+            AtomicInteger selectionSize = new AtomicInteger(LotteryRegistry.NUMBERS_PER_BET);
 
             gui.addElement(new StaticGuiElement('e', XMaterial.ARROW.parseItem(), click -> {
                 int decrement = click.getType().isRightClick() ? 10 : 1;
                 bankerSize.updateAndGet(i -> Math.max(1, i - decrement));
-                selectionSize.updateAndGet(i -> Math.max(7 - bankerSize.get(), i));
+                selectionSize.updateAndGet(i -> Math.max(LotteryRegistry.NUMBERS_PER_BET + 1 - bankerSize.get(), i));
                 gui.draw(player);
                 return true;
             }, LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryDecrementButton, instance)));
             gui.addElement(new StaticGuiElement('g', XMaterial.ARROW.parseItem(), click -> {
                 int increment = click.getType().isRightClick() ? 10 : 1;
-                bankerSize.updateAndGet(i -> Math.min(5, i + increment));
+                bankerSize.updateAndGet(i -> Math.min(LotteryRegistry.NUMBERS_PER_BET - 1, i + increment));
                 selectionSize.updateAndGet(i -> Math.min(instance.numberOfChoices - bankerSize.get(), i));
                 gui.draw(player);
                 return true;
@@ -996,7 +997,7 @@ public class LotteryPluginGUI implements Listener {
 
             gui.addElement(new StaticGuiElement('i', XMaterial.ARROW.parseItem(), click -> {
                 int decrement = click.getType().isRightClick() ? 10 : 1;
-                selectionSize.updateAndGet(i -> Math.max(7 - bankerSize.get(), i - decrement));
+                selectionSize.updateAndGet(i -> Math.max(LotteryRegistry.NUMBERS_PER_BET + 1 - bankerSize.get(), i - decrement));
                 gui.draw(player);
                 return true;
             }, LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryDecrementButton, instance)));
@@ -1085,7 +1086,7 @@ public class LotteryPluginGUI implements Listener {
                 throw new RuntimeException(builder.getType() + " type does not need choosing");
             }
         }
-        InventoryGui gui = new InventoryGui(plugin, LotteryUtils.formatPlaceholders(player, title.replace("{Price}", StringUtils.formatComma(LotteryUtils.calculatePrice(builder, instance))).replace("{MinSelection}", ((isBanker ? ((BetNumbersBuilder.BankerBuilder) builder).getMinSelectionsNeeded() : 6) - builder.size()) + ""), instance, game), guiSetup);
+        InventoryGui gui = new InventoryGui(plugin, LotteryUtils.formatPlaceholders(player, title.replace("{Price}", StringUtils.formatComma(LotteryUtils.calculatePrice(builder, instance))).replace("{MinSelection}", ((isBanker ? ((BetNumbersBuilder.BankerBuilder) builder).getMinSelectionsNeeded() : LotteryRegistry.NUMBERS_PER_BET) - builder.size()) + ""), instance, game), guiSetup);
         char c = 'a';
         IntObjectConsumer<Player> handleClick = (number, clicker) -> {
             if (builder.completed() || (isBanker && !((BetNumbersBuilder.BankerBuilder) builder).getBankers().isEmpty())) {
@@ -1844,7 +1845,7 @@ public class LotteryPluginGUI implements Listener {
                                     TextComponent text = new TextComponent(winningNumberStr + "\n\n");
                                     TextComponent numbersText = new TextComponent(winnings.getWinningBet(game).getChosenNumbers().toFormattedString().replace("/ ", "/\n"));
 
-                                    List<BaseComponent> hoverComponents = new ArrayList<>(7);
+                                    List<BaseComponent> hoverComponents = new ArrayList<>(LotteryRegistry.NUMBERS_PER_BET + 1);
                                     for (PrizeTier prizeTier : PrizeTier.values()) {
                                         List<PlayerWinnings> playerWinnings = winningsForBet.get(prizeTier);
                                         if (playerWinnings != null && !playerWinnings.isEmpty()) {

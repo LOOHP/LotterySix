@@ -850,7 +850,7 @@ public class LotterySix implements AutoCloseable {
         if (pricePerBet % 2 != 0) {
             pricePerBet += 1;
         }
-        numberOfChoices = Math.max(7, Math.min(49, config.getConfiguration().getInt("LotterySix.NumberOfChoices")));
+        numberOfChoices = Math.max(LotteryRegistry.NUMBERS_PER_BET + 1, Math.min(49, config.getConfiguration().getInt("LotterySix.NumberOfChoices")));
         lowestTopPlacesPrize = config.getConfiguration().getLong("LotterySix.LowestTopPlacesPrize");
         estimationRoundToNearest = config.getConfiguration().getLong("LotterySix.EstimationRoundToNearest");
         taxPercentage = config.getConfiguration().getDouble("LotterySix.TaxPercentage");

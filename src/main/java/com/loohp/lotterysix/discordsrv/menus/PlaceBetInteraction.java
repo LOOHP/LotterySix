@@ -24,6 +24,7 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.loohp.lotterysix.LotterySixPlugin;
 import com.loohp.lotterysix.discordsrv.DiscordInteraction;
+import com.loohp.lotterysix.game.LotteryRegistry;
 import com.loohp.lotterysix.game.lottery.PlayableLotterySixGame;
 import com.loohp.lotterysix.game.objects.AddBetResult;
 import com.loohp.lotterysix.game.objects.BetUnitType;
@@ -272,7 +273,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
 
             String description = "**" + ChatColor.stripColor(LotteryUtils.formatPlaceholders(player, instance.guiNewBetSingleTitle, instance)) + "**";
 
-            if (builder.size() == 6) {
+            if (builder.size() == LotteryRegistry.NUMBERS_PER_BET) {
                 Button randomButton = Button.danger(SINGLE_ENTRY_SELECTION_RANDOM_LABEL + selectionId, instance.discordSRVSlashCommandsComponentsAddRandom).withEmoji(Emoji.fromUnicode("\uD83D\uDD22")).asDisabled();
                 actionRows.add(ActionRow.of(randomButton));
                 Button confirmButton = Button.primary(SINGLE_ENTRY_CONFIRM_LABEL + selectionId, instance.discordSRVSlashCommandsComponentsFinish).withEmoji(Emoji.fromUnicode("\u2705"));
@@ -326,7 +327,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
 
             String description = "**" + ChatColor.stripColor(LotteryUtils.formatPlaceholders(player, instance.guiNewBetSingleTitle, instance)) + "**";
 
-            if (builder.size() == 6) {
+            if (builder.size() == LotteryRegistry.NUMBERS_PER_BET) {
                 Button randomButton = Button.danger(SINGLE_ENTRY_SELECTION_RANDOM_LABEL + selectionId, instance.discordSRVSlashCommandsComponentsAddRandom).withEmoji(Emoji.fromUnicode("\uD83D\uDD22")).asDisabled();
                 actionRows.add(ActionRow.of(randomButton));
                 Button confirmButton = Button.primary(SINGLE_ENTRY_CONFIRM_LABEL + selectionId, instance.discordSRVSlashCommandsComponentsFinish).withEmoji(Emoji.fromUnicode("\u2705"));
@@ -412,7 +413,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
 
             String description = "**" + ChatColor.stripColor(LotteryUtils.formatPlaceholders(player, instance.guiNewBetMultipleTitle, instance)) + "**";
 
-            if (builder.size() >= 7) {
+            if (builder.size() >= LotteryRegistry.NUMBERS_PER_BET + 1) {
                 long units = MathUtils.combinationsCount(builder.size(), 0);
                 long price = units * instance.pricePerBet;
                 long partial = price / BetUnitType.PARTIAL.getDivisor();
@@ -477,7 +478,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
 
             String description = "**" + ChatColor.stripColor(LotteryUtils.formatPlaceholders(player, instance.guiNewBetMultipleTitle, instance)) + "**";
 
-            if (builder.size() >= 7) {
+            if (builder.size() >= LotteryRegistry.NUMBERS_PER_BET + 1) {
                 long units = MathUtils.combinationsCount(builder.size(), 0);
                 long price = units * instance.pricePerBet;
                 long partial = price / BetUnitType.PARTIAL.getDivisor();
@@ -544,7 +545,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
 
             String description = "**" + ChatColor.stripColor(LotteryUtils.formatPlaceholders(player, instance.guiNewBetMultipleTitle, instance)) + "**";
 
-            if (builder.size() >= 7) {
+            if (builder.size() >= LotteryRegistry.NUMBERS_PER_BET + 1) {
                 long units = MathUtils.combinationsCount(builder.size(), 0);
                 long price = units * instance.pricePerBet;
                 long partial = price / BetUnitType.PARTIAL.getDivisor();
@@ -640,7 +641,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
 
             String description = "**" + ChatColor.stripColor(LotteryUtils.formatPlaceholders(player, instance.guiNewBetBankerTitle, instance)) + "**";
 
-            if (builder.size() >= 7 - builder.bankerSize()) {
+            if (builder.size() >= LotteryRegistry.NUMBERS_PER_BET + 1 - builder.bankerSize()) {
                 long units = MathUtils.combinationsCount(builder.size(), builder.bankerSize());
                 long price = units * instance.pricePerBet;
                 long partial = price / BetUnitType.PARTIAL.getDivisor();
@@ -715,10 +716,10 @@ public class PlaceBetInteraction extends DiscordInteraction {
 
                 String description = "**" + ChatColor.stripColor(LotteryUtils.formatPlaceholders(player, instance.guiNewBetBankerTitle, instance)) + "**";
 
-                if (builder.bankerSize() > 0 && builder.bankerSize() <= 5) {
+                if (builder.bankerSize() > 0 && builder.bankerSize() <= LotteryRegistry.NUMBERS_PER_BET - 1) {
                     Button selectAllButton = Button.secondary(BANKER_ENTRY_SELECTION_SELECT_ALL_LABEL + selectionId, instance.guiNewBetSelectAll).withEmoji(Emoji.fromUnicode("\uD83D\uDFE7")).asDisabled();
                     Button randomButton = Button.danger(BANKER_ENTRY_SELECTION_RANDOM_LABEL + selectionId, instance.discordSRVSlashCommandsComponentsAddRandom).withEmoji(Emoji.fromUnicode("\uD83D\uDD22"));
-                    if (builder.bankerSize() >= 5) {
+                    if (builder.bankerSize() >= LotteryRegistry.NUMBERS_PER_BET - 1) {
                         randomButton = randomButton.asDisabled();
                     }
                     actionRows.add(ActionRow.of(selectAllButton, randomButton));
@@ -769,7 +770,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
 
                 String description = "**" + ChatColor.stripColor(LotteryUtils.formatPlaceholders(player, instance.guiNewBetBankerTitle, instance)) + "**";
 
-                if (builder.size() >= 7 - builder.bankerSize()) {
+                if (builder.size() >= LotteryRegistry.NUMBERS_PER_BET + 1 - builder.bankerSize()) {
                     long units = MathUtils.combinationsCount(builder.size(), builder.bankerSize());
                     long price = units * instance.pricePerBet;
                     long partial = price / BetUnitType.PARTIAL.getDivisor();
@@ -848,10 +849,10 @@ public class PlaceBetInteraction extends DiscordInteraction {
 
                 String description = "**" + ChatColor.stripColor(LotteryUtils.formatPlaceholders(player, instance.guiNewBetBankerTitle, instance)) + "**";
 
-                if (builder.bankerSize() > 0 && builder.bankerSize() <= 5) {
+                if (builder.bankerSize() > 0 && builder.bankerSize() <= LotteryRegistry.NUMBERS_PER_BET - 1) {
                     Button selectAllButton = Button.secondary(BANKER_ENTRY_SELECTION_SELECT_ALL_LABEL + selectionId, instance.guiNewBetSelectAll).withEmoji(Emoji.fromUnicode("\uD83D\uDFE7")).asDisabled();
                     Button randomButton = Button.danger(BANKER_ENTRY_SELECTION_RANDOM_LABEL + selectionId, instance.discordSRVSlashCommandsComponentsAddRandom).withEmoji(Emoji.fromUnicode("\uD83D\uDD22"));
-                    if (builder.bankerSize() >= 5) {
+                    if (builder.bankerSize() >= LotteryRegistry.NUMBERS_PER_BET - 1) {
                         randomButton = randomButton.asDisabled();
                     }
                     actionRows.add(ActionRow.of(selectAllButton, randomButton));
@@ -906,7 +907,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
 
                 String description = "**" + ChatColor.stripColor(LotteryUtils.formatPlaceholders(player, instance.guiNewBetBankerTitle, instance)) + "**";
 
-                if (builder.size() >= 7 - builder.bankerSize()) {
+                if (builder.size() >= LotteryRegistry.NUMBERS_PER_BET + 1 - builder.bankerSize()) {
                     long units = MathUtils.combinationsCount(builder.size(), builder.bankerSize());
                     long price = units * instance.pricePerBet;
                     long partial = price / BetUnitType.PARTIAL.getDivisor();
@@ -1035,12 +1036,12 @@ public class PlaceBetInteraction extends DiscordInteraction {
 
             UUID selectionId = UUID.randomUUID();
             String menuId = MULTIPLE_RANDOM_ENTRY_SIZE_LABEL + selectionId + "_";
-            List<SelectionMenu.Builder> sizeMenu = createSizeSelectionMenu(menuId, MULTIPLE_RANDOM_ENTRY_SIZE_OPTION_LABEL, 7, instance.numberOfChoices, instance.discordSRVSlashCommandsComponentsMultipleRandomSize);
+            List<SelectionMenu.Builder> sizeMenu = createSizeSelectionMenu(menuId, MULTIPLE_RANDOM_ENTRY_SIZE_OPTION_LABEL, LotteryRegistry.NUMBERS_PER_BET + 1, instance.numberOfChoices, instance.discordSRVSlashCommandsComponentsMultipleRandomSize);
             sizeMenu.get(0).setDefaultValues(Collections.singleton(sizeMenu.get(0).getOptions().get(0).getValue()));
             List<ActionRow> actionRows = sizeMenu.stream().map(m -> ActionRow.of(m.setMinValues(1).setMaxValues(1).build())).collect(Collectors.toList());
-            randomSizeSelection.put(selectionId, new int[] {7});
+            randomSizeSelection.put(selectionId, new int[] {LotteryRegistry.NUMBERS_PER_BET + 1});
 
-            long price = LotteryUtils.calculatePrice(7, 0, instance.pricePerBet);
+            long price = LotteryUtils.calculatePrice(LotteryRegistry.NUMBERS_PER_BET + 1, 0, instance.pricePerBet);
             embed.addField("1", ChatColor.stripColor(String.join("\n", LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBetCountValueComplex, instance)).replace("{Count}", "1").replace("{BetUnits}", StringUtils.formatComma(price / instance.pricePerBet)).replace("{Price}", StringUtils.formatComma(price)).replace("{PricePartial}", StringUtils.formatComma(price / BetUnitType.PARTIAL.getDivisor()))), true);
             embed.addField("2", ChatColor.stripColor(String.join("\n", LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBetCountValueComplex, instance)).replace("{Count}", "2").replace("{BetUnits}", StringUtils.formatComma(price * 2 / instance.pricePerBet)).replace("{Price}", StringUtils.formatComma(price * 2)).replace("{PricePartial}", StringUtils.formatComma(price * 2 / BetUnitType.PARTIAL.getDivisor()))), true);
             embed.addField("5", ChatColor.stripColor(String.join("\n", LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBetCountValueComplex, instance)).replace("{Count}", "5").replace("{BetUnits}", StringUtils.formatComma(price * 5 / instance.pricePerBet)).replace("{Price}", StringUtils.formatComma(price * 5)).replace("{PricePartial}", StringUtils.formatComma(price * 5 / BetUnitType.PARTIAL.getDivisor()))), true);
@@ -1058,7 +1059,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
         } else if (componentId.startsWith(MULTIPLE_RANDOM_ENTRY_SIZE_LABEL)) {
             UUID selectionId = UUID.fromString(componentId.substring(MULTIPLE_RANDOM_ENTRY_SIZE_LABEL.length(), componentId.lastIndexOf("_")));
             int size = Integer.parseInt(((SelectionMenuEvent) event).getValues().get(0).substring(MULTIPLE_RANDOM_ENTRY_SIZE_OPTION_LABEL.length()));
-            randomSizeSelection.computeIfAbsent(selectionId, k -> new int[] {7})[0] = size;
+            randomSizeSelection.computeIfAbsent(selectionId, k -> new int[] {LotteryRegistry.NUMBERS_PER_BET + 1})[0] = size;
 
             EmbedBuilder embed = new EmbedBuilder()
                     .setTitle(instance.discordSRVSlashCommandsPlaceBetTitle)
@@ -1066,7 +1067,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
                     .setDescription("**" + ChatColor.stripColor(instance.betNumbersTypeNames.get(BetNumbersType.MULTIPLE_RANDOM)) + "**");
 
             String menuId = MULTIPLE_RANDOM_ENTRY_SIZE_LABEL + selectionId + "_";
-            List<SelectionMenu.Builder> sizeMenu = createSizeSelectionMenu(menuId, MULTIPLE_RANDOM_ENTRY_SIZE_OPTION_LABEL, 7, instance.numberOfChoices, instance.discordSRVSlashCommandsComponentsMultipleRandomSize);
+            List<SelectionMenu.Builder> sizeMenu = createSizeSelectionMenu(menuId, MULTIPLE_RANDOM_ENTRY_SIZE_OPTION_LABEL, LotteryRegistry.NUMBERS_PER_BET + 1, instance.numberOfChoices, instance.discordSRVSlashCommandsComponentsMultipleRandomSize);
             outer: for (SelectionMenu.Builder menu : sizeMenu) {
                 for (SelectOption option : menu.getOptions()) {
                     if (option.getValue().equals(MULTIPLE_RANDOM_ENTRY_SIZE_OPTION_LABEL + size)) {
@@ -1106,17 +1107,17 @@ public class PlaceBetInteraction extends DiscordInteraction {
 
             UUID selectionId = UUID.randomUUID();
             String bankerMenuId = BANKER_RANDOM_ENTRY_BANKER_LABEL + selectionId + "_";
-            List<SelectionMenu.Builder> bankerMenu = createSizeSelectionMenu(bankerMenuId, BANKER_RANDOM_ENTRY_BANKER_OPTION_LABEL, 1, 5, instance.discordSRVSlashCommandsComponentsBankerRandomBankerSize);
+            List<SelectionMenu.Builder> bankerMenu = createSizeSelectionMenu(bankerMenuId, BANKER_RANDOM_ENTRY_BANKER_OPTION_LABEL, 1, LotteryRegistry.NUMBERS_PER_BET - 1, instance.discordSRVSlashCommandsComponentsBankerRandomBankerSize);
             bankerMenu.get(0).setDefaultValues(Collections.singleton(bankerMenu.get(0).getOptions().get(0).getValue()));
 
             String sizeMenuId = BANKER_RANDOM_ENTRY_SIZE_LABEL + selectionId + "_";
-            List<SelectionMenu.Builder> sizeMenu = createSizeSelectionMenu(sizeMenuId, BANKER_RANDOM_ENTRY_SIZE_OPTION_LABEL, 6, instance.numberOfChoices, instance.discordSRVSlashCommandsComponentsBankerRandomSelectionSize);
+            List<SelectionMenu.Builder> sizeMenu = createSizeSelectionMenu(sizeMenuId, BANKER_RANDOM_ENTRY_SIZE_OPTION_LABEL, LotteryRegistry.NUMBERS_PER_BET, instance.numberOfChoices, instance.discordSRVSlashCommandsComponentsBankerRandomSelectionSize);
             sizeMenu.get(0).setDefaultValues(Collections.singleton(sizeMenu.get(0).getOptions().get(0).getValue()));
 
             List<ActionRow> actionRows = Stream.concat(bankerMenu.stream(), sizeMenu.stream()).map(m -> ActionRow.of(m.setMinValues(1).setMaxValues(1).build())).collect(Collectors.toList());
-            randomSizeSelection.put(selectionId, new int[]{1, 6});
+            randomSizeSelection.put(selectionId, new int[]{1, LotteryRegistry.NUMBERS_PER_BET});
 
-            long price = LotteryUtils.calculatePrice(6, 1, instance.pricePerBet);
+            long price = LotteryUtils.calculatePrice(LotteryRegistry.NUMBERS_PER_BET, 1, instance.pricePerBet);
             embed.addField("1", ChatColor.stripColor(String.join("\n", LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBetCountValueComplex, instance)).replace("{Count}", "1").replace("{BetUnits}", StringUtils.formatComma(price / instance.pricePerBet)).replace("{Price}", StringUtils.formatComma(price)).replace("{PricePartial}", StringUtils.formatComma(price / BetUnitType.PARTIAL.getDivisor()))), true);
             embed.addField("2", ChatColor.stripColor(String.join("\n", LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBetCountValueComplex, instance)).replace("{Count}", "2").replace("{BetUnits}", StringUtils.formatComma(price * 2 / instance.pricePerBet)).replace("{Price}", StringUtils.formatComma(price * 2)).replace("{PricePartial}", StringUtils.formatComma(price * 2 / BetUnitType.PARTIAL.getDivisor()))), true);
             embed.addField("5", ChatColor.stripColor(String.join("\n", LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBetCountValueComplex, instance)).replace("{Count}", "5").replace("{BetUnits}", StringUtils.formatComma(price * 5 / instance.pricePerBet)).replace("{Price}", StringUtils.formatComma(price * 5)).replace("{PricePartial}", StringUtils.formatComma(price * 5 / BetUnitType.PARTIAL.getDivisor()))), true);
@@ -1133,11 +1134,11 @@ public class PlaceBetInteraction extends DiscordInteraction {
             event.getHook().editOriginalEmbeds(embed.build()).setActionRows(actionRows).retainFiles(Collections.emptyList()).queue();
         } else if (componentId.startsWith(BANKER_RANDOM_ENTRY_BANKER_LABEL)) {
             UUID selectionId = UUID.fromString(componentId.substring(BANKER_RANDOM_ENTRY_BANKER_LABEL.length(), componentId.lastIndexOf("_")));
-            int[] data = randomSizeSelection.computeIfAbsent(selectionId, k -> new int[] {1, 6});
+            int[] data = randomSizeSelection.computeIfAbsent(selectionId, k -> new int[] {1, LotteryRegistry.NUMBERS_PER_BET});
             int banker = Integer.parseInt(((SelectionMenuEvent) event).getValues().get(0).substring(BANKER_RANDOM_ENTRY_BANKER_OPTION_LABEL.length()));
             int size = data[1];
-            if (banker + size < 7) {
-                size = 7 - banker;
+            if (banker + size < LotteryRegistry.NUMBERS_PER_BET + 1) {
+                size = LotteryRegistry.NUMBERS_PER_BET + 1 - banker;
             } else if (banker + size > instance.numberOfChoices) {
                 size = instance.numberOfChoices - banker;
             }
@@ -1150,7 +1151,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
                     .setDescription("**" + ChatColor.stripColor(instance.betNumbersTypeNames.get(BetNumbersType.BANKER_RANDOM)) + "**");
 
             String bankerMenuId = BANKER_RANDOM_ENTRY_BANKER_LABEL + selectionId + "_";
-            List<SelectionMenu.Builder> bankerMenu = createSizeSelectionMenu(bankerMenuId, BANKER_RANDOM_ENTRY_BANKER_OPTION_LABEL, 1, 5, instance.discordSRVSlashCommandsComponentsBankerRandomBankerSize);
+            List<SelectionMenu.Builder> bankerMenu = createSizeSelectionMenu(bankerMenuId, BANKER_RANDOM_ENTRY_BANKER_OPTION_LABEL, 1, LotteryRegistry.NUMBERS_PER_BET - 1, instance.discordSRVSlashCommandsComponentsBankerRandomBankerSize);
             outer: for (SelectionMenu.Builder menu : bankerMenu) {
                 for (SelectOption option : menu.getOptions()) {
                     if (option.getValue().equals(BANKER_RANDOM_ENTRY_BANKER_OPTION_LABEL + banker)) {
@@ -1161,7 +1162,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
             }
 
             String sizeMenuId = BANKER_RANDOM_ENTRY_SIZE_LABEL + selectionId + "_";
-            List<SelectionMenu.Builder> sizeMenu = createSizeSelectionMenu(sizeMenuId, BANKER_RANDOM_ENTRY_SIZE_OPTION_LABEL, 7 - banker, instance.numberOfChoices - banker, instance.discordSRVSlashCommandsComponentsBankerRandomSelectionSize);
+            List<SelectionMenu.Builder> sizeMenu = createSizeSelectionMenu(sizeMenuId, BANKER_RANDOM_ENTRY_SIZE_OPTION_LABEL, LotteryRegistry.NUMBERS_PER_BET + 1 - banker, instance.numberOfChoices - banker, instance.discordSRVSlashCommandsComponentsBankerRandomSelectionSize);
             outer: for (SelectionMenu.Builder menu : sizeMenu) {
                 for (SelectOption option : menu.getOptions()) {
                     if (option.getValue().equals(BANKER_RANDOM_ENTRY_SIZE_OPTION_LABEL + size)) {
@@ -1190,7 +1191,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
             event.getHook().editOriginalComponents().setActionRows(actionRows).setEmbeds(embed.build()).retainFiles(Collections.emptyList()).queue();
         } else if (componentId.startsWith(BANKER_RANDOM_ENTRY_SIZE_LABEL)) {
             UUID selectionId = UUID.fromString(componentId.substring(BANKER_RANDOM_ENTRY_SIZE_LABEL.length(), componentId.lastIndexOf("_")));
-            int[] data = randomSizeSelection.computeIfAbsent(selectionId, k -> new int[] {1, 6});
+            int[] data = randomSizeSelection.computeIfAbsent(selectionId, k -> new int[] {1, LotteryRegistry.NUMBERS_PER_BET});
             int size = Integer.parseInt(((SelectionMenuEvent) event).getValues().get(0).substring(BANKER_RANDOM_ENTRY_SIZE_OPTION_LABEL.length()));
             int banker = data[0];
             data[1] = size;
@@ -1212,7 +1213,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
             }
 
             String sizeMenuId = BANKER_RANDOM_ENTRY_SIZE_LABEL + selectionId + "_";
-            List<SelectionMenu.Builder> sizeMenu = createSizeSelectionMenu(sizeMenuId, BANKER_RANDOM_ENTRY_SIZE_OPTION_LABEL, 7 - banker, instance.numberOfChoices - banker, instance.discordSRVSlashCommandsComponentsBankerRandomSelectionSize);
+            List<SelectionMenu.Builder> sizeMenu = createSizeSelectionMenu(sizeMenuId, BANKER_RANDOM_ENTRY_SIZE_OPTION_LABEL, LotteryRegistry.NUMBERS_PER_BET + 1 - banker, instance.numberOfChoices - banker, instance.discordSRVSlashCommandsComponentsBankerRandomSelectionSize);
             outer: for (SelectionMenu.Builder menu : sizeMenu) {
                 for (SelectOption option : menu.getOptions()) {
                     if (option.getValue().equals(BANKER_RANDOM_ENTRY_SIZE_OPTION_LABEL + size)) {

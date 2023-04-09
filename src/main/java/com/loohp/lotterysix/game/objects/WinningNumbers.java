@@ -20,11 +20,11 @@
 
 package com.loohp.lotterysix.game.objects;
 
+import com.loohp.lotterysix.game.LotteryRegistry;
 import com.loohp.lotterysix.game.objects.betnumbers.BetNumbers;
 import com.loohp.lotterysix.utils.ChatColorUtils;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -40,15 +40,21 @@ import java.util.stream.Stream;
 
 public class WinningNumbers implements FormattedString {
 
-    public static final Pattern STRING_PATTERN = Pattern.compile("^([0-9]+) ([0-9]+) ([0-9]+) ([0-9]+) ([0-9]+) ([0-9]+) \\+ ([0-9]+)$");
+    public static Pattern buildStringPattern() {
+        StringBuilder sb = new StringBuilder("^");
+        for (int i = 0; i < LotteryRegistry.NUMBERS_PER_BET; i++) {
+            sb.append("([0-9]+) ");
+        }
+        return Pattern.compile(sb.append("\\+ ([0-9]+)$").toString());
+    }
 
     public static WinningNumbers fromString(String input) {
-        Matcher matcher = STRING_PATTERN.matcher(input);
+        Matcher matcher = buildStringPattern().matcher(input);
         if (!matcher.find()) {
             return null;
         }
         Set<Integer> numbers = new LinkedHashSet<>();
-        for (int i = 1; i <= 6; i++) {
+        for (int i = 1; i <= LotteryRegistry.NUMBERS_PER_BET; i++) {
             try {
                 if (!numbers.add(Integer.parseInt(matcher.group(i)))) {
                     return null;
@@ -58,7 +64,7 @@ public class WinningNumbers implements FormattedString {
             }
         }
         try {
-            int specialNumber = Integer.parseInt(matcher.group(7));
+            int specialNumber = Integer.parseInt(matcher.group(LotteryRegistry.NUMBERS_PER_BET + 1));
             if (numbers.contains(specialNumber)) {
                 return null;
             }
@@ -71,13 +77,9 @@ public class WinningNumbers implements FormattedString {
     private final List<Integer> numbers;
     private final int specialNumber;
 
-    private WinningNumbers(Collection<Integer> numbers, int specialNumber) {
+    public WinningNumbers(Collection<Integer> numbers, int specialNumber) {
         this.numbers = Collections.unmodifiableList(new ArrayList<>(numbers));
         this.specialNumber = specialNumber;
-    }
-
-    public WinningNumbers(int number1, int number2, int number3, int number4, int number5, int number6, int specialNumber) {
-        this(Arrays.asList(number1, number2, number3, number4, number5, number6), specialNumber);
     }
 
     public List<Integer> getNumbers() {
@@ -93,11 +95,12 @@ public class WinningNumbers implements FormattedString {
     }
 
     public int getNumber(int index) {
-        return numbers.get(index);
+        return index < numbers.size() ? numbers.get(index) : -1;
     }
 
     public int getNumberOrdered(int index) {
-        return getNumbersOrdered().get(index);
+        List<Integer> ordered = getNumbersOrdered();
+        return index < ordered.size() ? ordered.get(index) : -1;
     }
 
     public int getSpecialNumber() {
@@ -107,7 +110,7 @@ public class WinningNumbers implements FormattedString {
     public Stream<Pair<PrizeTier, WinningCombination>> checkWinning(BetNumbers betNumbers) {
         PrizeTier[] prizeTiers = PrizeTier.values();
         return betNumbers.combinations().map(numbers -> {
-            int matches = (int) numbers.stream().filter(i -> this.numbers.contains(i)).limit(6).count();
+            int matches = (int) numbers.stream().filter(i -> this.numbers.contains(i)).limit(LotteryRegistry.NUMBERS_PER_BET).count();
             boolean matchSpecial = numbers.contains(specialNumber);
             for (PrizeTier prizeTier : prizeTiers) {
                 if (prizeTier.getWinningCriteria().satisfies(matches, matchSpecial)) {

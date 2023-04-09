@@ -20,6 +20,7 @@
 
 package com.loohp.lotterysix.game.objects.betnumbers;
 
+import com.loohp.lotterysix.game.LotteryRegistry;
 import com.loohp.lotterysix.game.objects.FormattedString;
 import com.loohp.lotterysix.utils.ChatColorUtils;
 import org.paukov.combinatorics3.Generator;
@@ -82,9 +83,9 @@ public class BetNumbers implements FormattedString {
     public Stream<List<Integer>> combinations() {
         Stream<List<Integer>> stream;
         if (hasNoBankers()) {
-            stream = Generator.combination(numbers).simple(6).stream();
+            stream = Generator.combination(numbers).simple(LotteryRegistry.NUMBERS_PER_BET).stream();
         } else {
-            stream = Generator.combination(numbers).simple(6 - bankers.size()).stream().peek(list -> list.addAll(bankers));
+            stream = Generator.combination(numbers).simple(LotteryRegistry.NUMBERS_PER_BET - bankers.size()).stream().peek(list -> list.addAll(bankers));
         }
         if (hasNoAdditionalSets()) {
             return stream;

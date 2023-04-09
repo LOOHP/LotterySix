@@ -21,6 +21,7 @@
 package com.loohp.lotterysix.game.lottery;
 
 import com.google.gson.Gson;
+import com.loohp.lotterysix.game.LotteryRegistry;
 import com.loohp.lotterysix.game.LotterySix;
 import com.loohp.lotterysix.game.objects.AddBetResult;
 import com.loohp.lotterysix.game.objects.BetUnitType;
@@ -426,8 +427,8 @@ public class PlayableLotterySixGame implements IDedGame {
 
     public CompletedLotterySixGame runLottery(int maxNumber, long pricePerBet, long maxTopPlacesPrize, double taxPercentage, PrizeCalculationMode prizeCalculationMode, CarryOverMode carryOverMode) {
         SecureRandom random = new SecureRandom();
-        int[] num = random.ints(1, maxNumber + 1).distinct().limit(7).toArray();
-        WinningNumbers winningNumbers = new WinningNumbers(num[0], num[1], num[2], num[3], num[4], num[5], num[6]);
+        List<Integer> num = random.ints(1, maxNumber + 1).distinct().limit(LotteryRegistry.NUMBERS_PER_BET + 1).boxed().collect(Collectors.toList());
+        WinningNumbers winningNumbers = new WinningNumbers(num.subList(0, LotteryRegistry.NUMBERS_PER_BET), num.get(num.size() - 1));
         return runLottery(maxNumber, pricePerBet, maxTopPlacesPrize, taxPercentage, winningNumbers, prizeCalculationMode, carryOverMode);
     }
 
