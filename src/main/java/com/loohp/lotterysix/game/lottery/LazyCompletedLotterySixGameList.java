@@ -40,8 +40,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Spliterator;
+import java.util.TimeZone;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class LazyCompletedLotterySixGameList extends AbstractList<CompletedLotterySixGame> {
@@ -219,6 +222,25 @@ public class LazyCompletedLotterySixGameList extends AbstractList<CompletedLotte
 
     public int indexOf(CompletedLotterySixGameIndex gameIndex) {
         return gameIndexes.indexOf(gameIndex);
+    }
+
+    public List<CompletedLotterySixGameIndex> query(CompletedLotteryGamesQuery query, TimeZone timeZone) {
+        return query(query, -1, timeZone);
+    }
+
+    public List<CompletedLotterySixGameIndex> query(CompletedLotteryGamesQuery query, int numberOfGames, TimeZone timeZone) {
+        Stream<CompletedLotterySixGameIndex> stream = queryStream(query, timeZone);
+        if (numberOfGames >= 0) {
+            stream = stream.limit(numberOfGames);
+        }
+        synchronized (getIterateLock()) {
+            return stream.collect(Collectors.toList());
+        }
+    }
+
+    public Stream<CompletedLotterySixGameIndex> queryStream(CompletedLotteryGamesQuery query, TimeZone timeZone) {
+        Predicate<CompletedLotterySixGameIndex> predicate = query.getQueryPredicate(this, timeZone);
+        return indexStream().filter(predicate);
     }
 
     @Deprecated

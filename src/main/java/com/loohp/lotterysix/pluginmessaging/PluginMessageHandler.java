@@ -285,7 +285,10 @@ public class PluginMessageHandler implements PluginMessageListener {
                             if (size > 0) {
                                 for (int i = 0; i < size; i++) {
                                     UUID gameId = DataTypeIO.readUUID(in);
-                                    Optional<CompletedLotterySixGameIndex> optGame = instance.getCompletedGames().indexStream().filter(each -> each.getGameId().equals(gameId)).findFirst();
+                                    Optional<CompletedLotterySixGameIndex> optGame;
+                                    synchronized (instance.getCompletedGames().getIterateLock()) {
+                                        optGame = instance.getCompletedGames().indexStream().filter(each -> each.getGameId().equals(gameId)).findFirst();
+                                    }
                                     if (optGame.isPresent()) {
                                         CompletedLotterySixGame game = instance.getCompletedGames().get(optGame.get());
                                         gsonOfInstance(game).fromJson(DataTypeIO.readString(in, StandardCharsets.UTF_8), CompletedLotterySixGame.class);
