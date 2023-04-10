@@ -66,7 +66,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-public class PlayableLotterySixGame implements IDedGame {
+public class PlayableLotterySixGame implements ILotterySixGame {
 
     private static final Map<Object, Map<String, Object>> LOCKS_AND_FLAGS = Collections.synchronizedMap(new WeakHashMap<>());
 
@@ -159,6 +159,11 @@ public class PlayableLotterySixGame implements IDedGame {
     public void setSpecialName(String specialName) {
         this.specialName = specialName;
         getDirtyFlag().set(true);
+    }
+
+    @Override
+    public String getDataFileName() {
+        return "current.json";
     }
 
     public void setScheduledDateTime(long scheduledDateTime) {

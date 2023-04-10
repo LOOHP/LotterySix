@@ -18,27 +18,18 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.loohp.lotterysix.game.objects;
-
-import com.loohp.lotterysix.game.lottery.ILotterySixGame;
+package com.loohp.lotterysix.game.lottery;
 
 import java.util.UUID;
 
-@FunctionalInterface
-public interface MessageConsumer {
+public interface ILotterySixGame extends PersistentGame {
 
-    void accept(UUID uuid, String message, String hover, ILotterySixGame game);
+    UUID getGameId();
 
-    default void accept(UUID uuid, String message) {
-        accept(uuid, message, "", null);
-    }
+    GameNumber getGameNumber();
 
-    default void accept(UUID uuid, String message, String hover) {
-        accept(uuid, message, hover, null);
-    }
+    boolean hasSpecialName();
 
-    default void accept(UUID uuid, String message, ILotterySixGame game) {
-        accept(uuid, message, "", game);
-    }
+    String getSpecialName();
 
 }

@@ -23,7 +23,7 @@ package com.loohp.lotterysix.proxy.bungee;
 import com.google.common.collect.Collections2;
 import com.loohp.lotterysix.config.Config;
 import com.loohp.lotterysix.game.LotterySix;
-import com.loohp.lotterysix.game.lottery.IDedGame;
+import com.loohp.lotterysix.game.lottery.ILotterySixGame;
 import com.loohp.lotterysix.game.objects.AddBetResult;
 import com.loohp.lotterysix.game.objects.BossBarInfo;
 import com.loohp.lotterysix.game.objects.LotterySixAction;
@@ -62,7 +62,7 @@ public class LotterySixBungee extends Plugin implements Listener {
     private static PluginMessageBungee pluginMessageBungee;
 
     private static volatile BossBarInfo latestBossBar = BossBarInfo.CLEAR;
-    private static volatile IDedGame latestBossBarGame = null;
+    private static volatile ILotterySixGame latestBossBarGame = null;
 
     @Override
     public void onEnable() {
@@ -167,11 +167,11 @@ public class LotterySixBungee extends Plugin implements Listener {
         pluginMessageBungee.callPlayerBetEvent(player, numbers, price, result);
     }
 
-    public static void sendFormattedTitle(ProxiedPlayer player, IDedGame game, String title, int fadeIn, int stay, int fadeOut) {
+    public static void sendFormattedTitle(ProxiedPlayer player, ILotterySixGame game, String title, int fadeIn, int stay, int fadeOut) {
         pluginMessageBungee.sendFormattedTitle(player, game, title, fadeIn, stay, fadeOut);
     }
 
-    public static void sendFormattedMessage(ProxiedPlayer player, IDedGame game, String message, String hover) {
+    public static void sendFormattedMessage(ProxiedPlayer player, ILotterySixGame game, String message, String hover) {
         pluginMessageBungee.sendFormattedMessage(player, game, message, hover);
     }
 

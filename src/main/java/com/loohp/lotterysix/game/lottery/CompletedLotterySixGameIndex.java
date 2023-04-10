@@ -25,7 +25,7 @@ import com.loohp.lotterysix.game.objects.WinningNumbers;
 import java.util.Objects;
 import java.util.UUID;
 
-public class CompletedLotterySixGameIndex implements IDedGame {
+public class CompletedLotterySixGameIndex implements ILotterySixGame {
 
     private transient WinningNumbers drawResultCache;
 
@@ -63,8 +63,9 @@ public class CompletedLotterySixGameIndex implements IDedGame {
         return datetime;
     }
 
+    @Override
     public String getDataFileName() {
-        return datetime + ".json";
+        return gameNumber.toString().replace("/", "_") + "_" + datetime + ".json";
     }
 
     public WinningNumbers getDrawResult() {

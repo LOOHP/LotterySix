@@ -30,7 +30,7 @@ import com.loohp.lotterysix.config.Config;
 import com.loohp.lotterysix.game.lottery.CompletedLotterySixGame;
 import com.loohp.lotterysix.game.lottery.CompletedLotterySixGameIndex;
 import com.loohp.lotterysix.game.lottery.GameNumber;
-import com.loohp.lotterysix.game.lottery.IDedGame;
+import com.loohp.lotterysix.game.lottery.ILotterySixGame;
 import com.loohp.lotterysix.game.lottery.LazyCompletedLotterySixGameList;
 import com.loohp.lotterysix.game.lottery.PlayableLotterySixGame;
 import com.loohp.lotterysix.game.objects.BetResultConsumer;
@@ -65,7 +65,6 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -346,9 +345,9 @@ public class LotterySix implements AutoCloseable {
     private final Consumer<LotterySixAction> actionListener;
     private final Consumer<LotteryPlayer> lotteryPlayerUpdateListener;
     private final Consumer<String> consoleMessageConsumer;
-    private final BiConsumer<BossBarInfo, IDedGame> bossBarUpdater;
+    private final BiConsumer<BossBarInfo, ILotterySixGame> bossBarUpdater;
 
-    public LotterySix(boolean isBackend, File dataFolder, String configId, BiPredicate<UUID, Long> takeMoneyConsumer, BiPredicate<UUID, Long> giveMoneyConsumer, Consumer<UUID> notifyBalanceChangeConsumer, BiPredicate<UUID, String> hasPermissionPredicate, Consumer<Boolean> lockRunnable, Supplier<Collection<UUID>> onlinePlayersSupplier, MessageConsumer messageSendingConsumer, MessageConsumer titleSendingConsumer, BetResultConsumer playerBetListener, Consumer<Collection<PlayerBets>> playerBetsInvalidateListener, Consumer<LotterySixAction> actionListener, Consumer<LotteryPlayer> lotteryPlayerUpdateListener, Consumer<String> consoleMessageConsumer, BiConsumer<BossBarInfo, IDedGame> bossBarUpdater) {
+    public LotterySix(boolean isBackend, File dataFolder, String configId, BiPredicate<UUID, Long> takeMoneyConsumer, BiPredicate<UUID, Long> giveMoneyConsumer, Consumer<UUID> notifyBalanceChangeConsumer, BiPredicate<UUID, String> hasPermissionPredicate, Consumer<Boolean> lockRunnable, Supplier<Collection<UUID>> onlinePlayersSupplier, MessageConsumer messageSendingConsumer, MessageConsumer titleSendingConsumer, BetResultConsumer playerBetListener, Consumer<Collection<PlayerBets>> playerBetsInvalidateListener, Consumer<LotterySixAction> actionListener, Consumer<LotteryPlayer> lotteryPlayerUpdateListener, Consumer<String> consoleMessageConsumer, BiConsumer<BossBarInfo, ILotterySixGame> bossBarUpdater) {
         this.dataFolder = dataFolder;
         this.configId = configId;
         this.takeMoneyConsumer = takeMoneyConsumer;
@@ -500,7 +499,7 @@ public class LotterySix implements AutoCloseable {
         return lotteryPlayerManager;
     }
 
-    public IDedGame getGame(UUID uuid) {
+    public ILotterySixGame getGame(UUID uuid) {
         if (currentGame != null && currentGame.getGameId().equals(uuid)) {
             return currentGame;
         }
@@ -748,7 +747,7 @@ public class LotterySix implements AutoCloseable {
         return lotteryPlayerUpdateListener;
     }
 
-    public BiConsumer<BossBarInfo, IDedGame> getBossBarUpdater() {
+    public BiConsumer<BossBarInfo, ILotterySixGame> getBossBarUpdater() {
         return bossBarUpdater;
     }
 
@@ -1064,6 +1063,12 @@ public class LotterySix implements AutoCloseable {
                 for (JsonElement element : array) {
                     CompletedLotterySixGameIndex gameIndex = GSON.fromJson(element.getAsJsonObject(), CompletedLotterySixGameIndex.class);
                     File detailFile = new File(lotteryDataFolder, gameIndex.getDataFileName());
+                    if (!detailFile.exists()) {
+                        File oldLocation = new File(lotteryDataFolder, gameIndex.getDatetime() + ".json");
+                        if (oldLocation.exists()) {
+                            Files.move(oldLocation.toPath(), detailFile.toPath());
+                        }
+                    }
                     if (detailFile.exists()) {
                         if (gameIndex.isDetailsComplete()) {
                             completedGames.add(gameIndex);
@@ -1094,20 +1099,6 @@ public class LotterySix implements AutoCloseable {
                     e.printStackTrace();
                 }
             }
-        } else {
-            for (File file : lotteryDataFolder.listFiles()) {
-                if (file.getName().endsWith(".json") && !file.equals(currentGameFile) && !file.equals(completedGameFile)) {
-                    try {
-                        CompletedLotterySixGame game = LazyCompletedLotterySixGameList.loadFromFile(file);
-                        completedGames.add(game);
-                        file.renameTo(new File(lotteryDataFolder, game.getDataFileName()));
-                    } catch (Throwable e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-            completedGames.sort(Comparator.comparing((CompletedLotterySixGame game) -> game.getDatetime()).reversed());
-            saveData(false);
         }
     }
 

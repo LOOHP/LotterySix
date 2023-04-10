@@ -44,7 +44,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-public class CompletedLotterySixGame implements IDedGame {
+public class CompletedLotterySixGame implements ILotterySixGame {
 
     public static final Comparator<PlayerWinnings> PLAYER_WINNINGS_COMPARATOR = Comparator.comparing(playerWinnings -> playerWinnings.getTier());
 
@@ -119,8 +119,9 @@ public class CompletedLotterySixGame implements IDedGame {
         return gameNumber;
     }
 
+    @Override
     public String getDataFileName() {
-        return datetime + ".json";
+        return gameNumber.toString().replace("/", "_") + "_" + datetime + ".json";
     }
 
     public CompletedLotterySixGameIndex toGameIndex() {

@@ -23,7 +23,7 @@ package com.loohp.lotterysix.proxy.bungee;
 import com.google.gson.Gson;
 import com.loohp.lotterysix.game.LotterySix;
 import com.loohp.lotterysix.game.lottery.CompletedLotterySixGame;
-import com.loohp.lotterysix.game.lottery.IDedGame;
+import com.loohp.lotterysix.game.lottery.ILotterySixGame;
 import com.loohp.lotterysix.game.lottery.PlayableLotterySixGame;
 import com.loohp.lotterysix.game.objects.AddBetResult;
 import com.loohp.lotterysix.game.objects.BetUnitType;
@@ -280,7 +280,7 @@ public class PluginMessageBungee implements Listener {
         }
     }
 
-    public void sendFormattedTitle(ProxiedPlayer player, IDedGame game, String title, int fadeIn, int stay, int fadeOut) {
+    public void sendFormattedTitle(ProxiedPlayer player, ILotterySixGame game, String title, int fadeIn, int stay, int fadeOut) {
         try {
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             DataOutputStream out = new DataOutputStream(outputStream);
@@ -301,7 +301,7 @@ public class PluginMessageBungee implements Listener {
         }
     }
 
-    public void sendFormattedMessage(ProxiedPlayer player, IDedGame game, String message, String hover) {
+    public void sendFormattedMessage(ProxiedPlayer player, ILotterySixGame game, String message, String hover) {
         try {
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             DataOutputStream out = new DataOutputStream(outputStream);
@@ -493,7 +493,7 @@ public class PluginMessageBungee implements Listener {
         }
     }
 
-    public void updateBossBar(BossBarInfo bossBarInfo, IDedGame game) {
+    public void updateBossBar(BossBarInfo bossBarInfo, ILotterySixGame game) {
         try {
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             DataOutputStream out = new DataOutputStream(outputStream);

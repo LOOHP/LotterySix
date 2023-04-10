@@ -30,7 +30,7 @@ import com.loohp.lotterysix.events.PlayerBetEvent;
 import com.loohp.lotterysix.game.LotterySix;
 import com.loohp.lotterysix.game.lottery.CompletedLotterySixGame;
 import com.loohp.lotterysix.game.lottery.CompletedLotterySixGameIndex;
-import com.loohp.lotterysix.game.lottery.IDedGame;
+import com.loohp.lotterysix.game.lottery.ILotterySixGame;
 import com.loohp.lotterysix.game.lottery.PlayableLotterySixGame;
 import com.loohp.lotterysix.game.objects.AddBetResult;
 import com.loohp.lotterysix.game.objects.BetUnitType;
@@ -184,7 +184,7 @@ public class PluginMessageHandler implements PluginMessageListener {
                                 int fadeIn = in.readInt();
                                 int stay = in.readInt();
                                 int fadeOut = in.readInt();
-                                IDedGame game = gameId == null ? null : instance.getGame(gameId);
+                                ILotterySixGame game = gameId == null ? null : instance.getGame(gameId);
                                 if (game instanceof PlayableLotterySixGame) {
                                     message = LotteryUtils.formatPlaceholders(player, message, instance, (PlayableLotterySixGame) game);
                                 } else if (game instanceof CompletedLotterySixGame) {
@@ -201,7 +201,7 @@ public class PluginMessageHandler implements PluginMessageListener {
                             if (player != null) {
                                 String message = DataTypeIO.readString(in, StandardCharsets.UTF_8);
                                 String hover = DataTypeIO.readString(in, StandardCharsets.UTF_8);
-                                IDedGame game = gameId == null ? null : instance.getGame(gameId);
+                                ILotterySixGame game = gameId == null ? null : instance.getGame(gameId);
                                 if (game instanceof PlayableLotterySixGame) {
                                     message = LotteryUtils.formatPlaceholders(player, message, instance, (PlayableLotterySixGame) game);
                                     if (!hover.isEmpty()) {
@@ -433,7 +433,7 @@ public class PluginMessageHandler implements PluginMessageListener {
                                     LotterySixPlugin.activeBossBar.setProgress(progress);
                                     LotterySixPlugin.activeBossBar.setColor(BarColor.valueOf(color));
                                     LotterySixPlugin.activeBossBar.setStyle(BarStyle.valueOf(style));
-                                    IDedGame game = gameId == null ? null : instance.getGame(gameId);
+                                    ILotterySixGame game = gameId == null ? null : instance.getGame(gameId);
                                     if (game instanceof PlayableLotterySixGame) {
                                         message = LotteryUtils.formatPlaceholders(null, message, instance, (PlayableLotterySixGame) game);
                                     } else if (game instanceof CompletedLotterySixGame) {
