@@ -70,7 +70,7 @@ public class LotteryPlayer {
         if (!manager.getInstance().backendBungeecordMode) {
             manager.getInstance().getLotteryPlayerUpdateListener().accept(this);
         }
-        new Thread(() -> manager.saveLotteryPlayer(player)).start();
+        new Thread(() -> manager.saveLotteryPlayer(player), "LotteryPlayer Save Thread - " + player).start();
     }
 
     public UUID getPlayer() {
@@ -130,8 +130,16 @@ public class LotteryPlayer {
         return updateStats(key, type, t -> predicate.test(t) ? newValue : t);
     }
 
-    @SuppressWarnings("unchecked")
+    public <T> T updateStats(PlayerStatsKey key, Class<T> type, Predicate<T> predicate, T newValue, boolean save) {
+        return updateStats(key, type, t -> predicate.test(t) ? newValue : t, save);
+    }
+
     public <T> T updateStats(PlayerStatsKey key, Class<T> type, UnaryOperator<T> updateFunction) {
+        return updateStats(key, type, updateFunction, true);
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T> T updateStats(PlayerStatsKey key, Class<T> type, UnaryOperator<T> updateFunction, boolean save) {
         AtomicReference<T> ref = new AtomicReference<>(null);
         T defaultValue = (T) key.getDefaultValue();
         stats.compute(key, (k, v) -> {
@@ -139,7 +147,9 @@ public class LotteryPlayer {
             ref.set(t);
             return updateFunction.apply(v == null ? defaultValue : t);
         });
-        save();
+        if (save) {
+            save();
+        }
         T t = ref.get();
         return t == null ? defaultValue : t;
     }

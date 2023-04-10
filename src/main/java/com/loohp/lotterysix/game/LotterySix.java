@@ -608,11 +608,16 @@ public class LotterySix implements AutoCloseable {
                             if (announcerDrawBossBarEnabled) {
                                 bossBarUpdater.accept(BossBarInfo.CLEAR, completed);
                             }
-                            completed.givePrizesAndUpdateStats(LotterySix.this);
-                            setGameLocked(false);
+                            consoleMessageConsumer.accept("Distributing Lottery Win Prizes...");
+                            long start1 = System.currentTimeMillis();
+                            completed.givePrizesAndUpdateStats(LotterySix.this, () -> {
+                                long end1 = System.currentTimeMillis();
+                                consoleMessageConsumer.accept("Lottery Win Prizes Distribution Completed! (" + (end1 - start1) + "ms)");
+                                setGameLocked(false);
+                                actionListener.accept(LotterySixAction.RUN_LOTTERY_FINISH);
+                            });
                             announcementTask = null;
                             this.cancel();
-                            actionListener.accept(LotterySixAction.RUN_LOTTERY_FINISH);
                             return;
                         }
                         if (counter >= 0 && counter % liveDrawAnnouncerTimeBetween == 0) {
@@ -645,9 +650,14 @@ public class LotterySix implements AutoCloseable {
                 }
             }, 0, 1000);
         } else {
-            completed.givePrizesAndUpdateStats(this);
-            setGameLocked(false);
-            actionListener.accept(LotterySixAction.RUN_LOTTERY_FINISH);
+            consoleMessageConsumer.accept("Distributing Lottery Win Prizes...");
+            long start1 = System.currentTimeMillis();
+            completed.givePrizesAndUpdateStats(this, () -> {
+                long end1 = System.currentTimeMillis();
+                consoleMessageConsumer.accept("Lottery Win Prizes Distribution Completed! (" + (end1 - start1) + "ms)");
+                setGameLocked(false);
+                actionListener.accept(LotterySixAction.RUN_LOTTERY_FINISH);
+            });
         }
         return completed;
     }

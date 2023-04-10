@@ -228,20 +228,15 @@ public class CompletedLotterySixGame implements ILotterySixGame {
         return lotteriesFunds;
     }
 
-    public void givePrizesAndUpdateStats(LotterySix instance) {
+    public void givePrizesAndUpdateStats(LotterySix instance, Runnable onCompletion) {
         new Thread(() -> {
             LotteryPlayerManager lotteryPlayerManager = instance.getLotteryPlayerManager();
             Map<UUID, Long> transactions = new HashMap<>();
             Map<UUID, PrizeTier> prizeTiers = new HashMap<>();
             Map<UUID, List<PlayerBets>> multipleDrawBets = new HashMap<>();
-            Set<UUID> affected = new HashSet<>();
             for (PlayerWinnings winning : winners) {
-                LotteryPlayer lotteryPlayer = lotteryPlayerManager.getLotteryPlayer(winning.getPlayer());
-                lotteryPlayer.updateStats(PlayerStatsKey.ACCOUNT_BALANCE, long.class, i -> i + winning.getWinnings());
-                lotteryPlayer.updateStats(PlayerStatsKey.NOTIFY_BALANCE_CHANGE, long.class, i -> i + winning.getWinnings());
                 transactions.merge(winning.getPlayer(), winning.getWinnings(), (a, b) -> a + b);
                 prizeTiers.merge(winning.getPlayer(), winning.getTier(), (a, b) -> a.ordinal() < b.ordinal() ? a : b);
-                affected.add(winning.getPlayer());
             }
             for (PlayerBets bet : bets.values()) {
                 List<PlayerBets> playerBets = multipleDrawBets.computeIfAbsent(bet.getPlayer(), k -> new ArrayList<>());
@@ -256,22 +251,29 @@ public class CompletedLotterySixGame implements ILotterySixGame {
                 LotteryPlayer lotteryPlayer = instance.getLotteryPlayerManager().getLotteryPlayer(entry.getKey());
                 lotteryPlayer.setMultipleDrawPlayerBets(entry.getValue());
             }
+            Set<LotteryPlayer> affected = new HashSet<>();
             for (Map.Entry<UUID, Long> entry : transactions.entrySet()) {
                 LotteryPlayer lotteryPlayer = instance.getLotteryPlayerManager().getLotteryPlayer(entry.getKey());
                 PrizeTier prizeTier = prizeTiers.get(entry.getKey());
-                lotteryPlayer.updateStats(PlayerStatsKey.TOTAL_WINNINGS, long.class, i -> i + entry.getValue());
-                lotteryPlayer.updateStats(PlayerStatsKey.HIGHEST_WON_TIER, PrizeTier.class, t -> t == null || prizeTier.ordinal() < t.ordinal(), prizeTier);
+                long total = entry.getValue();
+                lotteryPlayer.updateStats(PlayerStatsKey.ACCOUNT_BALANCE, long.class, i -> i + total, false);
+                lotteryPlayer.updateStats(PlayerStatsKey.NOTIFY_BALANCE_CHANGE, long.class, i -> i + total, false);
+                lotteryPlayer.updateStats(PlayerStatsKey.TOTAL_WINNINGS, long.class, i -> i + total, false);
+                lotteryPlayer.updateStats(PlayerStatsKey.HIGHEST_WON_TIER, PrizeTier.class, t -> t == null || prizeTier.ordinal() < t.ordinal(), prizeTier, false);
+                affected.add(lotteryPlayer);
             }
             if (instance.lotteriesFundAccount != null) {
                 LotteryPlayer lotteryPlayer = lotteryPlayerManager.getLotteryPlayer(instance.lotteriesFundAccount);
-                lotteryPlayer.updateStats(PlayerStatsKey.ACCOUNT_BALANCE, long.class, i -> i + lotteriesFunds);
-                lotteryPlayer.updateStats(PlayerStatsKey.NOTIFY_BALANCE_CHANGE, long.class, i -> i + lotteriesFunds);
-                affected.add(instance.lotteriesFundAccount);
+                lotteryPlayer.updateStats(PlayerStatsKey.ACCOUNT_BALANCE, long.class, i -> i + lotteriesFunds, false);
+                lotteryPlayer.updateStats(PlayerStatsKey.NOTIFY_BALANCE_CHANGE, long.class, i -> i + lotteriesFunds, false);
+                affected.add(lotteryPlayer);
             }
-            for (UUID player : affected) {
-                instance.notifyBalanceChangeConsumer(player);
+            for (LotteryPlayer lotteryPlayer : affected) {
+                lotteryPlayer.save();
+                instance.notifyBalanceChangeConsumer(lotteryPlayer.getPlayer());
             }
-        }).start();
+            onCompletion.run();
+        }, "LotterySix Win Prize Distribution Thread - " + gameNumber).start();
     }
 
     @Override
