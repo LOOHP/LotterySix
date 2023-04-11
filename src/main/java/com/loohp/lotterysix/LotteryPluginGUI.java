@@ -1179,7 +1179,7 @@ public class LotteryPluginGUI implements Listener {
                                         return;
                                     }
                                     long price = LotteryUtils.calculatePrice(builder, instance);
-                                    ((StaticGuiElement) gui.getElement('\0')).setText(LotteryUtils.formatPlaceholders(player, Arrays.stream(isBanker ? instance.guiNewBetFinishBankers : (builder.getType().isMultipleCombination() ? instance.guiNewBetFinishComplex : instance.guiNewBetFinishSimple))
+                                    ((StaticGuiElement) gui.getElement('\0')).setText(LotteryUtils.formatPlaceholders(player, Arrays.stream(isBanker && !((BetNumbersBuilder.BankerBuilder) builder).inSelectionPhase() ? instance.guiNewBetFinishBankers : (builder.getType().isMultipleCombination() ? instance.guiNewBetFinishComplex : instance.guiNewBetFinishSimple))
                                             .map(each -> each
                                                     .replace("{BetUnits}", StringUtils.formatComma(price / instance.pricePerBet))
                                                     .replace("{Price}", StringUtils.formatComma(price))
@@ -1284,7 +1284,7 @@ public class LotteryPluginGUI implements Listener {
             return true;
         }, LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetDecrementButton, instance)));
         gui.addElement(new StaticGuiElement('m', XMaterial.ARROW.parseItem(), click -> {
-            int increment = click.getType().isRightClick() ? 5 : 1;
+            int increment = click.getType().isRightClick() ? (multipleDraw.get() == 1 ? 4 : 5) : 1;
             multipleDraw.updateAndGet(i -> Math.min(20, i + increment));
             gui.draw(player);
             return true;
@@ -1376,7 +1376,7 @@ public class LotteryPluginGUI implements Listener {
             return true;
         }, LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetDecrementButton, instance)));
         gui.addElement(new StaticGuiElement('m', XMaterial.ARROW.parseItem(), click -> {
-            int increment = click.getType().isRightClick() ? 5 : 1;
+            int increment = click.getType().isRightClick() ? (multipleDraw.get() == 1 ? 4 : 5) : 1;
             multipleDraw.updateAndGet(i -> Math.min(20, i + increment));
             gui.draw(player);
             return true;
@@ -1532,7 +1532,7 @@ public class LotteryPluginGUI implements Listener {
             return true;
         }, LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetDecrementButton, instance)));
         gui.addElement(new StaticGuiElement('m', XMaterial.ARROW.parseItem(), click -> {
-            int increment = click.getType().isRightClick() ? 5 : 1;
+            int increment = click.getType().isRightClick() ? (multipleDraw.get() == 1 ? 4 : 5) : 1;
             multipleDraw.updateAndGet(i -> Math.min(20, i + increment));
             gui.draw(player);
             return true;
@@ -1627,7 +1627,7 @@ public class LotteryPluginGUI implements Listener {
             return true;
         }, LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetDecrementButton, instance)));
         gui.addElement(new StaticGuiElement('m', XMaterial.ARROW.parseItem(), click -> {
-            int increment = click.getType().isRightClick() ? 5 : 1;
+            int increment = click.getType().isRightClick() ? (multipleDraw.get() == 1 ? 4 : 5) : 1;
             multipleDraw.updateAndGet(i -> Math.min(20, i + increment));
             gui.draw(player);
             return true;
