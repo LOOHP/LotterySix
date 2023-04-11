@@ -20,6 +20,7 @@
 
 package com.loohp.lotterysix.pluginmessaging;
 
+import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import com.google.gson.InstanceCreator;
 import com.google.gson.JsonElement;
@@ -400,8 +401,7 @@ public class PluginMessageHandler implements PluginMessageListener {
                                 }
                             }
 
-                            @SuppressWarnings("unchecked")
-                            List<PlayerBets> multipleDrawPlayerBets = GSON.fromJson(json.getAsJsonArray("multipleDrawPlayerBets"), ArrayList.class);
+                            List<PlayerBets> multipleDrawPlayerBets = GSON.fromJson(json.getAsJsonArray("multipleDrawPlayerBets"), new TypeToken<ArrayList<PlayerBets>>(){}.getType());
 
                             lotteryPlayer.bulkSet(preferences, stats, multipleDrawPlayerBets);
                             break;

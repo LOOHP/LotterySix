@@ -20,6 +20,7 @@
 
 package com.loohp.lotterysix.game.player;
 
+import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -143,8 +144,7 @@ public class LotteryPlayerManager {
                     }
                 }
 
-                @SuppressWarnings("unchecked")
-                List<PlayerBets> multipleDrawPlayerBets = GSON.fromJson(json.getAsJsonArray("multipleDrawPlayerBets"), ArrayList.class);
+                List<PlayerBets> multipleDrawPlayerBets = GSON.fromJson(json.getAsJsonArray("multipleDrawPlayerBets"), new TypeToken<ArrayList<PlayerBets>>(){}.getType());
 
                 LotteryPlayer lotteryPlayer = new LotteryPlayer(this, UUID.fromString(json.get("player").getAsString()), preferences, stats, multipleDrawPlayerBets == null ? Collections.emptyList() : multipleDrawPlayerBets);
 
