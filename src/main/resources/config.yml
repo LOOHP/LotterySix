@@ -336,6 +336,8 @@ GUI:
       - "&e{EntriesTotal} &cRandom Bet Entries"
     MultipleDrawValue:
       - "&eMultiple Draw: &a{Count}"
+      - "&7Multiple Draw allow players to bet on"
+      - "&7the same set of numbers for consecutive draws"
     IncrementButton:
       - "&7Left Click: &a+1"
       - "&7Right Click: &a+5"
