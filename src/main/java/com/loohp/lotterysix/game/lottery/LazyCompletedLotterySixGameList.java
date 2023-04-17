@@ -166,6 +166,17 @@ public class LazyCompletedLotterySixGameList extends AbstractList<CompletedLotte
         return game;
     }
 
+    @Override
+    public int indexOf(Object o) {
+        if (o == null || o instanceof CompletedLotterySixGameIndex) {
+            return gameIndexes.indexOf(o);
+        } else if (o instanceof CompletedLotterySixGame) {
+            return gameIndexes.indexOf(((CompletedLotterySixGame) o).toGameIndex());
+        } else {
+            return super.indexOf(o);
+        }
+    }
+
     public Iterator<CompletedLotterySixGameIndex> indexIterator() {
         return new Iterator<CompletedLotterySixGameIndex>() {
             int index = -1;
@@ -201,10 +212,6 @@ public class LazyCompletedLotterySixGameList extends AbstractList<CompletedLotte
 
     public Stream<CompletedLotterySixGameIndex> indexParallelStream() {
         return gameIndexes.parallelStream();
-    }
-
-    public int indexOf(CompletedLotterySixGameIndex gameIndex) {
-        return gameIndexes.indexOf(gameIndex);
     }
 
     public List<CompletedLotterySixGameIndex> query(CompletedLotteryGamesQuery query, TimeZone timeZone) {
