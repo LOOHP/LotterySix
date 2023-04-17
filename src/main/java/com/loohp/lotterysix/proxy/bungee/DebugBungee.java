@@ -78,7 +78,7 @@ public class DebugBungee implements Listener {
         } else {
             sender.sendMessage(ChatColor.YELLOW + "Game ID: " + currentGame.getGameId());
             sender.sendMessage(ChatColor.YELLOW + "Game Number: " + currentGame.getGameNumber());
-            sender.sendMessage(ChatColor.YELLOW + "Date: " + LotterySixBungee.getInstance().dateFormat.format(new Date(currentGame.getScheduledDateTime())));
+            sender.sendMessage(ChatColor.YELLOW + "Date: " + LotterySixBungee.getInstance().dateFormat.format(new Date(currentGame.getDatetime())));
             List<PlayerBets> bets = currentGame.getPlayerBets(player.getUniqueId());
             sender.sendMessage(ChatColor.GREEN + "Total Bet Placed By Player: $" + StringUtils.formatComma(bets.stream().mapToLong(each -> each.getBet()).sum()));
             sender.sendMessage("");

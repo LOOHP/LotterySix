@@ -227,7 +227,8 @@ public class Commands implements CommandExecutor, TabCompleter {
                             return true;
                         }
                     }
-                    LotterySixPlugin.getInstance().getCurrentGame().setScheduledDateTime(System.currentTimeMillis());
+                    long time = System.currentTimeMillis();
+                    LotterySixPlugin.getInstance().getCurrentGame().setDatetime(time, LotterySixPlugin.getInstance().dateToGameNumber(time));
                 }
             } else {
                 sender.sendMessage(LotterySixPlugin.getInstance().messageNoPermission);
@@ -317,7 +318,7 @@ public class Commands implements CommandExecutor, TabCompleter {
                         if (game == null) {
                             sender.sendMessage(LotterySixPlugin.getInstance().messageNoGameRunning);
                         } else {
-                            game.setScheduledDateTime(time);
+                            game.setDatetime(time, LotterySixPlugin.getInstance().dateToGameNumber(time));
                             sender.sendMessage(LotterySixPlugin.getInstance().messageGameSettingsUpdated);
                         }
                     } catch (NumberFormatException e) {

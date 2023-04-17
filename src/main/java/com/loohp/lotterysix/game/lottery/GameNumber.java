@@ -23,12 +23,14 @@ package com.loohp.lotterysix.game.lottery;
 import java.text.DecimalFormat;
 import java.time.Year;
 import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
 import java.util.Objects;
 
-public class GameNumber {
+public class GameNumber implements Comparable<GameNumber> {
 
     public static final DateTimeFormatter YEAR_FORMAT = DateTimeFormatter.ofPattern("yy");
     public static final DecimalFormat NUMBER_FORMAT = new DecimalFormat("000");
+    public static final Comparator<GameNumber> COMPARATOR = Comparator.comparing(GameNumber::getYear).thenComparing(GameNumber::getNumber);
 
     public static GameNumber fromString(String input) {
         String[] sections = input.split("/");
@@ -70,5 +72,10 @@ public class GameNumber {
     @Override
     public int hashCode() {
         return Objects.hash(year, number);
+    }
+
+    @Override
+    public int compareTo(GameNumber o) {
+        return COMPARATOR.compare(this, o);
     }
 }

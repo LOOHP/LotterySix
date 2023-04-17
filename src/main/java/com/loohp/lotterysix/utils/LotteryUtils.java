@@ -41,8 +41,6 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.stream.Collectors;
 
-import static com.loohp.lotterysix.utils.MathUtils.probabilityFormula;
-
 public class LotteryUtils {
 
     public static final DecimalFormat ODDS_FORMAT = new DecimalFormat("0.##");
@@ -150,8 +148,8 @@ public class LotteryUtils {
             str = new LazyReplaceString(input)
                     .replace("{Now}", () -> lotterySix.dateFormat.format(new Date()))
                     .replaceAll("\\{Now_(.*?)}", result -> dateFormat(lotterySix, result.group(1)).format(new Date()))
-                    .replace("{Date}", () -> lotterySix.dateFormat.format(new Date(game.getScheduledDateTime())))
-                    .replaceAll("\\{Date_(.*?)}", result -> dateFormat(lotterySix, result.group(1)).format(new Date(game.getScheduledDateTime())))
+                    .replace("{Date}", () -> lotterySix.dateFormat.format(new Date(game.getDatetime())))
+                    .replaceAll("\\{Date_(.*?)}", result -> dateFormat(lotterySix, result.group(1)).format(new Date(game.getDatetime())))
                     .replace("{GameNumberRaw}", () -> game.getGameNumber() + "")
                     .replace("{GameNumber}", () -> game.getGameNumber() + (game.hasSpecialName() ? " " + game.getSpecialName() : ""))
                     .replace("{SpecialName}", () -> game.hasSpecialName() ? game.getSpecialName() : "")

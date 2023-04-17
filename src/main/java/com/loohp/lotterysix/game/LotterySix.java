@@ -92,6 +92,14 @@ public class LotterySix implements AutoCloseable {
 
     public static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
+    public static CompletedLotterySixGame loadFromFile(File file) {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(Files.newInputStream(file.toPath()), StandardCharsets.UTF_8))) {
+            return GSON.fromJson(reader, CompletedLotterySixGame.class);
+        } catch (IOException e) {
+            throw new IllegalStateException("Do not remove LotterySix game data from the file system while the server is running, please restart the server now", e);
+        }
+    }
+
     private final TimerTask lotteryTask;
     private volatile TimerTask announcementTask;
     private final File dataFolder;
@@ -371,7 +379,7 @@ public class LotterySix implements AutoCloseable {
 
         File lotteryDataFolder = new File(getDataFolder(), "data");
         lotteryDataFolder.mkdirs();
-        this.completedGames = new LazyCompletedLotterySixGameList(lotteryDataFolder);
+        this.completedGames = new LazyCompletedLotterySixGameList(gameIndex -> loadFromFile(new File(lotteryDataFolder, gameIndex.getDataFileName())));
 
         if (!getDataFolder().exists()) {
             getDataFolder().mkdirs();
@@ -407,7 +415,7 @@ public class LotterySix implements AutoCloseable {
                                 }
                             }
                         } else {
-                            long timeLeft = currentGame.getScheduledDateTime() - now;
+                            long timeLeft = currentGame.getDatetime() - now;
                             if (announcerPreDrawBossBarEnabled && !gameLocked) {
                                 if (timeLeft > 0 && timeLeft < announcerPreDrawBossBarTimeBeforeDraw) {
                                     double progress = Math.max(0.0, Math.min(1.0, (double) timeLeft / (double) announcerPreDrawBossBarTimeBeforeDraw));
@@ -423,7 +431,7 @@ public class LotterySix implements AutoCloseable {
                             } else if (counter % announcerPeriodicMessageFrequency == 0) {
                                 announce = true;
                             } else {
-                                if ((currentGame.getScheduledDateTime() / 1000) - (now / 1000) <= 60) {
+                                if ((currentGame.getDatetime() / 1000) - (now / 1000) <= 60) {
                                     if (!oneMinuteAnnounced) {
                                         oneMinuteAnnounced = true;
                                         announce = true;
@@ -1060,7 +1068,11 @@ public class LotterySix implements AutoCloseable {
         if (currentGameFile.exists()) {
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(Files.newInputStream(currentGameFile.toPath()), StandardCharsets.UTF_8))) {
                 currentGame = GSON.fromJson(reader, PlayableLotterySixGame.class);
-                currentGame.setInstance(this);
+                if (currentGame == null) {
+                    throw new IOException("Unable to read data of current LotterySix game in " + currentGameFile.getAbsolutePath());
+                } else {
+                    currentGame.setInstance(this);
+                }
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -1084,7 +1096,7 @@ public class LotterySix implements AutoCloseable {
                             completedGames.add(gameIndex);
                         } else {
                             needSaving = true;
-                            completedGames.add(LazyCompletedLotterySixGameList.loadFromFile(detailFile));
+                            completedGames.add(loadFromFile(detailFile));
                         }
                     }
                 }

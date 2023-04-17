@@ -22,15 +22,7 @@ package com.loohp.lotterysix.game.lottery;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -43,29 +35,20 @@ import java.util.Spliterator;
 import java.util.TimeZone;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class LazyCompletedLotterySixGameList extends AbstractList<CompletedLotterySixGame> {
 
-    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
-
-    public static CompletedLotterySixGame loadFromFile(File file) {
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(Files.newInputStream(file.toPath()), StandardCharsets.UTF_8))) {
-            return GSON.fromJson(reader, CompletedLotterySixGame.class);
-        } catch (IOException e) {
-            throw new IllegalStateException("Do not remove LotterySix game data from the file system while the server is running, please restart the server now", e);
-        }
-    }
-
-    private final File lotteryDataFolder;
+    private final Function<CompletedLotterySixGameIndex, CompletedLotterySixGame> gameLoader;
     private final List<CompletedLotterySixGameIndex> gameIndexes;
     private final Map<UUID, CompletedLotterySixGame> cachedGames;
     private final Map<UUID, CompletedLotterySixGame> dirtyGames;
 
-    public LazyCompletedLotterySixGameList(File lotteryDataFolder) {
-        this.lotteryDataFolder = lotteryDataFolder;
+    public LazyCompletedLotterySixGameList(Function<CompletedLotterySixGameIndex, CompletedLotterySixGame> gameLoader) {
+        this.gameLoader = gameLoader;
         this.gameIndexes = Collections.synchronizedList(new ArrayList<>());
         Cache<UUID, CompletedLotterySixGame> cache = CacheBuilder.newBuilder().maximumSize(20).build();
         this.cachedGames = cache.asMap();
@@ -107,7 +90,7 @@ public class LazyCompletedLotterySixGameList extends AbstractList<CompletedLotte
         if (game != null) {
             return game;
         }
-        game = loadFromFile(new File(lotteryDataFolder, gameIndex.getDataFileName()));
+        game = gameLoader.apply(gameIndex);
         cachedGames.put(gameIndex.getGameId(), game);
         return game;
     }

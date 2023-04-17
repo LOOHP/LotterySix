@@ -166,15 +166,16 @@ public class PlayableLotterySixGame implements ILotterySixGame {
         return "current.json";
     }
 
-    public void setScheduledDateTime(long scheduledDateTime) {
+    public void setDatetime(long scheduledDateTime, GameNumber gameNumber) {
         if (instance == null || !instance.backendBungeecordMode) {
             this.scheduledDateTime = scheduledDateTime;
-            this.gameNumber = instance.dateToGameNumber(scheduledDateTime);
+            this.gameNumber = gameNumber;
             getDirtyFlag().set(true);
         }
     }
 
-    public long getScheduledDateTime() {
+    @Override
+    public long getDatetime() {
         return scheduledDateTime;
     }
 

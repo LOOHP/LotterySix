@@ -193,7 +193,8 @@ public class CommandsBungee extends Command implements TabExecutor {
                                 return;
                             }
                         }
-                        LotterySixBungee.getInstance().getCurrentGame().setScheduledDateTime(System.currentTimeMillis());
+                        long time = System.currentTimeMillis();
+                        LotterySixBungee.getInstance().getCurrentGame().setDatetime(time, LotterySixBungee.getInstance().dateToGameNumber(time));
                     }
                 } else {
                     sender.sendMessage(LotterySixBungee.getInstance().messageNoPermission);
@@ -297,7 +298,7 @@ public class CommandsBungee extends Command implements TabExecutor {
                             if (game == null) {
                                 sender.sendMessage(LotterySixBungee.getInstance().messageNoGameRunning);
                             } else {
-                                game.setScheduledDateTime(time);
+                                game.setDatetime(time, LotterySixBungee.getInstance().dateToGameNumber(time));
                                 sender.sendMessage(LotterySixBungee.getInstance().messageGameSettingsUpdated);
                             }
                         } catch (NumberFormatException e) {

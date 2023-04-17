@@ -71,7 +71,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.EnumMap;
 import java.util.List;
@@ -89,7 +88,6 @@ import java.util.stream.Stream;
 public class PluginMessageHandler implements PluginMessageListener {
 
     private static final Gson GSON = new Gson();
-    private static final byte[] EMPTY_DATA_ARRAY = new byte[0];
 
     private static <T> Gson gsonOfInstance(T instance) {
         return GSON.newBuilder().registerTypeAdapter(instance.getClass(), (InstanceCreator<T>) type -> instance).create();
@@ -299,7 +297,7 @@ public class PluginMessageHandler implements PluginMessageListener {
                                     }
                                 }
                                 if (instance.getCompletedGames().size() > 0) {
-                                    instance.getCompletedGames().indexSort(Comparator.comparing((CompletedLotterySixGameIndex gameIndex) -> gameIndex.getDatetime()).reversed());
+                                    instance.getCompletedGames().indexSort(ILotterySixGame.COMPARATOR.reversed());
                                 }
                                 instance.requestSave(false);
                             }

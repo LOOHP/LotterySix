@@ -59,6 +59,7 @@ public class CompletedLotterySixGameIndex implements ILotterySixGame {
         return specialName != null && !specialName.isEmpty();
     }
 
+    @Override
     public long getDatetime() {
         return datetime;
     }

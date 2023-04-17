@@ -128,6 +128,7 @@ public class CompletedLotterySixGame implements ILotterySixGame {
         return new CompletedLotterySixGameIndex(gameId, datetime, gameNumber, drawResult, specialName);
     }
 
+    @Override
     public long getDatetime() {
         return datetime;
     }

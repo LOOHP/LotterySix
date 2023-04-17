@@ -20,16 +20,25 @@
 
 package com.loohp.lotterysix.game.lottery;
 
+import java.util.Comparator;
 import java.util.UUID;
 
-public interface ILotterySixGame extends PersistentGame {
+public interface ILotterySixGame extends PersistentGame, Comparable<ILotterySixGame> {
+
+    Comparator<ILotterySixGame> COMPARATOR = Comparator.comparing(ILotterySixGame::getDatetime).thenComparing(ILotterySixGame::getGameNumber).thenComparing(ILotterySixGame::getGameId);
 
     UUID getGameId();
 
     GameNumber getGameNumber();
 
+    long getDatetime();
+
     boolean hasSpecialName();
 
     String getSpecialName();
 
+    @Override
+    default int compareTo(ILotterySixGame o) {
+        return COMPARATOR.compare(this, o);
+    }
 }
