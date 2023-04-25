@@ -732,7 +732,7 @@ public class LotteryPluginGUI implements Listener {
                         } else {
                             lotteryPlayer.updateStats(PlayerStatsKey.ACCOUNT_BALANCE, long.class, i -> i + amountNeeded);
                         }
-                        player.sendMessage(instance.messageDepositSuccess.replace("{Amount}", StringUtils.formatComma(amount)));
+                        player.sendMessage(instance.messageDepositSuccess.replace("{Amount}", StringUtils.formatComma(amountNeeded)));
                         new ScheduledRunnable() {
                             private int counter = 0;
                             @Override
