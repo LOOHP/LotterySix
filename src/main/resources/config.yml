@@ -368,6 +368,10 @@ GUI:
       - "&bTotal Winnings: &a$%lotterysix_stats_total_winnings%"
       - "&bGame Account Balance: &a$%vault_eco_balance_commas%"
       - "&bBetting Account Balance: &a$%lotterysix_stats_account_balance%"
+    FlipLeftRightClick:
+      - "&aInvert Left & Right Click Actions"
+      - "&7Applies only to this current menu for accessibility"
+      - "&7Current Status: {Status}"
     ToggleHideTitles:
       - "&bToggle Hide Titles"
       - "&7Whether to hide title messages during the LotterySix draw"

@@ -68,6 +68,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.inventory.InventoryInteractEvent;
@@ -96,8 +97,10 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.LongSupplier;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class LotteryPluginGUI implements Listener {
@@ -408,7 +411,7 @@ public class LotteryPluginGUI implements Listener {
                 "         ",
                 "bzacadaea",
                 "$zaaaaaaa",
-                "azaafagaa",
+                "yzaafagaa",
                 "         "
         };
         InventoryGui gui = new InventoryGui(plugin, LotteryUtils.formatPlaceholders(player, instance.guiBettingAccountTitle, instance), guiSetup);
@@ -416,6 +419,20 @@ public class LotteryPluginGUI implements Listener {
         gui.addElement(new StaticGuiElement('a', new ItemStack(Material.AIR), ChatColor.LIGHT_PURPLE.toString()));
         gui.addElement(new StaticGuiElement('z', XMaterial.LIGHT_BLUE_STAINED_GLASS_PANE.parseItem(), ChatColor.LIGHT_PURPLE.toString()));
         gui.addElement(new StaticGuiElement('b', SkinUtils.getSkull(player.getUniqueId()), LotteryUtils.formatPlaceholders(player, instance.guiBettingAccountProfile, instance)));
+
+        AtomicBoolean flipLeftRightClick = new AtomicBoolean(false);
+        Predicate<ClickType> isLeftClick = clickType -> flipLeftRightClick.get() ? clickType.isRightClick() : clickType.isLeftClick();
+        Predicate<ClickType> isRightClick = clickType -> flipLeftRightClick.get() ? clickType.isLeftClick() : clickType.isRightClick();
+
+        gui.addElement(new DynamicGuiElement('y', () -> {
+            boolean value = flipLeftRightClick.get();
+            String display = value ? instance.trueFormat : instance.falseFormat;
+            return new StaticGuiElement('c', value ? setEnchanted(XMaterial.ARROW.parseItem()) : XMaterial.ARROW.parseItem(), click -> {
+                flipLeftRightClick.set(!value);
+                gui.draw();
+                return true;
+            }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiBettingAccountFlipLeftRightClick, instance)).map(e -> e.replace("{Status}", display)).toArray(String[]::new));
+        }));
 
         LotteryPlayer lotteryPlayer = instance.getLotteryPlayerManager().getLotteryPlayer(player.getUniqueId());
         gui.addElement(new DynamicGuiElement('c', () -> {
@@ -496,7 +513,7 @@ public class LotteryPluginGUI implements Listener {
             leftMeta.setDisplayName(Math.max(0, realValue) + "");
             left.setItemMeta(leftMeta);
             return new StaticGuiElement('g', active ? setEnchanted(XMaterial.OAK_FENCE_GATE.parseItem()) : XMaterial.OAK_FENCE_GATE.parseItem(), click -> {
-                if (click.getType().isLeftClick()) {
+                if (isLeftClick.test(click.getType())) {
                     Scheduler.runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1, player);
                     Scheduler.runTaskLater(plugin, () -> new AnvilGUI.Builder().plugin(plugin)
                             .title(LotteryUtils.formatPlaceholders(player, instance.guiBettingAccountSetBetLimitPerRoundTitle, instance))
@@ -520,7 +537,7 @@ public class LotteryPluginGUI implements Listener {
                                 return Collections.singletonList(AnvilGUI.ResponseAction.close());
                             })
                             .open(player), 2, player);
-                } else if (click.getType().isRightClick()) {
+                } else if (isRightClick.test(click.getType())) {
                     if (instance.backendBungeecordMode) {
                         LotterySixPlugin.getPluginMessageHandler().resetPlayerPreference(lotteryPlayer, PlayerPreferenceKey.BET_LIMIT_PER_ROUND);
                     } else {
@@ -535,14 +552,14 @@ public class LotteryPluginGUI implements Listener {
             boolean active = System.currentTimeMillis() < realValue;
             String value = active ? instance.dateFormat.format(realValue) : "-";
             return new StaticGuiElement('f', active ? setEnchanted(XMaterial.ANVIL.parseItem()) : XMaterial.ANVIL.parseItem(), click -> {
-                if (click.getType().isLeftClick()) {
+                if (isLeftClick.test(click.getType())) {
                     long newValue = Math.max(System.currentTimeMillis(), realValue) + 604800000;
                     if (instance.backendBungeecordMode) {
                         LotterySixPlugin.getPluginMessageHandler().updatePlayerPreference(lotteryPlayer, PlayerPreferenceKey.SUSPEND_ACCOUNT_UNTIL, newValue);
                     } else {
                         lotteryPlayer.setPreference(PlayerPreferenceKey.SUSPEND_ACCOUNT_UNTIL, newValue);
                     }
-                } else if (click.getType().isRightClick()) {
+                } else if (isRightClick.test(click.getType())) {
                     if (instance.backendBungeecordMode) {
                         LotterySixPlugin.getPluginMessageHandler().resetPlayerPreference(lotteryPlayer, PlayerPreferenceKey.SUSPEND_ACCOUNT_UNTIL);
                     } else {

@@ -231,6 +231,7 @@ public class LotterySix implements AutoCloseable {
     public String[] guiNumberStatisticsNote;
     public String guiBettingAccountTitle;
     public String[] guiBettingAccountProfile;
+    public String[] guiBettingAccountFlipLeftRightClick;
     public String[] guiBettingAccountToggleHideTitles;
     public String[] guiBettingAccountToggleHidePeriodicAnnouncements;
     public String[] guiBettingAccountToggleReopenMenu;
@@ -940,6 +941,7 @@ public class LotterySix implements AutoCloseable {
         guiNumberStatisticsNote = config.getConfiguration().getStringList("GUI.NumberStatistics.Note").toArray(new String[0]);
         guiBettingAccountTitle = config.getConfiguration().getString("GUI.BettingAccount.Title");
         guiBettingAccountProfile = config.getConfiguration().getStringList("GUI.BettingAccount.Profile").toArray(new String[0]);
+        guiBettingAccountFlipLeftRightClick = config.getConfiguration().getStringList("GUI.BettingAccount.FlipLeftRightClick").toArray(new String[0]);
         guiBettingAccountToggleHideTitles = config.getConfiguration().getStringList("GUI.BettingAccount.ToggleHideTitles").toArray(new String[0]);
         guiBettingAccountToggleHidePeriodicAnnouncements = config.getConfiguration().getStringList("GUI.BettingAccount.ToggleHidePeriodicAnnouncements").toArray(new String[0]);
         guiBettingAccountToggleReopenMenu = config.getConfiguration().getStringList("GUI.BettingAccount.ToggleReopenMenu").toArray(new String[0]);
