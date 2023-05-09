@@ -44,6 +44,7 @@ import github.scarsz.discordsrv.dependencies.jda.api.interactions.components.sel
 import net.md_5.bungee.api.ChatColor;
 
 import java.awt.Color;
+import java.time.Year;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -57,6 +58,8 @@ import java.util.stream.Collectors;
 public class PastDrawInteraction extends DiscordInteraction {
 
     public static final String INTERACTION_LABEL = "ls_pastdraw";
+    public static final String SELECTION_YEAR_MENU_LABEL = "ls_pastdraw_year_menu_";
+    public static final String SELECTION_YEAR_OPTION_LABEL = "ls_pastdraw_year_menu_option_";
     public static final String SELECTION_MENU_LABEL = "ls_pastdraw_menu_";
     public static final String SELECTION_OPTION_LABEL = "ls_pastdraw_menu_option_";
     public static final String SELECTION_MENU_NEWER_LABEL = "ls_pastdraw_menu_newer";
@@ -79,7 +82,80 @@ public class PastDrawInteraction extends DiscordInteraction {
     @Override
     public void handle(GenericComponentInteractionCreateEvent event) {
         String componentId = event.getComponent().getId();
-        if (!componentId.equals(SELECTION_MENU_NEWER_LABEL) && !componentId.equals(SELECTION_MENU_OLDER_LABEL)) {
+        if (componentId.equals(SELECTION_MENU_NEWER_LABEL) || componentId.equals(SELECTION_MENU_OLDER_LABEL)) {
+            GameNumber gameNumber = GameNumber.fromString(event.getMessage().getActionRows().get(1).getComponents().get(0).getId().substring(SELECTION_MENU_LABEL.length()));
+            int currentPosition = instance.getCompletedGames().indexOf(instance.getCompletedGames().get(gameNumber));
+            if (componentId.equals(SELECTION_MENU_OLDER_LABEL)) {
+                currentPosition += 25;
+            } else {
+                currentPosition -= 25;
+            }
+            int startPosition = Math.max(0, currentPosition - currentPosition % 25);
+            List<CompletedLotterySixGameIndex> list = new ArrayList<>();
+            for (int i = startPosition; i < startPosition + 25 && i < instance.getCompletedGames().size(); i++) {
+                CompletedLotterySixGameIndex gameIndex = instance.getCompletedGames().getIndex(i);
+                list.add(gameIndex);
+            }
+
+            SelectionMenu.Builder yearBuilder = SelectionMenu.create(SELECTION_YEAR_MENU_LABEL + list.get(0).getGameNumber().getYear()).setMinValues(1).setMaxValues(1);
+            list.stream().map(each -> each.getGameNumber().getYear()).distinct().forEach(year -> yearBuilder.addOption(year.toString(), SELECTION_YEAR_OPTION_LABEL + year));
+            yearBuilder.setDefaultValues(Collections.singleton(SELECTION_YEAR_OPTION_LABEL + list.get(0).getGameNumber().getYear().toString()));
+
+            SelectionMenu.Builder menuBuilder = SelectionMenu.create(SELECTION_MENU_LABEL + list.get(0).getGameNumber()).setMinValues(1).setMaxValues(1);
+            for (CompletedLotterySixGameIndex index : list) {
+                String gn = index.getGameNumber().toString();
+                menuBuilder.addOption(ChatColor.stripColor(LotteryUtils.formatPlaceholders(null, "{GameNumber}", instance, index)), SELECTION_OPTION_LABEL + gn);
+            }
+
+            Button newer = Button.success(SELECTION_MENU_NEWER_LABEL, Emoji.fromUnicode("\u2B05\uFE0F"));
+            if (startPosition == 0) {
+                newer = newer.asDisabled();
+            }
+            Button older = Button.danger(SELECTION_MENU_OLDER_LABEL, Emoji.fromUnicode("\u27A1\uFE0F"));
+            if (startPosition + 25 >= instance.getCompletedGames().size()) {
+                older = older.asDisabled();
+            }
+
+            event.getHook().editOriginalComponents().setActionRows(ActionRow.of(yearBuilder.build()), ActionRow.of(menuBuilder.build()), ActionRow.of(newer, older), ActionRow.of(getMainMenuButton())).queue();
+        } else if (componentId.startsWith(SELECTION_YEAR_MENU_LABEL)) {
+            Year selectedYear = Year.of(Integer.parseInt(((SelectionMenuEvent) event).getValues().get(0).substring(SELECTION_YEAR_OPTION_LABEL.length())));
+
+            int currentPosition = 0;
+            for (int i = 0; i < instance.getCompletedGames().size(); i++) {
+                CompletedLotterySixGameIndex gameIndex = instance.getCompletedGames().getIndex(i);
+                if (gameIndex.getGameNumber().getYear().equals(selectedYear)) {
+                    currentPosition = i;
+                    break;
+                }
+            }
+            int startPosition = Math.max(0, currentPosition - currentPosition % 25);
+            List<CompletedLotterySixGameIndex> list = new ArrayList<>();
+            for (int i = startPosition; i < startPosition + 25 && i < instance.getCompletedGames().size(); i++) {
+                CompletedLotterySixGameIndex gameIndex = instance.getCompletedGames().getIndex(i);
+                list.add(gameIndex);
+            }
+
+            SelectionMenu.Builder yearBuilder = SelectionMenu.create(SELECTION_YEAR_MENU_LABEL + list.get(0).getGameNumber().getYear()).setMinValues(1).setMaxValues(1);
+            list.stream().map(each -> each.getGameNumber().getYear()).distinct().forEach(year -> yearBuilder.addOption(year.toString(), SELECTION_YEAR_OPTION_LABEL + year));
+            yearBuilder.setDefaultValues(Collections.singleton(SELECTION_YEAR_OPTION_LABEL + selectedYear.toString()));
+
+            SelectionMenu.Builder menuBuilder = SelectionMenu.create(SELECTION_MENU_LABEL + list.get(0).getGameNumber()).setMinValues(1).setMaxValues(1);
+            for (CompletedLotterySixGameIndex index : list) {
+                String gn = index.getGameNumber().toString();
+                menuBuilder.addOption(ChatColor.stripColor(LotteryUtils.formatPlaceholders(null, "{GameNumber}", instance, index)), SELECTION_OPTION_LABEL + gn);
+            }
+
+            Button newer = Button.success(SELECTION_MENU_NEWER_LABEL, Emoji.fromUnicode("\u2B05\uFE0F"));
+            if (startPosition == 0) {
+                newer = newer.asDisabled();
+            }
+            Button older = Button.danger(SELECTION_MENU_OLDER_LABEL, Emoji.fromUnicode("\u27A1\uFE0F"));
+            if (startPosition + 25 >= instance.getCompletedGames().size()) {
+                older = older.asDisabled();
+            }
+
+            event.getHook().editOriginalComponents().setActionRows(ActionRow.of(yearBuilder.build()), ActionRow.of(menuBuilder.build()), ActionRow.of(newer, older), ActionRow.of(getMainMenuButton())).queue();
+        } else {
             String discordUserId = event.getUser().getId();
             UUID uuid = DiscordSRV.getPlugin().getAccountLinkManager().getUuid(discordUserId);
             String gameNumber;
@@ -222,6 +298,10 @@ public class PastDrawInteraction extends DiscordInteraction {
                         list.add(gameIndex);
                     }
 
+                    SelectionMenu.Builder yearBuilder = SelectionMenu.create(SELECTION_YEAR_MENU_LABEL + list.get(0).getGameNumber().getYear()).setMinValues(1).setMaxValues(1);
+                    list.stream().map(each -> each.getGameNumber().getYear()).distinct().forEach(year -> yearBuilder.addOption(year.toString(), SELECTION_YEAR_OPTION_LABEL + year));
+                    yearBuilder.setDefaultValues(Collections.singleton(SELECTION_YEAR_OPTION_LABEL + game.getGameNumber().getYear().toString()));
+
                     SelectionMenu.Builder menuBuilder = SelectionMenu.create(SELECTION_MENU_LABEL + list.get(0).getGameNumber()).setMinValues(1).setMaxValues(1);
                     for (CompletedLotterySixGameIndex index : list) {
                         String gn = index.getGameNumber().toString();
@@ -238,42 +318,10 @@ public class PastDrawInteraction extends DiscordInteraction {
                         older = older.asDisabled();
                     }
 
-                    event.getHook().editOriginalEmbeds(builder.build()).setActionRows(ActionRow.of(menuBuilder.build()), ActionRow.of(newer, older), ActionRow.of(getMainMenuButton())).retainFiles(Collections.emptyList()).queue();
+                    event.getHook().editOriginalEmbeds(builder.build()).setActionRows(ActionRow.of(yearBuilder.build()), ActionRow.of(menuBuilder.build()), ActionRow.of(newer, older), ActionRow.of(getMainMenuButton())).retainFiles(Collections.emptyList()).queue();
                 });
             }
-        } else {
-            GameNumber gameNumber = GameNumber.fromString(event.getMessage().getActionRows().get(0).getComponents().get(0).getId().substring(SELECTION_MENU_LABEL.length()));
-            int currentPosition = instance.getCompletedGames().indexOf(instance.getCompletedGames().get(gameNumber));
-            if (componentId.equals(SELECTION_MENU_OLDER_LABEL)) {
-                currentPosition += 25;
-            } else {
-                currentPosition -= 25;
-            }
-            int startPosition = Math.max(0, currentPosition - currentPosition % 25);
-            List<CompletedLotterySixGameIndex> list = new ArrayList<>();
-            for (int i = startPosition; i < startPosition + 25 && i < instance.getCompletedGames().size(); i++) {
-                CompletedLotterySixGameIndex gameIndex = instance.getCompletedGames().getIndex(i);
-                list.add(gameIndex);
-            }
-
-            SelectionMenu.Builder menuBuilder = SelectionMenu.create(SELECTION_MENU_LABEL + list.get(0).getGameNumber()).setMinValues(1).setMaxValues(1);
-            for (CompletedLotterySixGameIndex index : list) {
-                String gn = index.getGameNumber().toString();
-                menuBuilder.addOption(ChatColor.stripColor(LotteryUtils.formatPlaceholders(null, "{GameNumber}", instance, index)), SELECTION_OPTION_LABEL + gn);
-            }
-
-            Button newer = Button.success(SELECTION_MENU_NEWER_LABEL, Emoji.fromUnicode("\u2B05\uFE0F"));
-            if (startPosition == 0) {
-                newer = newer.asDisabled();
-            }
-            Button older = Button.danger(SELECTION_MENU_OLDER_LABEL, Emoji.fromUnicode("\u27A1\uFE0F"));
-            if (startPosition + 25 >= instance.getCompletedGames().size()) {
-                older = older.asDisabled();
-            }
-
-            event.getHook().editOriginalComponents().setActionRows(ActionRow.of(menuBuilder.build()), ActionRow.of(newer, older), ActionRow.of(getMainMenuButton())).queue();
         }
-        return;
     }
 
 }
