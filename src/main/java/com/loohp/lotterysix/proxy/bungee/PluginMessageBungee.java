@@ -20,19 +20,24 @@
 
 package com.loohp.lotterysix.proxy.bungee;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.google.gson.Gson;
 import com.loohp.lotterysix.game.LotterySix;
 import com.loohp.lotterysix.game.lottery.CompletedLotterySixGame;
+import com.loohp.lotterysix.game.lottery.CompletedLotterySixGameIndex;
 import com.loohp.lotterysix.game.lottery.ILotterySixGame;
 import com.loohp.lotterysix.game.lottery.PlayableLotterySixGame;
 import com.loohp.lotterysix.game.objects.AddBetResult;
 import com.loohp.lotterysix.game.objects.BetUnitType;
 import com.loohp.lotterysix.game.objects.BossBarInfo;
-import com.loohp.lotterysix.game.objects.PlayerStatsKey;
-import com.loohp.lotterysix.game.player.LotteryPlayer;
 import com.loohp.lotterysix.game.objects.LotterySixAction;
+import com.loohp.lotterysix.game.objects.NumberStatistics;
+import com.loohp.lotterysix.game.objects.PlayerBets;
 import com.loohp.lotterysix.game.objects.PlayerPreferenceKey;
+import com.loohp.lotterysix.game.objects.PlayerStatsKey;
 import com.loohp.lotterysix.game.objects.betnumbers.BetNumbers;
+import com.loohp.lotterysix.game.player.LotteryPlayer;
 import com.loohp.lotterysix.utils.ArrayUtils;
 import com.loohp.lotterysix.utils.DataTypeIO;
 import com.loohp.lotterysix.utils.SyncUtils;
@@ -78,14 +83,19 @@ public class PluginMessageBungee implements Listener {
     private final Executor executor;
 
     private final Map<Integer, CompletableFuture<Boolean>> takeMoneyRequests;
+    private final Map<Integer, CompletableFuture<Boolean>> inventoryOpenedCompletion;
 
     public PluginMessageBungee(LotterySix instance) {
         this.instance = instance;
         this.incomingMessages = new ConcurrentHashMap<>();
         this.random = new Random();
         this.sequenceCounter = new ConcurrentHashMap<>();
-        this.takeMoneyRequests = new ConcurrentHashMap<>();
         this.lastReceivedSequence = new AtomicInteger();
+
+        Cache<Integer, CompletableFuture<Boolean>> takeMoneyRequestsCache = CacheBuilder.newBuilder().weakValues().build();
+        this.takeMoneyRequests = takeMoneyRequestsCache.asMap();
+        Cache<Integer, CompletableFuture<Boolean>> inventoryOpenedCompletionCache = CacheBuilder.newBuilder().weakValues().build();
+        this.inventoryOpenedCompletion = inventoryOpenedCompletionCache.asMap();
 
         this.executor = Executors.newSingleThreadExecutor();
     }
@@ -156,7 +166,7 @@ public class PluginMessageBungee implements Listener {
                             break;
                         }
                         case 0x02: { //Respond check past games
-                            int size = in.read();
+                            int size = in.readInt();
                             Set<UUID> gameIds = new HashSet<>(size);
                             for (int i = 0; i < size; i++) {
                                 gameIds.add(DataTypeIO.readUUID(in));
@@ -188,6 +198,31 @@ public class PluginMessageBungee implements Listener {
                             LotteryPlayer lotteryPlayer = instance.getLotteryPlayerManager().getLotteryPlayer(player);
                             lotteryPlayer.setStats(key, value);
                             syncPlayerData(lotteryPlayer);
+                            break;
+                        }
+                        case 0x06: { //Request Current Game Bets
+                            UUID gameId = DataTypeIO.readUUID(in);
+                            PlayableLotterySixGame game = instance.getCurrentGame();
+                            if (game != null && game.getGameId().equals(gameId)) {
+                                int size = in.readInt();
+                                List<PlayerBets> bets = new ArrayList<>(size);
+                                for (int i = 0; i < size; i++) {
+                                    UUID betId = DataTypeIO.readUUID(in);
+                                    PlayerBets bet = game.getBet(betId);
+                                    if (bet != null) {
+                                        bets.add(bet);
+                                    }
+                                }
+                                respondCurrentGameBets(senderServer.getInfo(), game.getGameId(), bets);
+                            }
+                            break;
+                        }
+                        case 0x07: { //Inventory Opened Response
+                            int interactionId = in.readInt();
+                            CompletableFuture<Boolean> future = inventoryOpenedCompletion.remove(interactionId);
+                            if (future != null) {
+                                future.complete(true);
+                            }
                             break;
                         }
                     }
@@ -235,7 +270,30 @@ public class PluginMessageBungee implements Listener {
                 out.writeBoolean(false);
             } else {
                 out.writeBoolean(true);
-                DataTypeIO.writeString(out, GSON.toJson(game), StandardCharsets.UTF_8);
+
+                DataTypeIO.writeUUID(out, game.getGameId());
+                out.writeLong(game.getDatetime());
+                DataTypeIO.writeGameNumber(out, game.getGameNumber());
+                if (game.hasSpecialName()) {
+                    out.writeBoolean(true);
+                    DataTypeIO.writeString(out, game.getSpecialName(), StandardCharsets.UTF_8);
+                } else {
+                    out.writeBoolean(false);
+                }
+                out.writeInt(game.getNumberStatistics().size());
+                for (Map.Entry<Integer, NumberStatistics> entry : game.getNumberStatistics().entrySet()) {
+                    out.writeByte(entry.getKey());
+                    DataTypeIO.writeNumberStatistics(out, entry.getValue());
+                }
+                out.writeLong(game.getCarryOverFund());
+                out.writeLong(game.getLowestTopPlacesPrize());
+                out.writeBoolean(game.isValid());
+
+                Set<UUID> betIds = game.getBetIds();
+                out.writeInt(betIds.size());
+                for (UUID betId : betIds) {
+                    DataTypeIO.writeUUID(out, betId);
+                }
             }
             for (ServerInfo info : ProxyServer.getInstance().getServers().values()) {
                 sendData(info, 0x00, outputStream.toByteArray());
@@ -254,7 +312,30 @@ public class PluginMessageBungee implements Listener {
                 out.writeBoolean(false);
             } else {
                 out.writeBoolean(true);
-                DataTypeIO.writeString(out, GSON.toJson(game), StandardCharsets.UTF_8);
+
+                DataTypeIO.writeUUID(out, game.getGameId());
+                out.writeLong(game.getDatetime());
+                DataTypeIO.writeGameNumber(out, game.getGameNumber());
+                if (game.hasSpecialName()) {
+                    out.writeBoolean(true);
+                    DataTypeIO.writeString(out, game.getSpecialName(), StandardCharsets.UTF_8);
+                } else {
+                    out.writeBoolean(false);
+                }
+                out.writeInt(game.getNumberStatistics().size());
+                for (Map.Entry<Integer, NumberStatistics> entry : game.getNumberStatistics().entrySet()) {
+                    out.writeByte(entry.getKey());
+                    DataTypeIO.writeNumberStatistics(out, entry.getValue());
+                }
+                out.writeLong(game.getCarryOverFund());
+                out.writeLong(game.getLowestTopPlacesPrize());
+                out.writeBoolean(game.isValid());
+
+                Set<UUID> betIds = game.getBetIds();
+                out.writeInt(betIds.size());
+                for (UUID betId : betIds) {
+                    DataTypeIO.writeUUID(out, betId);
+                }
             }
             sendData(target, 0x00, outputStream.toByteArray());
         } catch (IOException e) {
@@ -415,18 +496,24 @@ public class PluginMessageBungee implements Listener {
         try {
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             DataOutputStream out = new DataOutputStream(outputStream);
-            List<CompletedLotterySixGame> games = new ArrayList<>();
+            List<CompletedLotterySixGameIndex> games = new ArrayList<>();
+            Set<UUID> notExist = new HashSet<>(gameIds);
             synchronized (instance.getCompletedGames().getIterateLock()) {
-                for (CompletedLotterySixGame game : instance.getCompletedGames()) {
-                    if (!gameIds.contains(game.getGameId())) {
-                        games.add(game);
+                for (CompletedLotterySixGameIndex gameIndex : instance.getCompletedGames().indexIterable()) {
+                    notExist.remove(gameIndex.getGameId());
+                    if (!gameIds.contains(gameIndex.getGameId())) {
+                        games.add(gameIndex);
                     }
                 }
             }
             out.writeInt(games.size());
-            for (CompletedLotterySixGame game : games) {
-                DataTypeIO.writeUUID(out, game.getGameId());
-                DataTypeIO.writeString(out, GSON.toJson(game), StandardCharsets.UTF_8);
+            for (CompletedLotterySixGameIndex gameIndex : games) {
+                DataTypeIO.writeUUID(out, gameIndex.getGameId());
+                DataTypeIO.writeString(out, GSON.toJson(instance.getCompletedGames().get(gameIndex)), StandardCharsets.UTF_8);
+            }
+            out.writeInt(notExist.size());
+            for (UUID id : notExist) {
+                DataTypeIO.writeUUID(out, id);
             }
             sendData(target, 0x0C, outputStream.toByteArray());
         } catch (IOException e) {
@@ -434,15 +521,19 @@ public class PluginMessageBungee implements Listener {
         }
     }
 
-    public void openPlayMenu(ProxiedPlayer player) {
-        openPlayMenu(player, null);
+    public CompletableFuture<Boolean> openPlayMenu(ProxiedPlayer player) {
+        return openPlayMenu(player, null);
     }
 
-    public void openPlayMenu(ProxiedPlayer player, String input) {
+    public CompletableFuture<Boolean> openPlayMenu(ProxiedPlayer player, String input) {
+        int interactionId = random.nextInt();
+        CompletableFuture<Boolean> future = new CompletableFuture<>();
+        inventoryOpenedCompletion.put(interactionId, future);
         try {
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             DataOutputStream out = new DataOutputStream(outputStream);
             DataTypeIO.writeUUID(out, player.getUniqueId());
+            out.writeInt(interactionId);
             if (input == null) {
                 out.writeBoolean(false);
             } else {
@@ -453,6 +544,7 @@ public class PluginMessageBungee implements Listener {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        return future;
     }
 
     public void addBetResult(ProxiedPlayer player, AddBetResult result, long price) {
@@ -515,6 +607,21 @@ public class PluginMessageBungee implements Listener {
             for (ServerInfo info : ProxyServer.getInstance().getServers().values()) {
                 sendData(info, 0x11, outputStream.toByteArray());
             }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void respondCurrentGameBets(ServerInfo target, UUID gameId, List<PlayerBets> bets) {
+        try {
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            DataOutputStream out = new DataOutputStream(outputStream);
+            DataTypeIO.writeUUID(out, gameId);
+            out.writeInt(bets.size());
+            for (PlayerBets bet : bets) {
+                DataTypeIO.writeString(out, GSON.toJson(bet), StandardCharsets.UTF_8);
+            }
+            sendData(target, 0x12, outputStream.toByteArray());
         } catch (IOException e) {
             e.printStackTrace();
         }

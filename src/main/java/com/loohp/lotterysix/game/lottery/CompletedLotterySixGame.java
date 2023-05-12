@@ -22,17 +22,16 @@ package com.loohp.lotterysix.game.lottery;
 
 import com.loohp.lotterysix.game.LotterySix;
 import com.loohp.lotterysix.game.objects.BetUnitType;
-import com.loohp.lotterysix.game.player.LotteryPlayer;
 import com.loohp.lotterysix.game.objects.NumberStatistics;
 import com.loohp.lotterysix.game.objects.PlayerBets;
 import com.loohp.lotterysix.game.objects.PlayerStatsKey;
 import com.loohp.lotterysix.game.objects.PlayerWinnings;
 import com.loohp.lotterysix.game.objects.PrizeTier;
 import com.loohp.lotterysix.game.objects.WinningNumbers;
+import com.loohp.lotterysix.game.player.LotteryPlayer;
 import com.loohp.lotterysix.game.player.LotteryPlayerManager;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -51,6 +50,7 @@ public class CompletedLotterySixGame implements ILotterySixGame {
     private transient Map<PrizeTier, List<PlayerWinnings>> winnersByTierCache;
     private transient Map<PrizeTier, Double> winnerCountForTierCache;
     private transient Map<UUID, Map<PrizeTier, List<PlayerWinnings>>> winnersByBetCache;
+    private transient List<PlayerBets> orderedBetCache;
 
     private final UUID gameId;
     private final long datetime;
@@ -106,6 +106,12 @@ public class CompletedLotterySixGame implements ILotterySixGame {
             for (PlayerWinnings winnings : winners) {
                 winnersByBetCache.computeIfAbsent(winnings.getWinningBetId(), k -> new HashMap<>()).computeIfAbsent(winnings.getTier(), k -> new ArrayList<>()).add(winnings);
             }
+        }
+    }
+
+    private synchronized void cacheOrderedBets() {
+        if (orderedBetCache == null) {
+            orderedBetCache = bets.values().stream().sorted().collect(Collectors.toList());
         }
     }
 
@@ -171,8 +177,9 @@ public class CompletedLotterySixGame implements ILotterySixGame {
         return Collections.unmodifiableList(winnersByTierCache.getOrDefault(prizeTier, Collections.emptyList()));
     }
 
-    public Collection<PlayerBets> getBets() {
-        return bets.values();
+    public List<PlayerBets> getBets() {
+        cacheOrderedBets();
+        return orderedBetCache;
     }
 
     public PlayerBets getBet(UUID betId) {
@@ -196,7 +203,7 @@ public class CompletedLotterySixGame implements ILotterySixGame {
     }
 
     public List<PlayerBets> getPlayerBets(UUID player) {
-        return Collections.unmodifiableList(bets.values().stream().filter(each -> each.getPlayer().equals(player)).collect(Collectors.toList()));
+        return Collections.unmodifiableList(bets.values().stream().filter(each -> each.getPlayer().equals(player)).sorted().collect(Collectors.toList()));
     }
 
     public Map<PrizeTier, List<PlayerWinnings>> getPlayerWinningsByBet(PlayerBets bet) {

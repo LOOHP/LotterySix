@@ -131,6 +131,7 @@ public class LotterySix implements AutoCloseable {
     public String messageInvalidNumber;
     public String messageInvalidBetNumbers;
     public String messagePlayerBalance;
+    public String messageLotterySixNotOnCurrentBackend;
 
     public String explanationMessage;
     public String explanationURL;
@@ -821,6 +822,7 @@ public class LotterySix implements AutoCloseable {
         messageInvalidNumber = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Messages.InvalidNumber"));
         messageInvalidBetNumbers = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Messages.InvalidBetNumbers"));
         messagePlayerBalance = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Messages.PlayerBalance"));
+        messageLotterySixNotOnCurrentBackend = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Messages.LotterySixNotOnCurrentBackend"));
 
         explanationMessage = ChatColorUtils.translateAlternateColorCodes('&', config.getConfiguration().getString("Explanation.Message"));
         explanationURL = config.getConfiguration().getString("Explanation.URL");

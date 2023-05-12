@@ -31,11 +31,13 @@ import com.loohp.lotterysix.events.PlayerBetEvent;
 import com.loohp.lotterysix.game.LotterySix;
 import com.loohp.lotterysix.game.lottery.CompletedLotterySixGame;
 import com.loohp.lotterysix.game.lottery.CompletedLotterySixGameIndex;
+import com.loohp.lotterysix.game.lottery.GameNumber;
 import com.loohp.lotterysix.game.lottery.ILotterySixGame;
 import com.loohp.lotterysix.game.lottery.PlayableLotterySixGame;
 import com.loohp.lotterysix.game.objects.AddBetResult;
 import com.loohp.lotterysix.game.objects.BetUnitType;
 import com.loohp.lotterysix.game.objects.LotterySixAction;
+import com.loohp.lotterysix.game.objects.NumberStatistics;
 import com.loohp.lotterysix.game.objects.Pair;
 import com.loohp.lotterysix.game.objects.PlayerBets;
 import com.loohp.lotterysix.game.objects.PlayerPreferenceKey;
@@ -71,12 +73,17 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
@@ -146,13 +153,51 @@ public class PluginMessageHandler implements PluginMessageListener {
                     switch (packetId) {
                         case 0x00: { // Update Current Game Data
                             if (in.readBoolean()) {
-                                if (instance.getCurrentGame() == null) {
-                                    PlayableLotterySixGame game = GSON.fromJson(DataTypeIO.readString(in, StandardCharsets.UTF_8), PlayableLotterySixGame.class);
-                                    instance.setCurrentGame(game);
+                                UUID gameId = DataTypeIO.readUUID(in);
+                                long dateTime = in.readLong();
+                                GameNumber gameNumber = DataTypeIO.readGameNumber(in);
+                                String specialName = in.readBoolean() ? DataTypeIO.readString(in, StandardCharsets.UTF_8) : null;
+                                int mapSize = in.readInt();
+                                Map<Integer, NumberStatistics> numberStatistics = new HashMap<>(mapSize);
+                                for (int i = 0; i < mapSize; i++) {
+                                    numberStatistics.put((int) in.readByte(), DataTypeIO.readNumberStatistics(in));
+                                }
+                                long carryOverFund = in.readLong();
+                                long lowestTopPlacesPrize = in.readLong();
+                                boolean isValid = in.readBoolean();
+
+                                int listSize = in.readInt();
+                                Set<UUID> betIds = new HashSet<>(listSize);
+                                for (int i = 0; i < listSize; i++) {
+                                    betIds.add(DataTypeIO.readUUID(in));
+                                }
+
+                                PlayableLotterySixGame currentGame = instance.getCurrentGame();
+                                if (currentGame == null || !currentGame.getGameId().equals(gameId) || (isValid && !currentGame.isValid())) {
+                                    currentGame = PlayableLotterySixGame.createPresetGame(instance, gameId, gameNumber, dateTime, specialName, numberStatistics, carryOverFund, lowestTopPlacesPrize, Collections.emptyList());
+                                    if (!isValid) {
+                                        currentGame.markInvalid();
+                                    }
+                                    instance.setCurrentGame(currentGame);
                                 } else {
-                                    gsonOfInstance(instance.getCurrentGame()).fromJson(DataTypeIO.readString(in, StandardCharsets.UTF_8), PlayableLotterySixGame.class);
+                                    currentGame.setDatetime(dateTime, gameNumber);
+                                    currentGame.setSpecialName(specialName);
+                                    currentGame.setNumberStatistics(numberStatistics);
+                                    currentGame.setCarryOverFund(carryOverFund);
+                                    currentGame.setLowestTopPlacesPrize(lowestTopPlacesPrize);
+                                    if (!isValid) {
+                                        currentGame.markInvalid();
+                                    }
+                                }
+
+                                betIds.removeAll(currentGame.getBetIds());
+                                if (!betIds.isEmpty()) {
+                                    requestCurrentGameBets(gameId, betIds);
                                 }
                             } else {
+                                if (instance.getCurrentGame() != null) {
+                                    instance.getCurrentGame().markInvalid();
+                                }
                                 instance.setCurrentGame(null);
                             }
                             instance.requestSave(true);
@@ -280,6 +325,7 @@ public class PluginMessageHandler implements PluginMessageListener {
                             break;
                         }
                         case 0x0C: { // Past Games Sync Check Missing
+                            boolean shouldSave = false;
                             int size = in.readInt();
                             if (size > 0) {
                                 for (int i = 0; i < size; i++) {
@@ -297,14 +343,35 @@ public class PluginMessageHandler implements PluginMessageListener {
                                     }
                                 }
                                 if (instance.getCompletedGames().size() > 0) {
-                                    instance.getCompletedGames().indexSort(ILotterySixGame.COMPARATOR.reversed());
+                                    instance.getCompletedGames().indexSort(Comparator.reverseOrder());
                                 }
+                                shouldSave = true;
+                            }
+                            size = in.readInt();
+                            if (size > 0) {
+                                Set<UUID> notExist = new HashSet<>();
+                                for (int i = 0; i < size; i++) {
+                                    notExist.add(DataTypeIO.readUUID(in));
+                                }
+                                synchronized (instance.getCompletedGames().getIterateLock()) {
+                                    Iterator<CompletedLotterySixGameIndex> itr = instance.getCompletedGames().indexIterator();
+                                    while (itr.hasNext()) {
+                                        CompletedLotterySixGameIndex gameIndex = itr.next();
+                                        if (notExist.contains(gameIndex.getGameId())) {
+                                            itr.remove();
+                                        }
+                                    }
+                                }
+                                shouldSave = true;
+                            }
+                            if (shouldSave) {
                                 instance.requestSave(false);
                             }
                             break;
                         }
                         case 0x0D: { // Open Main Menu
                             UUID uuid = DataTypeIO.readUUID(in);
+                            int interactionId = in.readInt();
                             String input = in.readBoolean() ? DataTypeIO.readString(in, StandardCharsets.UTF_8) : null;
                             Scheduler.runTask(LotterySixPlugin.plugin, () -> {
                                 Player player = Bukkit.getPlayer(uuid);
@@ -325,6 +392,7 @@ public class PluginMessageHandler implements PluginMessageListener {
                                         }
                                     }
                                 }
+                                inventoryOpenedResponse(interactionId);
                             }, Bukkit.getPlayer(uuid));
                             break;
                         }
@@ -439,6 +507,20 @@ public class PluginMessageHandler implements PluginMessageListener {
                                     }
                                     LotterySixPlugin.activeBossBar.setTitle(message);
                                 });
+                            }
+                            break;
+                        }
+                        case 0x12: { // Current Game Bet Response
+                            UUID gameId = DataTypeIO.readUUID(in);
+                            PlayableLotterySixGame game = instance.getCurrentGame();
+                            if (game != null && game.getGameId().equals(gameId)) {
+                                int size = in.readInt();
+                                for (int i = 0; i < size; i++) {
+                                    PlayerBets bet = GSON.fromJson(DataTypeIO.readString(in, StandardCharsets.UTF_8), PlayerBets.class);
+                                    if (game.getBet(bet.getBetId()) == null) {
+                                        game.addBet(bet);
+                                    }
+                                }
                             }
                             break;
                         }
@@ -567,6 +649,32 @@ public class PluginMessageHandler implements PluginMessageListener {
             out.writeInt(key.ordinal());
             DataTypeIO.writeString(out, GSON.toJson(value, key.getValueTypeClass()), StandardCharsets.UTF_8);
             sendData(0x05, outputStream.toByteArray());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void requestCurrentGameBets(UUID gameId, Set<UUID> betIds) {
+        try {
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            DataOutputStream out = new DataOutputStream(outputStream);
+            DataTypeIO.writeUUID(out, gameId);
+            out.writeInt(betIds.size());
+            for (UUID betId : betIds) {
+                DataTypeIO.writeUUID(out, betId);
+            }
+            sendData(0x06, outputStream.toByteArray());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void inventoryOpenedResponse(int interactionId) {
+        try {
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            DataOutputStream out = new DataOutputStream(outputStream);
+            out.writeInt(interactionId);
+            sendData(0x07, outputStream.toByteArray());
         } catch (IOException e) {
             e.printStackTrace();
         }

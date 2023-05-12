@@ -25,6 +25,8 @@ Messages:
   InvalidNumber: "&cThat is not a valid number"
   InvalidBetNumbers: "&cInvalid bet numbers"
   PlayerBalance: "&a{Player} now has ${Balance} in their Betting Account."
+  #Message only used if installed on Bungeecord
+  LotterySixNotOnCurrentBackend: "&cLotterySix is not accessible on this server, please try again on a server with LotterySix installed!"
 
 Explanation:
   Message: "&aFor the explanation on how LotterySix works, please visit: &bhttps://github.com/LOOHP/LotterySix/wiki/LotterySix-Draw-&-Prizes-Explanation"

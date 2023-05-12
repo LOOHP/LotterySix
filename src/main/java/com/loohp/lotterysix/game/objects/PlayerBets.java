@@ -22,24 +22,29 @@ package com.loohp.lotterysix.game.objects;
 
 import com.loohp.lotterysix.game.objects.betnumbers.BetNumbers;
 
+import java.util.Comparator;
 import java.util.Objects;
 import java.util.UUID;
 
-public class PlayerBets {
+public class PlayerBets implements Comparable<PlayerBets> {
+
+    public static final Comparator<PlayerBets> COMPARATOR = Comparator.comparing(PlayerBets::getTimePlaced).thenComparing(PlayerBets::getNanoTime).thenComparing(PlayerBets::getBetId);
 
     private final UUID betId;
     private final String name;
     private final UUID player;
     private final long timePlaced;
+    private final long nanoTime;
     private final long bet;
     private final BetUnitType type;
     private final BetNumbers chosenNumbers;
     private final int multipleDraw;
     private final int drawsRemaining;
 
-    private PlayerBets(String name, UUID player, long timePlaced, long bet, BetUnitType type, BetNumbers chosenNumbers, int multipleDraw, int drawsRemaining) {
+    private PlayerBets(String name, UUID player, long timePlaced, long nanoTime, long bet, BetUnitType type, BetNumbers chosenNumbers, int multipleDraw, int drawsRemaining) {
         this.name = name;
         this.timePlaced = timePlaced;
+        this.nanoTime = nanoTime;
         this.multipleDraw = multipleDraw;
         this.drawsRemaining = drawsRemaining;
         this.betId = UUID.randomUUID();
@@ -49,8 +54,8 @@ public class PlayerBets {
         this.chosenNumbers = chosenNumbers;
     }
 
-    public PlayerBets(String name, UUID player, long timePlaced, long bet, BetUnitType type, BetNumbers chosenNumbers, int multipleDraw) {
-        this(name, player, timePlaced, bet, type, chosenNumbers, multipleDraw, multipleDraw);
+    public PlayerBets(String name, UUID player, long timePlaced, long nanoTime, long bet, BetUnitType type, BetNumbers chosenNumbers, int multipleDraw) {
+        this(name, player, timePlaced, nanoTime, bet, type, chosenNumbers, multipleDraw, multipleDraw);
     }
 
     public UUID getBetId() {
@@ -67,6 +72,10 @@ public class PlayerBets {
 
     public long getTimePlaced() {
         return timePlaced;
+    }
+
+    public long getNanoTime() {
+        return nanoTime;
     }
 
     public long getBet() {
@@ -97,7 +106,7 @@ public class PlayerBets {
         if (isMultipleDraw()) {
             int decremented = Math.max(0, drawsRemaining - 1);
             if (decremented < drawsRemaining) {
-                return new PlayerBets(name, player, timePlaced, bet, type, chosenNumbers, multipleDraw, decremented);
+                return new PlayerBets(name, player, timePlaced, nanoTime, bet, type, chosenNumbers, multipleDraw, decremented);
             }
         }
         return this;
@@ -108,11 +117,16 @@ public class PlayerBets {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         PlayerBets that = (PlayerBets) o;
-        return timePlaced == that.timePlaced && bet == that.bet && multipleDraw == that.multipleDraw && drawsRemaining == that.drawsRemaining && Objects.equals(betId, that.betId) && Objects.equals(name, that.name) && Objects.equals(player, that.player) && type == that.type && Objects.equals(chosenNumbers, that.chosenNumbers);
+        return timePlaced == that.timePlaced && nanoTime == that.nanoTime && bet == that.bet && multipleDraw == that.multipleDraw && drawsRemaining == that.drawsRemaining && Objects.equals(betId, that.betId) && Objects.equals(name, that.name) && Objects.equals(player, that.player) && type == that.type && Objects.equals(chosenNumbers, that.chosenNumbers);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(betId, name, player, timePlaced, bet, type, chosenNumbers, multipleDraw, drawsRemaining);
+        return Objects.hash(betId, name, player, timePlaced, nanoTime, bet, type, chosenNumbers, multipleDraw, drawsRemaining);
+    }
+
+    @Override
+    public int compareTo(PlayerBets o) {
+        return COMPARATOR.compare(this, o);
     }
 }

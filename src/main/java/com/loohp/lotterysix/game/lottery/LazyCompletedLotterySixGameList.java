@@ -193,7 +193,9 @@ public class LazyCompletedLotterySixGameList extends AbstractList<CompletedLotte
 
             @Override
             public void remove() {
-                LazyCompletedLotterySixGameList.this.remove(index);
+                if (LazyCompletedLotterySixGameList.this.remove(index) != null) {
+                    index--;
+                }
             }
         };
     }

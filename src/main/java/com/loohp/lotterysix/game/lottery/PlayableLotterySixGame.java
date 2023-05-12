@@ -26,7 +26,6 @@ import com.loohp.lotterysix.game.LotterySix;
 import com.loohp.lotterysix.game.objects.AddBetResult;
 import com.loohp.lotterysix.game.objects.BetUnitType;
 import com.loohp.lotterysix.game.objects.CarryOverMode;
-import com.loohp.lotterysix.game.player.LotteryPlayer;
 import com.loohp.lotterysix.game.objects.NumberStatistics;
 import com.loohp.lotterysix.game.objects.Pair;
 import com.loohp.lotterysix.game.objects.PlayerBets;
@@ -38,6 +37,7 @@ import com.loohp.lotterysix.game.objects.PrizeTier;
 import com.loohp.lotterysix.game.objects.WinningCombination;
 import com.loohp.lotterysix.game.objects.WinningNumbers;
 import com.loohp.lotterysix.game.objects.betnumbers.BetNumbers;
+import com.loohp.lotterysix.game.player.LotteryPlayer;
 import com.loohp.lotterysix.game.player.LotteryPlayerManager;
 import com.loohp.lotterysix.utils.MathUtils;
 import com.loohp.lotterysix.utils.StringUtils;
@@ -53,15 +53,14 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -80,6 +79,10 @@ public class PlayableLotterySixGame implements ILotterySixGame {
         return new PlayableLotterySixGame(instance, UUID.randomUUID(), scheduledDateTime, gameNumber, specialName, numberStatistics, placedBets, lowestTopPlacesPrize, carryOverFund, true);
     }
 
+    public static PlayableLotterySixGame createPresetGame(LotterySix instance, UUID gameId, GameNumber gameNumber, long scheduledDateTime, String specialName, Map<Integer, NumberStatistics> numberStatistics, long carryOverFund, long lowestTopPlacesPrize, List<PlayerBets> placedBets) {
+        return new PlayableLotterySixGame(instance, gameId, scheduledDateTime, gameNumber, specialName, numberStatistics, placedBets, lowestTopPlacesPrize, carryOverFund, true);
+    }
+
     private transient LotterySix instance;
 
     private final UUID gameId;
@@ -87,7 +90,7 @@ public class PlayableLotterySixGame implements ILotterySixGame {
     private volatile GameNumber gameNumber;
     private volatile String specialName;
     private final ConcurrentHashMap<Integer, NumberStatistics> numberStatistics;
-    private final LinkedHashMap<UUID, PlayerBets> bets;
+    private final ConcurrentHashMap<UUID, PlayerBets> bets;
     private volatile long carryOverFund;
     private volatile long lowestTopPlacesPrize;
     private volatile boolean valid;
@@ -100,7 +103,7 @@ public class PlayableLotterySixGame implements ILotterySixGame {
         this.specialName = specialName;
         this.numberStatistics = new ConcurrentHashMap<>(numberStatistics);
         this.gameNumber = gameNumber;
-        this.bets = new LinkedHashMap<>();
+        this.bets = new ConcurrentHashMap<>();
         for (PlayerBets bet : placedBets) {
             this.bets.put(bet.getBetId(), bet);
         }
@@ -109,25 +112,16 @@ public class PlayableLotterySixGame implements ILotterySixGame {
         this.valid = valid;
         this.lastSaved = -1;
     }
-    
-    private ReentrantReadWriteLock getBetsReadWriteLock() {
-        return getSharedLockOrFlag(this, "betsLock", () -> new ReentrantReadWriteLock(true));
-    }
 
     public AtomicBoolean getDirtyFlag() {
         return getSharedLockOrFlag(this, "dirty", () -> new AtomicBoolean(true));
     }
 
     public String toJson(Gson gson, boolean updateSaveTime) {
-        getBetsReadWriteLock().readLock().lock();
-        try {
-            if (updateSaveTime) {
-                lastSaved = System.currentTimeMillis();
-            }
-            return gson.toJson(this);
-        } finally {
-            getBetsReadWriteLock().readLock().unlock();
+        if (updateSaveTime) {
+            lastSaved = System.currentTimeMillis();
         }
+        return gson.toJson(this);
     }
 
     public LotterySix getInstance() {
@@ -157,8 +151,10 @@ public class PlayableLotterySixGame implements ILotterySixGame {
     }
 
     public void setSpecialName(String specialName) {
-        this.specialName = specialName;
-        getDirtyFlag().set(true);
+        if (!Objects.equals(this.specialName, specialName)) {
+            this.specialName = specialName;
+            getDirtyFlag().set(true);
+        }
     }
 
     @Override
@@ -167,7 +163,7 @@ public class PlayableLotterySixGame implements ILotterySixGame {
     }
 
     public void setDatetime(long scheduledDateTime, GameNumber gameNumber) {
-        if (instance == null || !instance.backendBungeecordMode) {
+        if (this.scheduledDateTime != scheduledDateTime || !this.gameNumber.equals(gameNumber)) {
             this.scheduledDateTime = scheduledDateTime;
             this.gameNumber = gameNumber;
             getDirtyFlag().set(true);
@@ -190,6 +186,14 @@ public class PlayableLotterySixGame implements ILotterySixGame {
         return numberStatistics == null ? Collections.emptyMap() : Collections.unmodifiableMap(numberStatistics);
     }
 
+    public void setNumberStatistics(Map<Integer, NumberStatistics> numberStatistics) {
+        if (!this.numberStatistics.equals(numberStatistics)) {
+            this.numberStatistics.clear();
+            this.numberStatistics.putAll(numberStatistics);
+            getDirtyFlag().set(true);
+        }
+    }
+
     public long getCarryOverFund(long rounding) {
         return MathUtils.followRound(rounding, carryOverFund);
     }
@@ -199,7 +203,7 @@ public class PlayableLotterySixGame implements ILotterySixGame {
     }
 
     public void setCarryOverFund(long carryOverFund) {
-        if (instance == null || !instance.backendBungeecordMode) {
+        if (this.carryOverFund != carryOverFund) {
             this.carryOverFund = carryOverFund;
             getDirtyFlag().set(true);
         }
@@ -210,7 +214,7 @@ public class PlayableLotterySixGame implements ILotterySixGame {
     }
 
     public void setLowestTopPlacesPrize(long lowestTopPlacesPrize) {
-        if (instance == null || !instance.backendBungeecordMode) {
+        if (this.lowestTopPlacesPrize != lowestTopPlacesPrize) {
             this.lowestTopPlacesPrize = lowestTopPlacesPrize;
             getDirtyFlag().set(true);
         }
@@ -220,28 +224,31 @@ public class PlayableLotterySixGame implements ILotterySixGame {
         return valid;
     }
 
+    @Deprecated
+    public void markInvalid() {
+        if (this.valid) {
+            this.valid = false;
+            getDirtyFlag().set(true);
+        }
+    }
+
     public void cancelGame() {
         this.valid = false;
         if (instance != null && !instance.backendBungeecordMode) {
-            getBetsReadWriteLock().readLock().lock();
             Map<UUID, List<PlayerBets>> multipleDrawBets = new HashMap<>();
             Set<UUID> affected = new HashSet<>();
-            try {
-                LotteryPlayerManager lotteryPlayerManager = instance.getLotteryPlayerManager();
-                for (PlayerBets bet : bets.values()) {
-                    List<PlayerBets> playerBets = multipleDrawBets.computeIfAbsent(bet.getPlayer(), k -> new ArrayList<>());
-                    if (bet.isMultipleDraw()) {
-                        playerBets.add(bet);
-                    } else {
-                        LotteryPlayer lotteryPlayer = lotteryPlayerManager.getLotteryPlayer(bet.getPlayer());
-                        lotteryPlayer.updateStats(PlayerStatsKey.TOTAL_BETS_PLACED, long.class, i -> i - bet.getBet());
-                        lotteryPlayer.updateStats(PlayerStatsKey.ACCOUNT_BALANCE, long.class, i -> i + bet.getBet());
-                        lotteryPlayer.updateStats(PlayerStatsKey.NOTIFY_BALANCE_CHANGE, long.class, i -> i + bet.getBet());
-                        affected.add(bet.getPlayer());
-                    }
+            LotteryPlayerManager lotteryPlayerManager = instance.getLotteryPlayerManager();
+            for (PlayerBets bet : bets.values()) {
+                List<PlayerBets> playerBets = multipleDrawBets.computeIfAbsent(bet.getPlayer(), k -> new ArrayList<>());
+                if (bet.isMultipleDraw()) {
+                    playerBets.add(bet);
+                } else {
+                    LotteryPlayer lotteryPlayer = lotteryPlayerManager.getLotteryPlayer(bet.getPlayer());
+                    lotteryPlayer.updateStats(PlayerStatsKey.TOTAL_BETS_PLACED, long.class, i -> i - bet.getBet());
+                    lotteryPlayer.updateStats(PlayerStatsKey.ACCOUNT_BALANCE, long.class, i -> i + bet.getBet());
+                    lotteryPlayer.updateStats(PlayerStatsKey.NOTIFY_BALANCE_CHANGE, long.class, i -> i + bet.getBet());
+                    affected.add(bet.getPlayer());
                 }
-            } finally {
-                getBetsReadWriteLock().readLock().unlock();
             }
             for (Map.Entry<UUID, List<PlayerBets>> entry : multipleDrawBets.entrySet()) {
                 LotteryPlayer lotteryPlayer = instance.getLotteryPlayerManager().getLotteryPlayer(entry.getKey());
@@ -255,20 +262,15 @@ public class PlayableLotterySixGame implements ILotterySixGame {
 
     public synchronized void invalidateBetsIf(Predicate<PlayerBets> predicate, boolean clearMultipleDraw) {
         List<PlayerBets> removedBets = new ArrayList<>();
-        getBetsReadWriteLock().writeLock().lock();
-        try {
-            Iterator<PlayerBets> itr = bets.values().iterator();
-            while (itr.hasNext()) {
-                PlayerBets playerBet = itr.next();
-                if (predicate.test(playerBet)) {
-                    itr.remove();
-                    removedBets.add(playerBet);
-                }
+        Iterator<PlayerBets> itr = bets.values().iterator();
+        while (itr.hasNext()) {
+            PlayerBets playerBet = itr.next();
+            if (predicate.test(playerBet)) {
+                itr.remove();
+                removedBets.add(playerBet);
             }
-            getDirtyFlag().set(true);
-        } finally {
-            getBetsReadWriteLock().writeLock().unlock();
         }
+        getDirtyFlag().set(true);
         if (instance != null && !instance.backendBungeecordMode) {
             instance.requestSave(true);
             LotteryPlayerManager lotteryPlayerManager = instance.getLotteryPlayerManager();
@@ -291,26 +293,32 @@ public class PlayableLotterySixGame implements ILotterySixGame {
         }
     }
 
+    public boolean hasBets() {
+        return !bets.isEmpty();
+    }
+
     public List<PlayerBets> getBets() {
-        getBetsReadWriteLock().readLock().lock();
-        try {
-            return new ArrayList<>(bets.values());
-        } finally {
-            getBetsReadWriteLock().readLock().unlock();
-        }
+        return bets.values().stream().sorted().collect(Collectors.toList());
+    }
+
+    public Set<UUID> getBetIds() {
+        return Collections.unmodifiableSet(bets.keySet());
+    }
+
+    public PlayerBets getBet(UUID betId) {
+        return bets.get(betId);
+    }
+
+    public List<PlayerBets> getPlayerBets(UUID player) {
+        return bets.values().stream().filter(each -> each.getPlayer().equals(player)).sorted().collect(Collectors.toList());
     }
 
     public long getTotalBets() {
-        getBetsReadWriteLock().readLock().lock();
-        try {
-            return bets.values().stream().mapToLong(each -> each.getBet()).sum();
-        } finally {
-            getBetsReadWriteLock().readLock().unlock();
-        }
+        return bets.values().stream().mapToLong(each -> each.getBet()).sum();
     }
 
     public AddBetResult addBet(String name, UUID player, long bet, BetUnitType unitType, BetNumbers chosenNumbers, int multipleDraw) {
-        return addBet(new PlayerBets(name, player, System.currentTimeMillis(), bet, unitType, chosenNumbers, multipleDraw));
+        return addBet(new PlayerBets(name, player, System.currentTimeMillis(), System.nanoTime(), bet, unitType, chosenNumbers, multipleDraw));
     }
 
     public AddBetResult addBet(String name, UUID player, long betPerUnit, BetUnitType unitType, Collection<BetNumbers> chosenNumbers, int multipleDraw) {
@@ -318,7 +326,8 @@ public class PlayableLotterySixGame implements ILotterySixGame {
             throw new IllegalArgumentException("chosenNumbers cannot be empty");
         }
         long now = System.currentTimeMillis();
-        return addBet(name, player, chosenNumbers.stream().map(each -> new PlayerBets(name, player, now, betPerUnit, unitType, each, multipleDraw)).collect(Collectors.toList()));
+        long nano = System.nanoTime();
+        return addBet(name, player, chosenNumbers.stream().map(each -> new PlayerBets(name, player, now, nano, betPerUnit, unitType, each, multipleDraw)).collect(Collectors.toList()));
     }
 
     public AddBetResult addBet(PlayerBets bet) {
@@ -356,13 +365,8 @@ public class PlayableLotterySixGame implements ILotterySixGame {
             lotteryPlayer.updateStats(PlayerStatsKey.ACCOUNT_BALANCE, long.class, i -> i - price);
             lotteryPlayer.updateStats(PlayerStatsKey.TOTAL_BETS_PLACED, long.class, i -> i + price);
         }
-        getBetsReadWriteLock().writeLock().lock();
-        try {
-            for (PlayerBets bet : bets) {
-                this.bets.put(bet.getBetId(), bet);
-            }
-        } finally {
-            getBetsReadWriteLock().writeLock().unlock();
+        for (PlayerBets bet : bets) {
+            this.bets.put(bet.getBetId(), bet);
         }
         getDirtyFlag().set(true);
         if (instance != null) {
@@ -390,19 +394,6 @@ public class PlayableLotterySixGame implements ILotterySixGame {
             }
         }
         return result;
-    }
-
-    public boolean hasBets() {
-        return !bets.isEmpty();
-    }
-
-    public List<PlayerBets> getPlayerBets(UUID player) {
-        getBetsReadWriteLock().readLock().lock();
-        try {
-            return bets.values().stream().filter(each -> each.getPlayer().equals(player)).collect(Collectors.toList());
-        } finally {
-            getBetsReadWriteLock().readLock().unlock();
-        }
     }
 
     public long estimatedPrizePool(long maxTopPlacesPrize, double taxPercentage, long rounding) {
@@ -460,17 +451,12 @@ public class PlayableLotterySixGame implements ILotterySixGame {
         }
 
         Set<UUID> participants = new HashSet<>();
-        getBetsReadWriteLock().readLock().lock();
-        try {
-            for (PlayerBets playerBets : bets.values()) {
-                participants.add(playerBets.getPlayer());
-                for (Iterator<Pair<PrizeTier, WinningCombination>> itr = winningNumbers.checkWinning(playerBets.getChosenNumbers()).iterator(); itr.hasNext();) {
-                    Pair<PrizeTier, WinningCombination> prizeTiersPair = itr.next();
-                    tiers.get(prizeTiersPair.getFirst()).add(Pair.of(playerBets, prizeTiersPair.getSecond()));
-                }
+        for (PlayerBets playerBets : bets.values()) {
+            participants.add(playerBets.getPlayer());
+            for (Iterator<Pair<PrizeTier, WinningCombination>> itr = winningNumbers.checkWinning(playerBets.getChosenNumbers()).iterator(); itr.hasNext();) {
+                Pair<PrizeTier, WinningCombination> prizeTiersPair = itr.next();
+                tiers.get(prizeTiersPair.getFirst()).add(Pair.of(playerBets, prizeTiersPair.getSecond()));
             }
-        } finally {
-            getBetsReadWriteLock().readLock().unlock();
         }
         if (instance != null) {
             new Thread(() -> {
@@ -708,7 +694,7 @@ public class PlayableLotterySixGame implements ILotterySixGame {
             carryOverNext = Math.max(0, carryOverNext);
         }
 
-        winnings.sort(Comparator.comparing((PlayerWinnings playerWinnings) -> playerWinnings.getTier()).thenComparing((PlayerWinnings playerWinnings) -> playerWinnings.getWinningBet(bets).getTimePlaced()));
+        winnings.sort(Comparator.comparing((PlayerWinnings playerWinnings) -> playerWinnings.getTier()).thenComparing((PlayerWinnings playerWinnings) -> playerWinnings.getWinningBet(bets)));
         this.valid = false;
 
         if (instance != null) {
@@ -993,7 +979,7 @@ public class PlayableLotterySixGame implements ILotterySixGame {
             carryOverNext = Math.max(0, carryOverNext);
         }
 
-        winnings.sort(Comparator.comparing((PlayerWinnings playerWinnings) -> playerWinnings.getTier()).thenComparing((PlayerWinnings playerWinnings) -> playerWinnings.getWinningBet(bets).getTimePlaced()));
+        winnings.sort(Comparator.comparing((PlayerWinnings playerWinnings) -> playerWinnings.getTier()).thenComparing((PlayerWinnings playerWinnings) -> playerWinnings.getWinningBet(bets)));
         this.valid = false;
 
         return new CompletedLotterySixGame(gameId, scheduledDateTime, gameNumber, specialName, winningNumbers, newNumberStats, pricePerBet, prizeForTier, winnings, bets, totalPrizes, carryOverNext, lotteriesFunds);

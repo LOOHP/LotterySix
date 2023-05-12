@@ -20,10 +20,15 @@
 
 package com.loohp.lotterysix.utils;
 
+import com.loohp.lotterysix.game.lottery.GameNumber;
+import com.loohp.lotterysix.game.objects.NumberStatistics;
+import com.loohp.lotterysix.game.objects.WinningNumbers;
+
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.time.Year;
 import java.util.UUID;
 
 public class DataTypeIO {
@@ -53,6 +58,24 @@ public class DataTypeIO {
         byte[] bytes = string.getBytes(charset);
         out.writeInt(bytes.length);
         out.write(bytes);
+    }
+
+    public static GameNumber readGameNumber(DataInputStream in) throws IOException {
+        return new GameNumber(Year.of(in.readInt()), in.readInt());
+    }
+
+    public static void writeGameNumber(DataOutputStream out, GameNumber gameNumber) throws IOException {
+        out.writeInt(gameNumber.getYear().getValue());
+        out.writeInt(gameNumber.getNumber());
+    }
+
+    public static NumberStatistics readNumberStatistics(DataInputStream in) throws IOException {
+        return new NumberStatistics(in.readInt(), in.readInt());
+    }
+
+    public static void writeNumberStatistics(DataOutputStream out, NumberStatistics statistics) throws IOException {
+        out.writeInt(statistics.getLastDrawn());
+        out.writeInt(statistics.getTimesDrawn());
     }
 
 }

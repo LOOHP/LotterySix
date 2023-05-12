@@ -41,7 +41,10 @@ import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 public class CommandsBungee extends Command implements TabExecutor {
 
@@ -87,16 +90,28 @@ public class CommandsBungee extends Command implements TabExecutor {
                     }
                     if (sender instanceof ProxiedPlayer) {
                         ProxiedPlayer player = (ProxiedPlayer) sender;
+                        CompletableFuture<Boolean> future;
                         if (args.length > 1) {
                             String input = String.join(" ", Arrays.copyOfRange(args, 1, args.length));
                             PlayableLotterySixGame game = LotterySixBungee.getInstance().getCurrentGame();
                             if (game != null) {
-                                LotterySixBungee.getPluginMessageHandler().openPlayMenu(player, input);
+                                future = LotterySixBungee.getPluginMessageHandler().openPlayMenu(player, input);
                             } else {
+                                future = null;
                                 player.sendMessage(LotterySixBungee.getInstance().messageNoGameRunning);
                             }
                         } else {
-                            LotterySixBungee.getPluginMessageHandler().openPlayMenu(player);
+                            future = LotterySixBungee.getPluginMessageHandler().openPlayMenu(player);
+                        }
+                        if (future != null) {
+                            new Timer().schedule(new TimerTask() {
+                                @Override
+                                public void run() {
+                                    if (!future.getNow(false)) {
+                                        player.sendMessage(LotterySixBungee.getInstance().messageLotterySixNotOnCurrentBackend);
+                                    }
+                                }
+                            }, 2000);
                         }
                     } else {
                         sender.sendMessage(LotterySixBungee.getInstance().messageNoConsole);
