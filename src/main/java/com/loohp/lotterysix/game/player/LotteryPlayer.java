@@ -159,8 +159,14 @@ public class LotteryPlayer {
     }
 
     public void setMultipleDrawPlayerBets(List<PlayerBets> bets) {
+        setMultipleDrawPlayerBets(bets, true);
+    }
+
+    public void setMultipleDrawPlayerBets(List<PlayerBets> bets, boolean save) {
         multipleDrawPlayerBets.clear();
         multipleDrawPlayerBets.addAll(bets);
-        save();
+        if (save) {
+            save();
+        }
     }
 }

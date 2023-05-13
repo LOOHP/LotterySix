@@ -255,11 +255,12 @@ public class CompletedLotterySixGame implements ILotterySixGame {
                     }
                 }
             }
+            Map<LotteryPlayer, Boolean> affected = new HashMap<>();
             for (Map.Entry<UUID, List<PlayerBets>> entry : multipleDrawBets.entrySet()) {
                 LotteryPlayer lotteryPlayer = instance.getLotteryPlayerManager().getLotteryPlayer(entry.getKey());
-                lotteryPlayer.setMultipleDrawPlayerBets(entry.getValue());
+                lotteryPlayer.setMultipleDrawPlayerBets(entry.getValue(), false);
+                affected.put(lotteryPlayer, false);
             }
-            Set<LotteryPlayer> affected = new HashSet<>();
             for (Map.Entry<UUID, Long> entry : transactions.entrySet()) {
                 LotteryPlayer lotteryPlayer = instance.getLotteryPlayerManager().getLotteryPlayer(entry.getKey());
                 PrizeTier prizeTier = prizeTiers.get(entry.getKey());
@@ -268,17 +269,20 @@ public class CompletedLotterySixGame implements ILotterySixGame {
                 lotteryPlayer.updateStats(PlayerStatsKey.NOTIFY_BALANCE_CHANGE, long.class, i -> i + total, false);
                 lotteryPlayer.updateStats(PlayerStatsKey.TOTAL_WINNINGS, long.class, i -> i + total, false);
                 lotteryPlayer.updateStats(PlayerStatsKey.HIGHEST_WON_TIER, PrizeTier.class, t -> t == null || prizeTier.ordinal() < t.ordinal(), prizeTier, false);
-                affected.add(lotteryPlayer);
+                affected.put(lotteryPlayer, true);
             }
             if (instance.lotteriesFundAccount != null) {
                 LotteryPlayer lotteryPlayer = lotteryPlayerManager.getLotteryPlayer(instance.lotteriesFundAccount);
                 lotteryPlayer.updateStats(PlayerStatsKey.ACCOUNT_BALANCE, long.class, i -> i + lotteriesFunds, false);
                 lotteryPlayer.updateStats(PlayerStatsKey.NOTIFY_BALANCE_CHANGE, long.class, i -> i + lotteriesFunds, false);
-                affected.add(lotteryPlayer);
+                affected.put(lotteryPlayer, true);
             }
-            for (LotteryPlayer lotteryPlayer : affected) {
+            for (Map.Entry<LotteryPlayer, Boolean> entry : affected.entrySet()) {
+                LotteryPlayer lotteryPlayer = entry.getKey();
                 lotteryPlayer.save();
-                instance.notifyBalanceChangeConsumer(lotteryPlayer.getPlayer());
+                if (entry.getValue()) {
+                    instance.notifyBalanceChangeConsumer(lotteryPlayer.getPlayer());
+                }
             }
             onCompletion.run();
         }, "LotterySix Win Prize Distribution Thread - " + gameNumber).start();

@@ -68,8 +68,9 @@ import java.util.stream.Collectors;
 public class PlayableLotterySixGame implements ILotterySixGame {
 
     private static final Map<Object, Map<String, Object>> LOCKS_AND_FLAGS = Collections.synchronizedMap(new WeakHashMap<>());
+    private static final String DIRTY_FLAG = "dirty";
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "SameParameterValue"})
     private static <T, V> V getSharedLockOrFlag(T owner, String key, Supplier<V> constructor) {
         return (V) LOCKS_AND_FLAGS.computeIfAbsent(owner, k -> new ConcurrentHashMap<>()).computeIfAbsent(key, k -> constructor.get());
     }
@@ -114,7 +115,7 @@ public class PlayableLotterySixGame implements ILotterySixGame {
     }
 
     public AtomicBoolean getDirtyFlag() {
-        return getSharedLockOrFlag(this, "dirty", () -> new AtomicBoolean(true));
+        return getSharedLockOrFlag(this, DIRTY_FLAG, () -> new AtomicBoolean(true));
     }
 
     public String toJson(Gson gson, boolean updateSaveTime) {
@@ -224,6 +225,7 @@ public class PlayableLotterySixGame implements ILotterySixGame {
         return valid;
     }
 
+    @SuppressWarnings("DeprecatedIsStillUsed")
     @Deprecated
     public void markInvalid() {
         if (this.valid) {
@@ -236,7 +238,7 @@ public class PlayableLotterySixGame implements ILotterySixGame {
         this.valid = false;
         if (instance != null && !instance.backendBungeecordMode) {
             Map<UUID, List<PlayerBets>> multipleDrawBets = new HashMap<>();
-            Set<UUID> affected = new HashSet<>();
+            Map<LotteryPlayer, Boolean> affected = new HashMap<>();
             LotteryPlayerManager lotteryPlayerManager = instance.getLotteryPlayerManager();
             for (PlayerBets bet : bets.values()) {
                 List<PlayerBets> playerBets = multipleDrawBets.computeIfAbsent(bet.getPlayer(), k -> new ArrayList<>());
@@ -244,18 +246,23 @@ public class PlayableLotterySixGame implements ILotterySixGame {
                     playerBets.add(bet);
                 } else {
                     LotteryPlayer lotteryPlayer = lotteryPlayerManager.getLotteryPlayer(bet.getPlayer());
-                    lotteryPlayer.updateStats(PlayerStatsKey.TOTAL_BETS_PLACED, long.class, i -> i - bet.getBet());
-                    lotteryPlayer.updateStats(PlayerStatsKey.ACCOUNT_BALANCE, long.class, i -> i + bet.getBet());
-                    lotteryPlayer.updateStats(PlayerStatsKey.NOTIFY_BALANCE_CHANGE, long.class, i -> i + bet.getBet());
-                    affected.add(bet.getPlayer());
+                    lotteryPlayer.updateStats(PlayerStatsKey.TOTAL_BETS_PLACED, long.class, i -> i - bet.getBet(), false);
+                    lotteryPlayer.updateStats(PlayerStatsKey.ACCOUNT_BALANCE, long.class, i -> i + bet.getBet(), false);
+                    lotteryPlayer.updateStats(PlayerStatsKey.NOTIFY_BALANCE_CHANGE, long.class, i -> i + bet.getBet(), false);
+                    affected.put(lotteryPlayer, true);
                 }
             }
             for (Map.Entry<UUID, List<PlayerBets>> entry : multipleDrawBets.entrySet()) {
                 LotteryPlayer lotteryPlayer = instance.getLotteryPlayerManager().getLotteryPlayer(entry.getKey());
-                lotteryPlayer.setMultipleDrawPlayerBets(entry.getValue());
+                lotteryPlayer.setMultipleDrawPlayerBets(entry.getValue(), false);
+                affected.putIfAbsent(lotteryPlayer, false);
             }
-            for (UUID player : affected) {
-                instance.notifyBalanceChangeConsumer(player);
+            for (Map.Entry<LotteryPlayer, Boolean> entry : affected.entrySet()) {
+                LotteryPlayer lotteryPlayer = entry.getKey();
+                lotteryPlayer.save();
+                if (entry.getValue()) {
+                    instance.notifyBalanceChangeConsumer(lotteryPlayer.getPlayer());
+                }
             }
         }
     }
@@ -274,20 +281,21 @@ public class PlayableLotterySixGame implements ILotterySixGame {
         if (instance != null && !instance.backendBungeecordMode) {
             instance.requestSave(true);
             LotteryPlayerManager lotteryPlayerManager = instance.getLotteryPlayerManager();
-            Set<UUID> affected = new HashSet<>();
+            Set<LotteryPlayer> affected = new HashSet<>();
             for (PlayerBets bet : removedBets) {
                 long total = clearMultipleDraw ? bet.getBet() * bet.getDrawsRemaining() : bet.getBet();
                 LotteryPlayer lotteryPlayer = lotteryPlayerManager.getLotteryPlayer(bet.getPlayer());
-                lotteryPlayer.updateStats(PlayerStatsKey.TOTAL_BETS_PLACED, long.class, i -> i - total);
-                lotteryPlayer.updateStats(PlayerStatsKey.ACCOUNT_BALANCE, long.class, i -> i + total);
-                lotteryPlayer.updateStats(PlayerStatsKey.NOTIFY_BALANCE_CHANGE, long.class, i -> i + total);
-                affected.add(bet.getPlayer());
+                lotteryPlayer.updateStats(PlayerStatsKey.TOTAL_BETS_PLACED, long.class, i -> i - total, false);
+                lotteryPlayer.updateStats(PlayerStatsKey.ACCOUNT_BALANCE, long.class, i -> i + total, false);
+                lotteryPlayer.updateStats(PlayerStatsKey.NOTIFY_BALANCE_CHANGE, long.class, i -> i + total, false);
+                affected.add(lotteryPlayer);
             }
-            for (UUID player : affected) {
+            for (LotteryPlayer lotteryPlayer : affected) {
                 if (clearMultipleDraw) {
-                    lotteryPlayerManager.getLotteryPlayer(player).setMultipleDrawPlayerBets(Collections.emptyList());
+                    lotteryPlayer.setMultipleDrawPlayerBets(Collections.emptyList(), false);
                 }
-                instance.notifyBalanceChangeConsumer(player);
+                lotteryPlayer.save();
+                instance.notifyBalanceChangeConsumer(lotteryPlayer.getPlayer());
             }
             instance.getPlayerBetsInvalidateListener().accept(removedBets);
         }
@@ -362,8 +370,9 @@ public class PlayableLotterySixGame implements ILotterySixGame {
             if (System.currentTimeMillis() < lotteryPlayer.getPreference(PlayerPreferenceKey.SUSPEND_ACCOUNT_UNTIL, long.class)) {
                 return betResult0(player, price, bets, AddBetResult.ACCOUNT_SUSPENDED);
             }
-            lotteryPlayer.updateStats(PlayerStatsKey.ACCOUNT_BALANCE, long.class, i -> i - price);
-            lotteryPlayer.updateStats(PlayerStatsKey.TOTAL_BETS_PLACED, long.class, i -> i + price);
+            lotteryPlayer.updateStats(PlayerStatsKey.ACCOUNT_BALANCE, long.class, i -> i - price, false);
+            lotteryPlayer.updateStats(PlayerStatsKey.TOTAL_BETS_PLACED, long.class, i -> i + price, false);
+            lotteryPlayer.save();
         }
         for (PlayerBets bet : bets) {
             this.bets.put(bet.getBetId(), bet);

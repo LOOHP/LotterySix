@@ -26,6 +26,7 @@ public enum PlayerStatsKey {
     TOTAL_ROUNDS_PARTICIPATED(long.class, 0L, false),
     TOTAL_WINNINGS(long.class, 0L, true),
     HIGHEST_WON_TIER(PrizeTier.class, null, false),
+    @SuppressWarnings("DeprecatedIsStillUsed")
     @Deprecated
     PENDING_TRANSACTION(long.class, 0L, true),
     NOTIFY_BALANCE_CHANGE(long.class, 0L, false),

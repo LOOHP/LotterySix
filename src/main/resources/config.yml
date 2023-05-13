@@ -160,6 +160,8 @@ Restrictions:
   #Default is 2760681 (Combinations of selecting 38 numbers)
   MaximumChancePerSelection: 2760681
 
+#For available placeholders, check out this page
+#https://github.com/LOOHP/LotterySix/wiki/Config-Placeholders
 GUI:
   MainMenu:
     Title: "&1LotterySix"
@@ -419,6 +421,8 @@ GUI:
     Cancel:
       - "&cCancel"
 
+#For available placeholders, check out this page
+#https://github.com/LOOHP/LotterySix/wiki/Config-Placeholders
 Announcer:
   PeriodicMessage:
     Message: "&6[LotterySix] Join the next round of LotterySix by placing your bet with [/lottery play]! &eDraw will happen on &a{Date} &ewith an estimated prize pool of &b${PrizePool}&6!"
@@ -528,6 +532,8 @@ Announcer:
     #If a corresponding message is not found, it is equivalent as blank
     PostMessagesHover: []
 
+#For available placeholders, check out this page
+#https://github.com/LOOHP/LotterySix/wiki/Config-Placeholders
 DiscordSRV:
   DrawResultAnnouncement:
     #Set this to a channel that does not exist to disable
