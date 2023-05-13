@@ -513,11 +513,9 @@ public class LotterySix implements AutoCloseable {
         if (currentGame != null && currentGame.getGameId().equals(uuid)) {
             return currentGame;
         }
-        synchronized (completedGames.getIterateLock()) {
-            for (CompletedLotterySixGame completedLotterySixGame : completedGames) {
-                if (completedLotterySixGame.getGameId().equals(uuid)) {
-                    return completedLotterySixGame;
-                }
+        for (CompletedLotterySixGame completedLotterySixGame : completedGames) {
+            if (completedLotterySixGame.getGameId().equals(uuid)) {
+                return completedLotterySixGame;
             }
         }
         return null;
@@ -694,11 +692,9 @@ public class LotterySix implements AutoCloseable {
 
     @Deprecated
     public void setLastGame(CompletedLotterySixGame game) {
-        Iterator<CompletedLotterySixGame> itr = completedGames.iterator();
-        while (itr.hasNext()) {
-            CompletedLotterySixGame completedLotterySixGame = itr.next();
-            if (completedLotterySixGame.getDatetime() > game.getDatetime()) {
-                itr.remove();
+        for (CompletedLotterySixGameIndex gameIndex : completedGames.indexIterable()) {
+            if (gameIndex.getDatetime() > game.getDatetime()) {
+                completedGames.remove(gameIndex);
             } else {
                 break;
             }
@@ -1113,10 +1109,8 @@ public class LotterySix implements AutoCloseable {
             }
             if (needSaving) {
                 JsonArray array = new JsonArray();
-                synchronized (completedGames.getIterateLock()) {
-                    for (CompletedLotterySixGameIndex gameIndex : completedGames.indexIterable()) {
-                        array.add(GSON.toJsonTree(gameIndex));
-                    }
+                for (CompletedLotterySixGameIndex gameIndex : completedGames.indexIterable()) {
+                    array.add(GSON.toJsonTree(gameIndex));
                 }
                 try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(Files.newOutputStream(completedGameFile.toPath()), StandardCharsets.UTF_8))) {
                     pw.println(GSON.toJson(array));
@@ -1181,10 +1175,8 @@ public class LotterySix implements AutoCloseable {
         if (!onlyCurrent) {
             File completedGameFile = new File(lotteryDataFolder, "completed.json");
             JsonArray array = new JsonArray();
-            synchronized (completedGames.getIterateLock()) {
-                for (CompletedLotterySixGameIndex gameIndex : completedGames.indexIterable()) {
-                    array.add(GSON.toJsonTree(gameIndex));
-                }
+            for (CompletedLotterySixGameIndex gameIndex : completedGames.indexIterable()) {
+                array.add(GSON.toJsonTree(gameIndex));
             }
             try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(Files.newOutputStream(completedGameFile.toPath()), StandardCharsets.UTF_8))) {
                 pw.println(GSON.toJson(array));
@@ -1192,18 +1184,16 @@ public class LotterySix implements AutoCloseable {
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            synchronized (completedGames.getIterateLock()) {
-                Iterator<CompletedLotterySixGame> itr = completedGames.dirtyGamesIterator();
-                while (itr.hasNext()) {
-                    CompletedLotterySixGame game = itr.next();
-                    File file = new File(lotteryDataFolder, game.getDataFileName());
-                    try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(Files.newOutputStream(file.toPath()), StandardCharsets.UTF_8))) {
-                        pw.println(GSON.toJson(game));
-                        itr.remove();
-                        pw.flush();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
+            Iterator<CompletedLotterySixGame> itr = completedGames.dirtyGamesIterator();
+            while (itr.hasNext()) {
+                CompletedLotterySixGame game = itr.next();
+                File file = new File(lotteryDataFolder, game.getDataFileName());
+                try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(Files.newOutputStream(file.toPath()), StandardCharsets.UTF_8))) {
+                    pw.println(GSON.toJson(game));
+                    itr.remove();
+                    pw.flush();
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
             }
         }

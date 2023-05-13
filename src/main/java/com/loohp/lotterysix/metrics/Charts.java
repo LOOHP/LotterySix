@@ -128,10 +128,7 @@ public class Charts {
             private long lastCall = System.currentTimeMillis();
             @Override
             public Integer call() throws Exception {
-                int counts;
-                synchronized (LotterySixPlugin.getInstance().getCompletedGames().getIterateLock()) {
-                    counts = (int) LotterySixPlugin.getInstance().getCompletedGames().indexStream().filter(each -> each.getDatetime() >= lastCall).count();
-                }
+                int counts = (int) LotterySixPlugin.getInstance().getCompletedGames().indexStream().filter(each -> each.getDatetime() >= lastCall).count();
                 lastCall = System.currentTimeMillis();
                 return counts;
             }

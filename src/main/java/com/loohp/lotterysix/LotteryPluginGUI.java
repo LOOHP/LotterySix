@@ -1984,7 +1984,10 @@ public class LotteryPluginGUI implements Listener {
         for (CompletedLotterySixGameIndex gameIndex : list) {
             gui.addElement(new StaticGuiElement(c++, XMaterial.PAPER.parseItem(), click -> {
                 Scheduler.runTaskLater(plugin, () -> close(player, gui, false), 1, player);
-                Scheduler.runTaskLater(plugin, () -> getPastResults(player, completedGames.get(position.get(gameIndex))).show(player), 2, player);
+                Scheduler.runTaskAsynchronously(plugin, () -> {
+                    CompletedLotterySixGame game = completedGames.get(position.get(gameIndex));
+                    Scheduler.runTaskLater(plugin, () -> getPastResults(player, game).show(player), 2, player);
+                });
                 return true;
             }, LotteryUtils.formatPlaceholders(player, instance.guiLastResultsHistoricGameListInfo, instance, gameIndex)));
             if (gameIndex.hasSpecialName()) {

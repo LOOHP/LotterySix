@@ -498,12 +498,10 @@ public class PluginMessageBungee implements Listener {
             DataOutputStream out = new DataOutputStream(outputStream);
             List<CompletedLotterySixGameIndex> games = new ArrayList<>();
             Set<UUID> notExist = new HashSet<>(gameIds);
-            synchronized (instance.getCompletedGames().getIterateLock()) {
-                for (CompletedLotterySixGameIndex gameIndex : instance.getCompletedGames().indexIterable()) {
-                    notExist.remove(gameIndex.getGameId());
-                    if (!gameIds.contains(gameIndex.getGameId())) {
-                        games.add(gameIndex);
-                    }
+            for (CompletedLotterySixGameIndex gameIndex : instance.getCompletedGames().indexIterable()) {
+                notExist.remove(gameIndex.getGameId());
+                if (!gameIds.contains(gameIndex.getGameId())) {
+                    games.add(gameIndex);
                 }
             }
             out.writeInt(games.size());

@@ -78,7 +78,6 @@ import java.util.Date;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -330,10 +329,7 @@ public class PluginMessageHandler implements PluginMessageListener {
                             if (size > 0) {
                                 for (int i = 0; i < size; i++) {
                                     UUID gameId = DataTypeIO.readUUID(in);
-                                    Optional<CompletedLotterySixGameIndex> optGame;
-                                    synchronized (instance.getCompletedGames().getIterateLock()) {
-                                        optGame = instance.getCompletedGames().indexStream().filter(each -> each.getGameId().equals(gameId)).findFirst();
-                                    }
+                                    Optional<CompletedLotterySixGameIndex> optGame = instance.getCompletedGames().indexStream().filter(each -> each.getGameId().equals(gameId)).findFirst();
                                     if (optGame.isPresent()) {
                                         CompletedLotterySixGame game = instance.getCompletedGames().get(optGame.get());
                                         gsonOfInstance(game).fromJson(DataTypeIO.readString(in, StandardCharsets.UTF_8), CompletedLotterySixGame.class);
@@ -353,13 +349,9 @@ public class PluginMessageHandler implements PluginMessageListener {
                                 for (int i = 0; i < size; i++) {
                                     notExist.add(DataTypeIO.readUUID(in));
                                 }
-                                synchronized (instance.getCompletedGames().getIterateLock()) {
-                                    Iterator<CompletedLotterySixGameIndex> itr = instance.getCompletedGames().indexIterator();
-                                    while (itr.hasNext()) {
-                                        CompletedLotterySixGameIndex gameIndex = itr.next();
-                                        if (notExist.contains(gameIndex.getGameId())) {
-                                            itr.remove();
-                                        }
+                                for (CompletedLotterySixGameIndex gameIndex : instance.getCompletedGames().indexIterable()) {
+                                    if (notExist.contains(gameIndex.getGameId())) {
+                                        instance.getCompletedGames().remove(gameIndex);
                                     }
                                 }
                                 shouldSave = true;
@@ -604,11 +596,9 @@ public class PluginMessageHandler implements PluginMessageListener {
         try {
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             DataOutputStream out = new DataOutputStream(outputStream);
-            synchronized (instance.getCompletedGames().getIterateLock()) {
-                out.writeInt(instance.getCompletedGames().size());
-                for (CompletedLotterySixGameIndex gameIndex : instance.getCompletedGames().indexIterable()) {
-                    DataTypeIO.writeUUID(out, gameIndex.getGameId());
-                }
+            out.writeInt(instance.getCompletedGames().size());
+            for (CompletedLotterySixGameIndex gameIndex : instance.getCompletedGames().indexIterable()) {
+                DataTypeIO.writeUUID(out, gameIndex.getGameId());
             }
             sendData(0x02, outputStream.toByteArray());
         } catch (IOException e) {

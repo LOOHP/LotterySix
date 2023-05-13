@@ -23,42 +23,57 @@ package com.loohp.lotterysix.game.lottery;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 
-import java.util.AbstractList;
-import java.util.ArrayList;
+import java.lang.reflect.Array;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.RandomAccess;
 import java.util.Spliterator;
 import java.util.TimeZone;
 import java.util.UUID;
+import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class LazyCompletedLotterySixGameList extends AbstractList<CompletedLotterySixGame> {
+public class LazyCompletedLotterySixGameList implements List<CompletedLotterySixGame>, RandomAccess {
 
     private final Function<CompletedLotterySixGameIndex, CompletedLotterySixGame> gameLoader;
     private final List<CompletedLotterySixGameIndex> gameIndexes;
     private final Map<UUID, CompletedLotterySixGame> cachedGames;
     private final Map<UUID, CompletedLotterySixGame> dirtyGames;
+    private final Map<UUID, Object> gameLoadingLock;
 
     public LazyCompletedLotterySixGameList(Function<CompletedLotterySixGameIndex, CompletedLotterySixGame> gameLoader) {
         this.gameLoader = gameLoader;
-        this.gameIndexes = Collections.synchronizedList(new ArrayList<>());
+        this.gameIndexes = new CopyOnWriteArrayList<>();
         Cache<UUID, CompletedLotterySixGame> cache = CacheBuilder.newBuilder().maximumSize(20).build();
         this.cachedGames = cache.asMap();
         this.dirtyGames = new ConcurrentHashMap<>();
+        this.gameLoadingLock = Collections.synchronizedMap(new WeakHashMap<>());
     }
 
-    public Object getIterateLock() {
-        return gameIndexes;
+    private LazyCompletedLotterySixGameList(Function<CompletedLotterySixGameIndex, CompletedLotterySixGame> gameLoader, List<CompletedLotterySixGameIndex> gameIndexes, Map<UUID, CompletedLotterySixGame> cachedGames, Map<UUID, CompletedLotterySixGame> dirtyGames, Map<UUID, Object> gameLoadingLock) {
+        this.gameLoader = gameLoader;
+        this.gameIndexes = gameIndexes;
+        this.cachedGames = cachedGames;
+        this.dirtyGames = dirtyGames;
+        this.gameLoadingLock = gameLoadingLock;
     }
-    
+
+    private Object getGameLoadingLock(UUID gameId) {
+        return gameLoadingLock.computeIfAbsent(gameId, k -> new Object());
+    }
+
     private CompletedLotterySixGame lookForCached(UUID gameId) {
         CompletedLotterySixGame game = dirtyGames.get(gameId);
         if (game != null) {
@@ -86,35 +101,33 @@ public class LazyCompletedLotterySixGameList extends AbstractList<CompletedLotte
     @Override
     public CompletedLotterySixGame get(int index) {
         CompletedLotterySixGameIndex gameIndex = gameIndexes.get(index);
-        CompletedLotterySixGame game = lookForCached(gameIndex.getGameId());
-        if (game != null) {
-            return game;
+        if (gameIndex == null) {
+            return null;
         }
-        game = gameLoader.apply(gameIndex);
-        cachedGames.put(gameIndex.getGameId(), game);
-        return game;
+        return get(gameIndex);
     }
 
     public CompletedLotterySixGame get(CompletedLotterySixGameIndex gameIndex) {
-        CompletedLotterySixGame game = lookForCached(gameIndex.getGameId());
-        if (game != null) {
+        UUID gameId = gameIndex.getGameId();
+        synchronized (getGameLoadingLock(gameId)) {
+            CompletedLotterySixGame game = lookForCached(gameId);
+            if (game != null) {
+                return game;
+            }
+            game = gameLoader.apply(gameIndex);
+            cachedGames.put(gameIndex.getGameId(), game);
             return game;
         }
-        return get(gameIndexes.indexOf(gameIndex));
     }
 
     public CompletedLotterySixGame get(GameNumber gameNumber) {
-        int i = 0;
-        synchronized (getIterateLock()) {
-            for (CompletedLotterySixGameIndex gameIndex : gameIndexes) {
-                GameNumber number = gameIndex.getGameNumber();
-                if (Objects.equals(number, gameNumber)) {
-                    break;
-                }
-                i++;
+        for (CompletedLotterySixGameIndex gameIndex : gameIndexes) {
+            GameNumber number = gameIndex.getGameNumber();
+            if (Objects.equals(number, gameNumber)) {
+                return get(gameIndex);
             }
         }
-        return get(i);
+        return null;
     }
 
     public CompletedLotterySixGameIndex getIndex(int index) {
@@ -124,6 +137,26 @@ public class LazyCompletedLotterySixGameList extends AbstractList<CompletedLotte
     @Override
     public int size() {
         return gameIndexes.size();
+    }
+
+    @Override
+    public boolean isEmpty() {
+        return size() == 0;
+    }
+
+    @Override
+    public boolean contains(Object o) {
+        if (o == null || o instanceof CompletedLotterySixGameIndex) {
+            return gameIndexes.contains(o);
+        } else if (o instanceof CompletedLotterySixGame) {
+            return gameIndexes.contains(((CompletedLotterySixGame) o).toGameIndex());
+        } else {
+            return false;
+        }
+    }
+
+    public boolean contains(CompletedLotterySixGameIndex o) {
+        return gameIndexes.contains(o);
     }
 
     @Override
@@ -144,18 +177,111 @@ public class LazyCompletedLotterySixGameList extends AbstractList<CompletedLotte
     }
 
     @Override
+    public boolean add(CompletedLotterySixGame element) {
+        CompletedLotterySixGameIndex gameIndex = element.toGameIndex();
+        dirtyGames.put(gameIndex.getGameId(), element);
+        return gameIndexes.add(gameIndex);
+    }
+
+    @Override
     public void add(int index, CompletedLotterySixGame element) {
         CompletedLotterySixGameIndex gameIndex = element.toGameIndex();
         gameIndexes.add(index, gameIndex);
         dirtyGames.put(gameIndex.getGameId(), element);
     }
 
-    public void add(CompletedLotterySixGameIndex gameIndex) {
-        add(size(), gameIndex);
+    @Deprecated
+    public boolean add(CompletedLotterySixGameIndex gameIndex) {
+        return gameIndexes.add(gameIndex);
     }
 
+    @Deprecated
     public void add(int index, CompletedLotterySixGameIndex gameIndex) {
         gameIndexes.add(index, gameIndex);
+    }
+
+    @Override
+    public boolean remove(Object o) {
+        if (o == null || o instanceof CompletedLotterySixGameIndex) {
+            return gameIndexes.remove(o);
+        } else if (o instanceof CompletedLotterySixGame) {
+            return gameIndexes.remove(((CompletedLotterySixGame) o).toGameIndex());
+        } else {
+            return false;
+        }
+    }
+
+    public boolean remove(CompletedLotterySixGameIndex o) {
+        return gameIndexes.remove(o);
+    }
+
+    @Override
+    public boolean containsAll(Collection<?> c) {
+        return c.stream().allMatch(o -> contains(o));
+    }
+
+    @Override
+    public boolean addAll(Collection<? extends CompletedLotterySixGame> c) {
+        boolean result = false;
+        for (CompletedLotterySixGame game : c) {
+            result |= add(game);
+        }
+        return result;
+    }
+
+    @Override
+    public boolean addAll(int index, Collection<? extends CompletedLotterySixGame> c) {
+        boolean result = false;
+        for (CompletedLotterySixGame game : c) {
+            add(index++, game);
+            result = true;
+        }
+        return result;
+    }
+
+    @Override
+    public boolean removeAll(Collection<?> c) {
+        boolean result = false;
+        for (Object o : c) {
+            result |= remove(o);
+        }
+        return result;
+    }
+
+    @Override
+    public boolean retainAll(Collection<?> c) {
+        boolean result = false;
+        Optional<?> optSample = c.stream().filter(o -> o != null).findAny();
+        if (!optSample.isPresent()) {
+            if (c.isEmpty()) {
+                result = !isEmpty();
+                clear();
+                return result;
+            } else {
+                return gameIndexes.retainAll(Collections.singleton(null));
+            }
+        }
+        Object sample = optSample.get();
+        if (sample instanceof CompletedLotterySixGameIndex) {
+            for (CompletedLotterySixGameIndex gameIndex : gameIndexes) {
+                if (!c.contains(gameIndex)) {
+                    result |= remove(gameIndex);
+                }
+            }
+            return result;
+        } else if (sample instanceof CompletedLotterySixGame) {
+            c = c.stream().map(g -> ((CompletedLotterySixGame) g).toGameIndex()).collect(Collectors.toSet());
+            for (CompletedLotterySixGameIndex gameIndex : gameIndexes) {
+                if (!c.contains(gameIndex)) {
+                    result |= remove(gameIndex);
+                }
+            }
+            return result;
+        } else {
+            result = !isEmpty();
+            clear();
+            return result;
+        }
     }
 
     @Override
@@ -173,31 +299,145 @@ public class LazyCompletedLotterySixGameList extends AbstractList<CompletedLotte
         } else if (o instanceof CompletedLotterySixGame) {
             return gameIndexes.indexOf(((CompletedLotterySixGame) o).toGameIndex());
         } else {
-            return super.indexOf(o);
+            return -1;
         }
     }
 
-    public Iterator<CompletedLotterySixGameIndex> indexIterator() {
-        return new Iterator<CompletedLotterySixGameIndex>() {
-            int index = -1;
+    @Override
+    public int lastIndexOf(Object o) {
+        if (o == null || o instanceof CompletedLotterySixGameIndex) {
+            return gameIndexes.lastIndexOf(o);
+        } else if (o instanceof CompletedLotterySixGame) {
+            return gameIndexes.lastIndexOf(((CompletedLotterySixGame) o).toGameIndex());
+        } else {
+            return -1;
+        }
+    }
+
+    @Override
+    public ListIterator<CompletedLotterySixGame> listIterator() {
+        return listIterator(0);
+    }
+
+    @Override
+    public ListIterator<CompletedLotterySixGame> listIterator(int index) {
+        return new ListIterator<CompletedLotterySixGame>() {
+
+            private final ListIterator<CompletedLotterySixGameIndex> itr = indexListIterator();
 
             @Override
             public boolean hasNext() {
-                return (index + 1) < size();
+                return itr.hasNext();
             }
 
             @Override
-            public CompletedLotterySixGameIndex next() {
-                return gameIndexes.get(++index);
+            public CompletedLotterySixGame next() {
+                return get(itr.next());
+            }
+
+            @Override
+            public boolean hasPrevious() {
+                return itr.hasPrevious();
+            }
+
+            @Override
+            public CompletedLotterySixGame previous() {
+                return get(itr.previous());
+            }
+
+            @Override
+            public int nextIndex() {
+                return itr.nextIndex();
+            }
+
+            @Override
+            public int previousIndex() {
+                return itr.previousIndex();
             }
 
             @Override
             public void remove() {
-                if (LazyCompletedLotterySixGameList.this.remove(index) != null) {
-                    index--;
-                }
+                itr.remove();
+            }
+
+            @Override
+            public void set(CompletedLotterySixGame completedLotterySixGame) {
+                itr.set(completedLotterySixGame.toGameIndex());
+            }
+
+            @Override
+            public void add(CompletedLotterySixGame completedLotterySixGame) {
+                itr.add(completedLotterySixGame.toGameIndex());
             }
         };
+    }
+
+    public ListIterator<CompletedLotterySixGameIndex> indexListIterator() {
+        return indexListIterator(0);
+    }
+
+    public ListIterator<CompletedLotterySixGameIndex> indexListIterator(int index) {
+        return gameIndexes.listIterator(index);
+    }
+
+    @Override
+    public LazyCompletedLotterySixGameList subList(int fromIndex, int toIndex) {
+        return new LazyCompletedLotterySixGameList(gameLoader, gameIndexes.subList(fromIndex, toIndex), cachedGames, dirtyGames, gameLoadingLock);
+    }
+
+    @Override
+    public Iterator<CompletedLotterySixGame> iterator() {
+        return new Iterator<CompletedLotterySixGame>() {
+
+            private final Iterator<CompletedLotterySixGameIndex> itr = indexIterator();
+
+            @Override
+            public boolean hasNext() {
+                return itr.hasNext();
+            }
+
+            @Override
+            public CompletedLotterySixGame next() {
+                return get(itr.next());
+            }
+
+            @Override
+            public void remove() {
+                itr.remove();
+            }
+        };
+    }
+
+    @Deprecated
+    @Override
+    public Object[] toArray() {
+        return indexStream().map(this::get).toArray();
+    }
+
+    @SuppressWarnings({"unchecked", "SuspiciousSystemArraycopy"})
+    @Deprecated
+    @Override
+    public <T> T[] toArray(T[] a) {
+        Object[] array = toArray();
+        if (a.length < array.length) {
+            a = (T[]) Array.newInstance(a.getClass().getComponentType(), array.length);
+        }
+        System.arraycopy(array, 0, a, 0, array.length);
+        return a;
+    }
+
+    @Override
+    public Stream<CompletedLotterySixGame> stream() {
+        return indexStream().map(this::get);
+    }
+
+    @Override
+    public Stream<CompletedLotterySixGame> parallelStream() {
+        return indexParallelStream().map(this::get);
+    }
+
+    public Iterator<CompletedLotterySixGameIndex> indexIterator() {
+        return gameIndexes.iterator();
     }
 
     public Iterable<CompletedLotterySixGameIndex> indexIterable() {
@@ -225,9 +465,7 @@ public class LazyCompletedLotterySixGameList extends AbstractList<CompletedLotte
         if (numberOfGames >= 0) {
             stream = stream.limit(numberOfGames);
         }
-        synchronized (getIterateLock()) {
-            return stream.collect(Collectors.toList());
-        }
+        return stream.collect(Collectors.toList());
     }
 
     public Stream<CompletedLotterySixGameIndex> queryStream(CompletedLotteryGamesQuery query, TimeZone timeZone) {
@@ -235,10 +473,17 @@ public class LazyCompletedLotterySixGameList extends AbstractList<CompletedLotte
         return indexStream().filter(predicate);
     }
 
+    @Override
+    public void clear() {
+        for (CompletedLotterySixGameIndex gameIndex : gameIndexes) {
+            remove(gameIndex);
+        }
+    }
+
     @Deprecated
     @Override
     public void sort(Comparator<? super CompletedLotterySixGame> comparator) {
-        super.sort(comparator);
+        indexSort(Comparator.comparing(this::get, comparator));
     }
 
     public void indexSort(Comparator<? super CompletedLotterySixGameIndex> comparator) {
