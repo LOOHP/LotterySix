@@ -1,0 +1,673 @@
+Messages:
+  Reloaded: '&7六合彩已重新加載！'
+  NoPermission: '&7你沒有這樣做的權限！'
+  NoConsole: '&7這個命令只能由玩家運行！'
+  InvalidUsage: '&c無效用法！'
+  NotEnoughMoney: '&c您的帳戶中沒有 ${Price}！'
+  BetPlaced: '&7投注！ &b${Price} &7從您的帳戶中扣除！'
+  NoGameRunning: '&c目前沒有攪珠在運行'
+  GameAlreadyRunning: '&c新一期六合彩已經開始'
+  GameLocked: '&c正在進行六合彩攪珠，投注服務暫停'
+  PreferenceUpdated: '&a成功更新玩家偏好！'
+  GameStarted: '&7開始新一期六合彩'
+  GameSettingsUpdated: '&7更新了本期六合彩'
+  BetLimitReachedSelf: '&c您已達到投注限額！ 切勿沉迷賭博'
+  BetLimitReachedPermission: '&c您已達到投注限額！ 切勿沉迷賭博'
+  PlayerNotFound: '&c無法找到該玩家'
+  PendingClaimed: '&7已領取 &b${Money} &7的六合彩派彩！'
+  GameNumberNotFound: '&c找不到該期六合彩'
+  BettingAccountSuspended: '&c您已暫停投注，直到 {Date}'
+  BetLimitMaximumChancePerSelection: '&c總投注注數超出了限制！'
+  NotifyBalanceChange: '&b${Amount} &7的餘額已添加到您的投注賬戶！'
+  WithdrawSuccess: '&7已成功從您的投注賬戶中提取 &b${Amount}'
+  DepositSuccess: '&7已成功將 &b${Amount} &7存入您的投注賬戶'
+  WithdrawFailed: '&c未能從您的投注賬戶提款'
+  InvalidNumber: '&c那不是一個有效的數字'
+  InvalidBetNumbers: '&c投注號碼無效'
+  PlayerBalance: '&a{Player} &7現在的投注賬戶中有 &b${Balance}&7'
+
+Explanation:
+  Message: '&a關於六合彩如何運作的解釋，請訪問： &bhttps://github.com/LOOHP/LotterySix/wiki/LotterySix-Draw-&-Prizes-Explanation'
+  URL: https://github.com/LOOHP/LotterySix/wiki/LotterySix-Draw-&-Prizes-Explanation
+  GUIItem:
+    - '&a六合彩指南'
+    - '&7- 攪珠如何運作'
+    - '&7- 概率是如何計算的'
+    - '&7- 獎品是如何分配的'
+    - '&7- 票價是如何計算的'
+
+Formatting:
+  Date: dd/MM/yyyy (EEEE) HH:mm
+  Locale: zh_hk
+  Booleans:
+    T: '&a啟用'
+    F: '&c停用'
+  PrizeTiers:
+    FIRST: 頭獎
+    SECOND: 二獎
+    THIRD: 三獎
+    FOURTH: 四獎
+    FIFTH: 五獎
+    SIXTH: 六獎
+    SEVENTH: 七獎
+  TicketDescription: '&6${Price} (每注${UnitPrice})'
+  WinningsDescription: '&6{Tier} ${Winnings} (每注${UnitPrice})'
+  MultipleWinningsDescription: '&6{Tier} ${Winnings} &7x{Times}'
+  BulkWinningsDescription: '&6{HighestTier}+ ${Winnings} (每注${UnitPrice})'
+  CombinationWinningsDescription: '&6{HighestTier}+ ${Winnings} (每注${UnitPrice})'
+  BetNumbersTypes:
+    SINGLE: '&6單式注項'
+    MULTIPLE: '&f複式注項'
+    BANKER: '&e膽拖注項'
+    RANDOM: '&6單式注項 &c(隨機)'
+    MULTIPLE_RANDOM: '&f複式注項 &c(隨機)'
+    BANKER_RANDOM: '&e膽拖注項 &c(隨機)'
+  RandomEntryGeneric: '&c運財號碼'
+  TicketDescriptionMultipleDraw: '&6${Price} (每注${UnitPrice}) &9[多期攪珠{DrawsRemaining}/{MultipleDraw}]'
+# This option is only used on backend servers
+Bungeecord: false
+# If you are using LotterySix on Bungeecord mode
+# THIS SECTION MUST BE THE SAME ACROSS ALL SERVERS AND PROXY
+# Ideally the whole config should be the same across all servers
+LotterySix:
+  # CornJob expression, https://crontab.guru/
+  # How often should the lottery run
+  # Put "Never" to never run automatically
+  RunInterval: 35 21 * * 2,4,6
+  TimeZone: Asia/Hong_Kong
+  # How long before the lottery runs after it had started
+  # Setting this to a negative value refers to
+  # N seconds before the next scheduled round
+  # If RunInterval is "Never",
+  # A negative value will be treated as positive
+  # This is in seconds
+  BetsAcceptDuration: -300
+  # This must be a positive EVEN integer
+  # If it isn't, it would be rounded up
+  PricePerBet: 10
+  # Number Of Number Choices, Starting from 1, Inclusive
+  # The lower the number of choices, the higher the odds
+  # Minimum is 7, Maximum is 49
+  NumberOfChoices: 39
+  # The lowest prize allocation for winning the top three tiers
+  # Ideally you want this value to be MUCH LOWER than
+  # the price for betting all numbers divided by 0.45,
+  # so you don't win more if you bet every number
+  # (MUCH LOWER is still pretty high for high number of choices)
+  LowestTopPlacesPrize: 8000000
+  # This percentage of total bets acquired will be taken from the prize pool
+  TaxPercentage: 0.25
+  # When displaying the estimated prize values
+  # Round to the nearest value below (uses the first sig. fig. to the right)
+  EstimationRoundToNearest: 1
+  # Choose carry-over fund calculation mode
+  # The difference between DEFAULT & ONLY_TICKET_SALES is that the for
+  # ONLY_TICKET_SALES that half of LowestTopPlacesPrize does not carry over to the next game
+  # MODES: DEFAULT, ONLY_TICKET_SALES
+  CarryOverMode: DEFAULT
+  # Highest possible value is 9223372036854775807
+  MaxTopPlacesPrize: 9223372036854775807
+  # Prize Calculation Mode
+  # This affects carry over prize calculation as well
+  # HKJC mode is an IRL prize money calculation method used by the HKJC
+  # Where the LowestTopPlacesPrize is only applied to 1st tier instead of all 1st - 3rd
+  # NOT recommended unless you have a large server that buys a LOT of tickets (>50000)
+  # MODES: DEFAULT, HKJC
+  PrizeCalculationMode: DEFAULT
+  # Tax percentage taken will be loaded into this account
+  # This is a PLAYER UUID
+  # For example, "d26f544b-392a-4a41-891f-fa470f5e6b40"
+  # Set to '-' to disable
+  LotteriesFundAccount: '-'
+  # DO NOT CHANGE this section if you don't know what you are doing!
+  # These are carefully calculated values, used in the MarkSix lottery in real life
+  # If changed incorrectly, it might mess up your lottery at best, or turn your lottery into an infinite money generator at worse.
+  # You are STRONGLY ADVISED to keep these settings AS-IS
+  PrizeTierSettings:
+    FOURTH:
+      MultiplierFromLast: 15
+    FIFTH:
+      MultiplierFromLast: 2
+    SIXTH:
+      MultiplierFromLast: 8
+    SEVENTH:
+      FixedPrizeMultiplier: 4
+  # If true, even if there isn't enough money to retain the lowest prize for a tier, the plugin will generate money for it
+  # If false, even there isn't enough money to retain the lowest prize for a tier, each tier will be lowered proportionally
+  RetainLowestPrizeForTier: false
+
+Restrictions:
+  # Max amount of money a player can bet in a single round of LotterySix
+  # Setting -1 means unlimited
+  # To add a player to a group, give the permission "lotterysix.betlimit.<group>"
+  # For example "lotterysix.betlimit.vip"
+  # Players with no groups will be treated as "default" unless they have "lotterysix.betlimit.unlimited"
+  BetLimitPerRound:
+    default: -1
+    miner: 0
+    minor: 0
+  # Allow players to still deposit money into their betting account if their game balance is going to be negative
+  # This setting is only effective if your economy allows negative balances
+  # Defaults to false as LotterySix aims to not make players go in debt due to playing the game
+  AllowLoans: false
+  # Maximum bet units a single number selection can have
+  # You can use this to, for example, stop players from selecting every number
+  # in one go in multiple selection
+  # Default is 2760681 (Combinations of selecting 38 numbers)
+  MaximumChancePerSelection: 2760681
+
+GUI:
+  MainMenu:
+    Title: 六合彩
+    CheckPastResults:
+      - '&d查看過去的攪珠結果'
+    NoLotteryGamesScheduled:
+      - '&c沒有安排 六合彩 攪珠'
+    CheckOwnBets:
+      - '&e本期六合彩！'
+      - '&e六合彩期數: &a{GameNumber}'
+      - '&e攪珠日期: &a{Date}'
+      - '&e總投注額: &a${TotalBets}'
+      - '&e估計頭獎基金: &a${PrizePool}'
+      - '&7(多寶/金多寶: ${CarryOverFund})'
+      - '&a'
+      - '&b點擊查看您的投注！ &7(只顯示首100張彩票)'
+    PlaceNewBets:
+      - '&6下新注項'
+      - '&a'
+      - '&7機率: '
+      - '&7 頭獎: {FIRSTOdds}分之1'
+      - '&7 二獎: {SECONDOdds}分之1'
+      - '&7 三獎: {THIRDOdds}分之1'
+      - '&7 四獎: {FOURTHOdds}分之1'
+      - '&7 五獎: {FIFTHOdds}分之1'
+      - '&7 六獎: {SIXTHOdds}分之1'
+      - '&7 七獎: {SEVENTHOdds}分之1'
+    Statistics:
+      - '&a攪珠結果統計'
+      - '&7透過數據分析贏得六合彩(?'
+    PendingTransactions:
+      - '&a您有未認領的派彩'
+      - '&a點擊領取'
+    BettingAccount:
+      - '&e%player_name% 投注賬戶'
+      - '&7查看您的投注賬戶詳情'
+    AccountFundTransfer:
+      - '&6投注賬戶存款'
+      - '&7您的投注賬戶存款持有您用於下注和贏取獎金的資金'
+  LastResults:
+    Title: '&2過去攪珠結果'
+    LotteryInfo:
+      - '&e六合彩期數: &a{GameNumber}'
+      - '&e攪珠日期: &a{Date}'
+      - '&e總投注額: &a${TotalBets}'
+      - '&e派出獎金: &a${TotalPrizes}'
+      - '&a'
+      - '&a頭獎: &6${FIRSTPrize} &7x{FIRSTPrizeCount}'
+      - '&a二獎: &6${SECONDPrize} &7x{SECONDPrizeCount}'
+      - '&a三獎: &6${THIRDPrize} &7x{THIRDPrizeCount}'
+      - '&a四獎: &6${FOURTHPrize} &7x{FOURTHPrizeCount}'
+      - '&a五獎: &6${FIFTHPrize} &7x{FIFTHPrizeCount}'
+      - '&a六獎: &6${SIXTHPrize} &7x{SIXTHPrizeCount}'
+      - '&a七獎: &6${SEVENTHPrize} &7x{SEVENTHPrizeCount}'
+    YourBets:
+      - '&a你的注項 &7(只顯示首100張彩票)'
+    NoWinnings: '&7沒有獎金'
+    Nothing:
+      - '&c沒有投注'
+    LookupHistoricGames:
+      - '&f查找歷史攪珠'
+      - '&7點擊並輸入六合彩期數'
+    ListHistoricGames:
+      - '&f過去攪珠結果列表'
+      - '&7查找較舊的攪珠結果'
+    HistoricGameListTitle: '&2{FromGameNumber} - {ToGameNumber}'
+    HistoricGameListInfo:
+      - '&e六合彩期數: &a{GameNumberRaw}'
+      - '&e攪珠日期: &a{Date}'
+      - '&7點擊查看詳情'
+    HistoricGameListSpecialName:
+      - '{SpecialName}'
+    HistoricNewerGames:
+      - '&a較新的'
+    HistoricOlderGames:
+      - '&e較舊的'
+  GameNumberInput:
+    Title: '&2輸入六合彩期數'
+  YourBets:
+    Title: '&2你的注項'
+    Nothing:
+      - '&c尚未投注'
+  SelectNewBetType:
+    Title: '&2選擇投注類型'
+    Single:
+      - '&6單式投注'
+      - '&7選擇6個不同的號碼'
+      - '&7最簡單易懂，推薦給新手玩家'
+    Multiple:
+      - '&f複式投注'
+      - '&7選擇 7 個或更多不同的數字'
+      - '&7示例: 如果選擇了七個數字 1、2、3、4、5、6 和 7，'
+      - '&7它可以分成七個單獨的組合，如下所示：'
+      - '&7'
+      - '&71. 1+2+3+4+5+6'
+      - '&72. 1+2+3+4+5+7'
+      - '&73. 1+2+3+4+6+7'
+      - '&74. 1+2+3+5+6+7'
+      - '&75. 1+2+4+5+6+7'
+      - '&76. 1+3+4+5+6+7'
+      - '&77. 2+3+4+5+6+7'
+    Banker:
+      - '&e膽拖投注'
+      - '&7選擇一到五個號碼作為膽，'
+      - '&7與其他數字被選為配腳'
+      - '&7例子: 如果兩個膽 1 和 2 的邊號為 3,4,5,6 和 7 被選中'
+      - '&7在 2-膽-5-配腳-號碼 組合中的選擇是：'
+      - '&7'
+      - '&71. 1+2   3+4+5+6'
+      - '&72. 1+2   3+4+5+7'
+      - '&73. 1+2   3+4+6+7'
+      - '&74. 1+2   3+5+6+7'
+      - '&75. 1+2   4+5+6+7'
+    Random:
+      - '&c運財號碼'
+      - '&7不知道選什麼號碼？'
+      - '&7讓電腦為你隨機挑選數字！'
+  RandomEntryCount:
+    Title: '&c選擇運財號碼投注數'
+    Value: '&a{Count}'
+  NewBet:
+    SingleTitle: '&2選擇6個號碼'
+    MultipleTitle: '&2選擇超過 7 個號碼'
+    BankerTitle: '&2選擇膽拖和配腳數字'
+    Finish:
+      - '&e點擊完成選擇'
+    FinishBankers:
+      - '&e點擊完成膽拖選擇'
+    AddRandom:
+      - '&c添加運財號碼'
+      - '&7讓電腦為你隨機挑選數字！'
+    NotYetFinish:
+      - '&7請選擇您的號碼！'
+    # You don't need to apply a color code for this text option
+    SelectAll: 全選
+    FinishSimple:
+      - '&e點擊完成選擇'
+      - '&e注數: &a{BetUnits}'
+      - '&e總金額: &a${Price}'
+    FinishComplex:
+      - '&e點擊完成選擇'
+      - '&e注數: &a{BetUnits}'
+      - '&e總金額: &a${Price}'
+      - '&e部份注項單位: &a${PricePartial}'
+  ConfirmNewBet:
+    Title: '&2確認投注'
+    LotteryInfo:
+      - '&e博彩要有節制 切勿沉迷賭博'
+    Confirm:
+      - '&a確認注項單位 (${Price})'
+    PartialConfirm:
+      - '&a確認部分注項單位 (${PricePartial})'
+    Cancel:
+      - '&c取消'
+    BulkRandom:
+      - '&c您即將隨機投注'
+      - '&e{EntriesTotal} &c次'
+    UnitInvestmentConfirm:
+      - '&a確認注項單位 &7(${PricePerBet})'
+      - '&e總金額: &a${Price}'
+    PartialInvestmentConfirm:
+      - '&a確認部分注項單位 &7(${PricePerPartialBet})'
+      - '&e總金額: &a${PricePartial}'
+    MultipleDrawValue:
+      - '&e多期攪珠: &a{Count}'
+      - '&7你可以透過多期攪珠投注'
+      - '&7用同一組號碼購買'
+      - '&7連續多期六合彩攪珠注項'
+    IncrementButton:
+      - '&7左鍵點擊: &a+1'
+      - '&7右鍵點擊: &a+5'
+    DecrementButton:
+      - '&7左鍵點擊: &c-1'
+      - '&7右鍵點擊: &c-5'
+  NumberStatistics:
+    Title: '&9攪珠結果統計'
+    LastDrawn: '&e號碼攪出相隔期數: {{Number}LastDrawn}'
+    TimesDrawn: '&a號碼攪出次數: {{Number}TimesDrawn}'
+    Never: '&c從來沒有'
+    Note:
+      - '&7統計數據最後更新於 {Date}'
+      - '&7六合彩期數: {GameNumber}'
+  BettingAccount:
+    Title: '&9投注賬戶'
+    Profile:
+      - '&e%player_name% 投注賬戶'
+      - '&b最高獲獎組別: &a%lotterysix_stats_highest_won_tier%'
+      - '&b總共獲獎金額: &a$%lotterysix_stats_total_winnings%'
+      - '&b遊戲幣餘額: &a$%vault_eco_balance_commas%'
+      - '&b投注帳戶餘額: &a$%lotterysix_stats_account_balance%'
+    ToggleHideTitles:
+      - '&b隱藏標題'
+      - '&7是否在六合彩抽獎期間隱藏標題消息'
+      - '&7當前狀態: {Status}'
+    ToggleHidePeriodicAnnouncements:
+      - '&b隱藏定期六合彩公告'
+      - '&7是否在六合彩攪珠前隱藏定期公告'
+      - '&7當前狀態: {Status}'
+    ToggleReopenMenu:
+      - '&b重新打開菜單'
+      - '&7投注後是否重新打開六合彩菜單'
+      - '&7當前狀態: {Status}'
+    SetBetLimitPerRound:
+      - '&a設置每期投注限額'
+      - '&7限制您在一期六合彩上的支出'
+      - '&7左鍵單擊設置/右鍵單擊清除'
+      - '&7當前限額: &a${Value}'
+    SetBetLimitPerRoundTitle: 設置每期投注限額
+    SuspendAccountForAWeek:
+      - '&c自願暫停戶口投注'
+      - '&7暫停自己在接下來的 1 週內投注'
+      - '&7左鍵單擊以添加 1 週/右鍵單擊以解除暫停'
+      - '&7當前暫停至: &c{Value}'
+  RandomEntry:
+    Title: '&c選擇運財號碼'
+    BetCountValueSimple:
+      - '&e注項數目: &a{Count}'
+      - '&e注數: &a{BetUnits}'
+      - '&e總金額: &a${Price}'
+    BetCountValueComplex:
+      - '&e注項數目: &a{Count}'
+      - '&e注數: &a{BetUnits}'
+      - '&e總金額: &a${Price}'
+      - '&e部份注項單位: &a${PricePartial}'
+    IncrementButton:
+      - '&7左鍵點擊: &a+1'
+      - '&7右鍵點擊: &a+10'
+    DecrementButton:
+      - '&7左鍵點擊: &c-1'
+      - '&7右鍵點擊: &c-10'
+    Single:
+      Tab:
+        - '&6單式投注'
+    Multiple:
+      Tab:
+        - '&f複式投注'
+      SizeValue:
+        - '&e選擇號碼數量: &a{Count}'
+    Banker:
+      Tab:
+        - '&e膽拖注項'
+      BankersValue:
+        - '&e選擇膽拖號碼數量: &a{Count}'
+      SelectionsValue:
+        - '&e選擇配腳號碼數量: &a{Count}'
+  AccountFundTransfer:
+    Title: '&5投注賬戶存款'
+    CurrentBalance:
+      - '&e當前餘額: &a${Amount}'
+      - '&7這是投注時使用的餘額，'
+      - '&7以及當您贏了注項時給您的派彩！'
+    Deposit:
+      - '&a點擊存款'
+    Withdraw:
+      - '&c點擊提現'
+    WithdrawAll:
+      - '&c點擊提取所有可用餘額'
+    WithdrawInputTitle: '&2輸入取款金額'
+    DepositInputTitle: '&2輸入存款金額'
+  AccountFundTransferPlacingBet:
+    Title: '&5餘額不足'
+    Confirm:
+      - '&a將剩餘的 ${Amount} 存入投注賬戶'
+      - '&7您的投注賬戶中只有 $%lotterysix_stats_account_balance% 餘額'
+    Cancel:
+      - '&c取消'
+
+Announcer:
+  PeriodicMessage:
+    Message: |-
+      &e本期的{SpecialName}&e六合彩攪珠估計頭獎基金為 &b${PrizePool}&e！
+      &e通過[&b/ls play&e]投注 &3[攪珠日期: {Date}]
+    # Set to blank if you don't want a hover text
+    Hover: ''
+    # This is in seconds
+    Frequency: 3600
+    # Send this message one more time one minute before scheduled draw
+    OneMinuteBefore: true
+  
+  DrawCancelledMessage: '&e[六合彩] {Date} 的 六合彩攪珠 {GameNumber} 已被管理員取消或因為沒有提交投注'
+  
+  BetPlacedAnnouncement:
+    # Whether to announce players placing bets
+    # Might be a security risk depending on the type of your server
+    Enabled: false
+    Message: '&a[六合彩] &b{Player} &a剛剛用 &c${Price}&a 下了注！'
+  
+  LiveDrawAnnouncer:
+    # Announce drawn numbers as it happens
+    Enabled: true
+    # Send Title Messages as well
+    # If you use this feature, don't set TimeBetween to 0
+    SendMessagesTitle: true
+    # Time between each number reveal
+    # This is in seconds
+    TimeBetween: 3
+    PreMessage:
+      - '&a六合彩 &e{GameNumber} &e{Date} &a的投注已關閉！'
+      - '&a六合彩抽獎即將開始，將抽取6 + 1個特別號碼'
+      - ''
+      - '&6總投注額: &b${TotalBets}&6 估計頭獎基金: &b${PrizePool}'
+      - ''
+      - '&a六合彩的玩法是每一期開從1~39個號碼開出6個數字+1個特別號，最少中三個號碼就能獲得七獎，全中（不計入特別號碼）就能獲得頭獎'
+    # Each line here corresponds to each line in 'PreMessage'
+    # And applies a hover message to that message
+    # Set to blank if you don't want a hover text
+    # If a corresponding message is not found, it is equivalent as blank
+    PreMessageHover:
+      - |-
+        &e六合彩的玩法是每一期開從1~39個號碼開出6個數字+1個特別號
+        &e最少中三個號碼就能獲得七獎
+        &e全中（不計入特別號碼）就能獲得頭獎
+    # These will also be sent as title if enabled above
+    Messages:
+      - '&c六&b合&a彩 &e攪珠將要開始'
+      - '&6第一個號碼：{FirstNumber}'
+      - '&6第二個號碼：{SecondNumber}'
+      - '&6第三個號碼：{ThirdNumber}'
+      - '&6第四個號碼：{FourthNumber}'
+      - '&6第五個號碼：{FifthNumber}'
+      - '&6第六個號碼：{SixthNumber}'
+      - '&a特別號碼: {SpecialNumber}'
+      - '&4頭獎: &a${FIRSTPrize} &7x{FIRSTPrizeCount}'
+      - '&d二獎: &a${SECONDPrize} &7x{SECONDPrizeCount}'
+      - '&c三獎: &a${THIRDPrize} &7x{THIRDPrizeCount}'
+    # These placeholders not used in the default config are also available
+    # {BetPlayerNames}
+    # {FIRSTPlayerNames}
+    # {SECONDPlayerNames}
+    # {THIRDPlayerNames}
+    # {FOURTHPlayerNames}
+    # {FIFTHPlayerNames}
+    # {SIXTHPlayerNames}
+    # {SEVENTHPlayerNames}
+    PostMessages:
+      - '&a彩金即將派發, 以下為攪珠結果回顧：'
+      - '&a六合彩期數: &e{GameNumber}'
+      - '&a攪珠日期: &e{Date}'
+      - '&a攪珠結果: {FirstNumberOrdered} {SecondNumberOrdered} {ThirdNumberOrdered} {FourthNumberOrdered} {FifthNumberOrdered} {SixthNumberOrdered} &e+ {SpecialNumber}'
+      - '&a頭獎: &6${FIRSTPrize} &7x{FIRSTPrizeCount}'
+      - '&a二獎: &6${SECONDPrize} &7x{SECONDPrizeCount}'
+      - '&a三獎: &6${THIRDPrize} &7x{THIRDPrizeCount}'
+      - '&a四獎: &6${FOURTHPrize} &7x{FOURTHPrizeCount}'
+      - '&a五獎: &6${FIFTHPrize} &7x{FIFTHPrizeCount}'
+      - '&a六獎: &6${SIXTHPrize} &7x{SIXTHPrizeCount}'
+      - '&a七獎: &6${SEVENTHPrize} &7x{SEVENTHPrizeCount}'
+      - '&a'
+      - '&a使用指令可以查看你有沒有中獎&領彩:'
+      - '&a[&b/ls play&a]'
+    # Each line here corresponds to each line in 'PostMessages'
+    # And applies a hover message to that message
+    # Set to blank if you don't want a hover text
+    # If a corresponding message is not found, it is equivalent as blank
+    PostMessagesHover: []
+  # This section is only available on Minecraft 1.9+
+  # Shows a bossbar leading up to the scheduled draw
+  PreDrawBossBar:
+    Enabled: true
+    # How long before the draw should the bossbar appear
+    # This is in seconds
+    TimeBeforeDraw: 300
+    Message: '&e本期的{SpecialName}&c六&b合&a彩&e將於{Date_HH:mm}進行攪珠，估計頭獎基金為 &b${PrizePool}&e，立即&b[/ls play]&e投注！'
+    # https://hub.spigotmc.org/javadocs/spigot/org/bukkit/boss/BarColor.html
+    Color: YELLOW
+    # https://hub.spigotmc.org/javadocs/spigot/org/bukkit/boss/BarStyle.html
+    Style: SOLID
+  # This section is only available on Minecraft 1.9+
+  # Shows a bossbar listing the drawn numbers during the draw
+  # Only appears if the 'LiveDrawAnnouncer' is enabled
+  DrawBossBar:
+    Enabled: true
+    # Each line here shows corresponding to each line in 'Messages' in the 'LiveDrawAnnouncer'
+    Messages:
+      - '&6_ _ _ _ _ _ + _'
+      - '{FirstNumber} &6_ _ _ _ _ + _'
+      - '{FirstNumber} {SecondNumber} &6_ _ _ _ + _'
+      - '{FirstNumber} {SecondNumber} {ThirdNumber} &6_ _ _ + _'
+      - '{FirstNumber} {SecondNumber} {ThirdNumber} {FourthNumber} &6_ _ + _'
+      - '{FirstNumber} {SecondNumber} {ThirdNumber} {FourthNumber} {FifthNumber} &6_ + _'
+      - '{FirstNumber} {SecondNumber} {ThirdNumber} {FourthNumber} {FifthNumber} {SixthNumber} &6+ _'
+      - '{FirstNumber} {SecondNumber} {ThirdNumber} {FourthNumber} {FifthNumber} {SixthNumber} &6+ {SpecialNumber}'
+      - '{FirstNumberOrdered} {SecondNumberOrdered} {ThirdNumberOrdered} {FourthNumberOrdered} {FifthNumberOrdered} {SixthNumberOrdered} &6+ {SpecialNumber}'
+    # https://hub.spigotmc.org/javadocs/spigot/org/bukkit/boss/BarColor.html
+    Color: YELLOW
+    # https://hub.spigotmc.org/javadocs/spigot/org/bukkit/boss/BarStyle.html
+    Style: SOLID
+
+DiscordSRV:
+  DrawResultAnnouncement:
+    # Set this to a channel that does not exist to disable
+    Channel: Global
+    Title: 六合彩攪珠結果
+    Description:
+      - '**六合彩期數: {GameNumber}**'
+      - '**攪珠日期: {Date}**'
+      - '**總投注額: ${TotalBets}**'
+      - '**派出獎金: ${TotalPrizes}**'
+      - '**攪珠結果: {FirstNumberOrdered} {SecondNumberOrdered} {ThirdNumberOrdered} {FourthNumberOrdered} {FifthNumberOrdered} {SixthNumberOrdered} + {SpecialNumber}**'
+      - ''
+      - '頭獎: ${FIRSTPrize} x{FIRSTPrizeCount}'
+      - '二獎: ${SECONDPrize} x{SECONDPrizeCount}'
+      - '三獎: ${THIRDPrize} x{THIRDPrizeCount}'
+      - '四獎: ${FOURTHPrize} x{FOURTHPrizeCount}'
+      - '五獎: ${FIFTHPrize} x{FIFTHPrizeCount}'
+      - '六獎: ${SIXTHPrize} x{SIXTHPrizeCount}'
+      - '七獎: ${SEVENTHPrize} x{SEVENTHPrizeCount}'
+      - ''
+      - '*恭喜！*'
+      - ''
+      - 'Discord六合彩投注頻道使用指令/lottery查看更多資訊'
+    ThumbnailURL: https://resources.loohpjames.com/spigot/plugins/lotterysix/icon.png
+  # Discord Slash Command /lottery
+  SlashCommands:
+    Global:
+      Messages:
+        NotLinked: 必須鏈接 Minecraft 帳戶才能使用此命令。
+        NoOneOnline: 玩家必須在伺服器上在線才能使此命令生效。
+        TimeOut: 動作超時！請重新開始。
+        UnknownError: 出現未知錯誤！
+      Labels:
+        GameNumber:
+          Name: 六合彩期數
+          Description: 要查找的六合彩期數 (e.g. '23/001')
+        BetNumbers:
+          Name: 投注號碼
+          Description: 您想投注的號碼
+      Title: 六合彩介面
+      Description: 打開六合彩介面
+      ThumbnailURL: https://resources.loohpjames.com/spigot/plugins/lotterysix/icon.png
+      SubTitle:
+        ActiveGame:
+          - '**本期六合彩！**'
+          - '**六合彩期數: {GameNumber}**'
+          - '**攪珠日期: {Date}**'
+          - '**總投注額: ${TotalBets}**'
+          - '**估計頭獎基金: ${PrizePool}**'
+          - '**(多寶/金多寶: ${CarryOverFund})**'
+        NoGame:
+          - 沒有六合彩
+      Components:
+        Back: 返回
+    ViewPastDraw:
+      NoResults: 沒有結果
+      YourBets: '**你的注項**'
+      NoWinnings: 沒有獎金
+      ThumbnailURL: https://resources.loohpjames.com/spigot/plugins/lotterysix/icon.png
+      Title: 六合彩攪珠結果
+    ViewCurrentBets:
+      Title: 你的注項
+      SubTitle:
+        - '六合彩期數: {GameNumber}'
+        - '攪珠日期: {Date}'
+        - '總投注額: ${TotalBets}'
+        - '估計頭獎基金: ${PrizePool}'
+        - '(多寶/金多寶: ${CarryOverFund})'
+      NoBets: 您還沒有投注
+      NoGame: 沒有預定的六合彩
+      ThumbnailURL: https://resources.loohpjames.com/spigot/plugins/lotterysix/icon.png
+    ViewNumberStatistics:
+      NumberField: 號碼
+      LastDrawnField: 攪出相隔期數
+      TimesDrawnField: 攪出次數
+      ThumbnailURL: https://resources.loohpjames.com/spigot/plugins/lotterysix/icon.png
+      Title: 攪珠結果統計
+    BetAccount:
+      Title: '%player_name% 投注賬戶'
+      SubTitle:
+        - '最高獲獎組別: %lotterysix_stats_highest_won_tier%'
+        - '總共獲獎金額: $%lotterysix_stats_total_winnings%'
+        - '遊戲幣餘額: $%vault_eco_balance_commas%'
+        - '投注帳戶餘額: $%lotterysix_stats_account_balance%'
+      ThumbnailURL: https://resources.loohpjames.com/spigot/plugins/lotterysix/icon.png
+    PlaceBet:
+      NoGame: 沒有預定的六合彩
+      Title: 下注
+      SubTitle:
+        - '六合彩期數: {GameNumber}'
+        - '攪珠日期: {Date}'
+        - ''
+        - '**投注帳戶餘額: $%lotterysix_stats_account_balance%**'
+        - '**投注類型: {BetNumbersType}**'
+      ThumbnailURL: https://resources.loohpjames.com/spigot/plugins/lotterysix/icon.png
+      Components:
+        NotYetFinish: 請選擇您的號碼！
+        Finish: 完成選擇
+        FinishBankers: 完成膽拖選擇
+        MultipleRandomSize: '選擇號碼數量: {Count}'
+        BankerRandomBankerSize: '選擇膽拖數量: {Count}'
+        BankerRandomSelectionSize: '選擇號碼數量: {Count}'
+        AddRandom: 添加運財號碼
+        MultipleDrawSelection: '多期攪珠: {Count}'
+
+Options:
+  Updater: true
+
+PlaceholderAPI:
+  HideResultsWhileGameIsLocked: true
+# If you would like to create custom texture for the number selection items
+# This section would be useful to you
+NumberItems:
+  # If you would like to use another item instead of colored wool
+  # Change this to an item type, for example, "BRICK"
+  # Defaults to "DEFAULT", which uses colored wool
+  ItemType: DEFAULT
+  # Whether the stack size should be set to the number it represents
+  SetStackSize: true
+  # For example, if this is set to 1000
+  # The item for the 'select all' will have Custom Model Data of 1000,
+  # The item for number 1 will have Custom Model Data of 1001,
+  # The item for number 2 will have Custom Model Data of 1002, etc.
+  # The item for number 1 when selected will have Custom Model Data of 1101,
+  # The item for number 2 when selected will have Custom Model Data of 1102, etc.
+  # The item for number 1 when selected as banker will have Custom Model Data of 1201,
+  # The item for number 2 when selected as banker will have Custom Model Data of 1202, etc.
+  StartingCustomModelData: 1000
