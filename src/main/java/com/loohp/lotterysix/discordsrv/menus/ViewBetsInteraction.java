@@ -43,9 +43,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
+import static com.loohp.lotterysix.discordsrv.DiscordSRVHook.INTERACTION_LABEL_PREFIX;
+
 public class ViewBetsInteraction extends DiscordInteraction {
 
-    public static final String INTERACTION_LABEL = "ls_view_bets";
+    public static final String INTERACTION_LABEL = INTERACTION_LABEL_PREFIX + "view_bets";
 
     public ViewBetsInteraction() {
         super(INTERACTION_LABEL, false);

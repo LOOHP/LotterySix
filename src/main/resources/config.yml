@@ -558,6 +558,7 @@ DiscordSRV:
     ThumbnailURL: "https://resources.loohpjames.com/spigot/plugins/lotterysix/icon.png"
   #Discord Slash Command /lottery
   SlashCommands:
+    EnableLotteryCommand: true
     Global:
       Title: "LotterySix Menu"
       Description: "Open LotterySix menu"

@@ -282,6 +282,7 @@ public class LotterySix implements AutoCloseable {
     public String discordSRVDrawResultAnnouncementTitle;
     public String discordSRVDrawResultAnnouncementDescription;
     public String discordSRVDrawResultAnnouncementThumbnailURL;
+    public boolean discordSRVSlashCommandsEnableLotteryCommand;
     public String discordSRVSlashCommandsGlobalTitle;
     public String discordSRVSlashCommandsGlobalSubTitleActiveGame;
     public String discordSRVSlashCommandsGlobalSubTitleNoGame;
@@ -989,6 +990,7 @@ public class LotterySix implements AutoCloseable {
         discordSRVDrawResultAnnouncementTitle = config.getConfiguration().getString("DiscordSRV.DrawResultAnnouncement.Title");
         discordSRVDrawResultAnnouncementDescription = String.join("\n", config.getConfiguration().getStringList("DiscordSRV.DrawResultAnnouncement.Description"));
         discordSRVDrawResultAnnouncementThumbnailURL = config.getConfiguration().getString("DiscordSRV.DrawResultAnnouncement.ThumbnailURL");
+        discordSRVSlashCommandsEnableLotteryCommand = config.getConfiguration().getBoolean("DiscordSRV.SlashCommands.EnableLotteryCommand");
         discordSRVSlashCommandsGlobalTitle = config.getConfiguration().getString("DiscordSRV.SlashCommands.Global.Title");
         discordSRVSlashCommandsGlobalSubTitleActiveGame = String.join("\n", config.getConfiguration().getStringList("DiscordSRV.SlashCommands.Global.SubTitle.ActiveGame"));
         discordSRVSlashCommandsGlobalSubTitleNoGame = String.join("\n", config.getConfiguration().getStringList("DiscordSRV.SlashCommands.Global.SubTitle.NoGame"));

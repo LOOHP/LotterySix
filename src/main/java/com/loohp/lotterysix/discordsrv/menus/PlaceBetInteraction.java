@@ -68,54 +68,56 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.loohp.lotterysix.discordsrv.DiscordSRVHook.INTERACTION_LABEL_PREFIX;
+
 public class PlaceBetInteraction extends DiscordInteraction {
 
-    public static final String INTERACTION_LABEL = "ls_place_bet";
+    public static final String INTERACTION_LABEL = INTERACTION_LABEL_PREFIX + "place_bet";
 
-    public static final String CONFIRM_SCREEN_BACK = "ls_place_bet_confirm_screen_back_";
+    public static final String CONFIRM_SCREEN_BACK = INTERACTION_LABEL_PREFIX + "place_bet_confirm_screen_back_";
 
-    public static final String SINGLE_ENTRY_LABEL = "ls_place_bet_single";
-    public static final String MULTIPLE_ENTRY_LABEL = "ls_place_bet_multiple";
-    public static final String BANKER_ENTRY_LABEL = "ls_place_bet_banker";
-    public static final String RANDOM_ENTRY_LABEL = "ls_place_bet_random";
+    public static final String SINGLE_ENTRY_LABEL = INTERACTION_LABEL_PREFIX + "place_bet_single";
+    public static final String MULTIPLE_ENTRY_LABEL = INTERACTION_LABEL_PREFIX + "place_bet_multiple";
+    public static final String BANKER_ENTRY_LABEL = INTERACTION_LABEL_PREFIX + "place_bet_banker";
+    public static final String RANDOM_ENTRY_LABEL = INTERACTION_LABEL_PREFIX + "place_bet_random";
 
-    public static final String SINGLE_RANDOM_ENTRY_LABEL = "ls_place_bet_single_random";
-    public static final String MULTIPLE_RANDOM_ENTRY_LABEL = "ls_place_bet_multiple_random";
-    public static final String BANKER_RANDOM_ENTRY_LABEL = "ls_place_bet_banker_random";
+    public static final String SINGLE_RANDOM_ENTRY_LABEL = INTERACTION_LABEL_PREFIX + "place_bet_single_random";
+    public static final String MULTIPLE_RANDOM_ENTRY_LABEL = INTERACTION_LABEL_PREFIX + "place_bet_multiple_random";
+    public static final String BANKER_RANDOM_ENTRY_LABEL = INTERACTION_LABEL_PREFIX + "place_bet_banker_random";
 
-    public static final String SINGLE_ENTRY_SELECTION_LABEL = "ls_place_bet_single_selection_";
-    public static final String SINGLE_ENTRY_SELECTION_OPTION_LABEL = "ls_place_bet_single_number_";
-    public static final String SINGLE_ENTRY_SELECTION_RANDOM_LABEL = "ls_place_bet_single_cpu_random_";
-    public static final String SINGLE_ENTRY_CONFIRM_LABEL = "ls_place_bet_single_confirm_";
+    public static final String SINGLE_ENTRY_SELECTION_LABEL = INTERACTION_LABEL_PREFIX + "place_bet_single_selection_";
+    public static final String SINGLE_ENTRY_SELECTION_OPTION_LABEL = INTERACTION_LABEL_PREFIX + "place_bet_single_number_";
+    public static final String SINGLE_ENTRY_SELECTION_RANDOM_LABEL = INTERACTION_LABEL_PREFIX + "place_bet_single_cpu_random_";
+    public static final String SINGLE_ENTRY_CONFIRM_LABEL = INTERACTION_LABEL_PREFIX + "place_bet_single_confirm_";
 
-    public static final String MULTIPLE_ENTRY_SELECTION_LABEL = "ls_place_bet_multiple_selection_";
-    public static final String MULTIPLE_ENTRY_SELECTION_OPTION_LABEL = "ls_place_bet_multiple_number_";
-    public static final String MULTIPLE_ENTRY_SELECTION_SELECT_ALL_LABEL = "ls_place_bet_multiple_select_all_";
-    public static final String MULTIPLE_ENTRY_SELECTION_RANDOM_LABEL = "ls_place_bet_multiple_cpu_random_";
-    public static final String MULTIPLE_ENTRY_CONFIRM_LABEL = "ls_place_bet_multiple_confirm_";
+    public static final String MULTIPLE_ENTRY_SELECTION_LABEL = INTERACTION_LABEL_PREFIX + "place_bet_multiple_selection_";
+    public static final String MULTIPLE_ENTRY_SELECTION_OPTION_LABEL = INTERACTION_LABEL_PREFIX + "place_bet_multiple_number_";
+    public static final String MULTIPLE_ENTRY_SELECTION_SELECT_ALL_LABEL = INTERACTION_LABEL_PREFIX + "place_bet_multiple_select_all_";
+    public static final String MULTIPLE_ENTRY_SELECTION_RANDOM_LABEL = INTERACTION_LABEL_PREFIX + "place_bet_multiple_cpu_random_";
+    public static final String MULTIPLE_ENTRY_CONFIRM_LABEL = INTERACTION_LABEL_PREFIX + "place_bet_multiple_confirm_";
 
-    public static final String BANKER_ENTRY_SELECTION_LABEL = "ls_place_bet_banker_selection_";
-    public static final String BANKER_ENTRY_SELECTION_OPTION_LABEL = "ls_place_bet_banker_number_";
-    public static final String BANKER_ENTRY_SELECTION_SELECT_ALL_LABEL = "ls_place_bet_banker_select_all_";
-    public static final String BANKER_ENTRY_SELECTION_RANDOM_LABEL = "ls_place_bet_banker_cpu_random_";
-    public static final String BANKER_ENTRY_CONFIRM_LABEL = "ls_place_bet_banker_confirm_";
+    public static final String BANKER_ENTRY_SELECTION_LABEL = INTERACTION_LABEL_PREFIX + "place_bet_banker_selection_";
+    public static final String BANKER_ENTRY_SELECTION_OPTION_LABEL = INTERACTION_LABEL_PREFIX + "place_bet_banker_number_";
+    public static final String BANKER_ENTRY_SELECTION_SELECT_ALL_LABEL = INTERACTION_LABEL_PREFIX + "place_bet_banker_select_all_";
+    public static final String BANKER_ENTRY_SELECTION_RANDOM_LABEL = INTERACTION_LABEL_PREFIX + "place_bet_banker_cpu_random_";
+    public static final String BANKER_ENTRY_CONFIRM_LABEL = INTERACTION_LABEL_PREFIX + "place_bet_banker_confirm_";
 
-    public static final String SINGLE_RANDOM_ENTRY_CONFIRM_LABEL = "ls_place_bet_single_random_";
+    public static final String SINGLE_RANDOM_ENTRY_CONFIRM_LABEL = INTERACTION_LABEL_PREFIX + "place_bet_single_random_";
 
-    public static final String MULTIPLE_RANDOM_ENTRY_SIZE_LABEL = "ls_place_bet_multiple_random_selection_";
-    public static final String MULTIPLE_RANDOM_ENTRY_SIZE_OPTION_LABEL = "ls_place_bet_multiple_random_size_";
-    public static final String MULTIPLE_RANDOM_ENTRY_CONFIRM_LABEL = "ls_place_bet_multiple_random_";
+    public static final String MULTIPLE_RANDOM_ENTRY_SIZE_LABEL = INTERACTION_LABEL_PREFIX + "place_bet_multiple_random_selection_";
+    public static final String MULTIPLE_RANDOM_ENTRY_SIZE_OPTION_LABEL = INTERACTION_LABEL_PREFIX + "place_bet_multiple_random_size_";
+    public static final String MULTIPLE_RANDOM_ENTRY_CONFIRM_LABEL = INTERACTION_LABEL_PREFIX + "place_bet_multiple_random_";
 
-    public static final String BANKER_RANDOM_ENTRY_BANKER_LABEL = "ls_place_bet_banker_random_bankersel_";
-    public static final String BANKER_RANDOM_ENTRY_BANKER_OPTION_LABEL = "ls_place_bet_banker_random_banker_";
-    public static final String BANKER_RANDOM_ENTRY_SIZE_LABEL = "ls_place_bet_banker_random_selection_";
-    public static final String BANKER_RANDOM_ENTRY_SIZE_OPTION_LABEL = "ls_place_bet_banker_random_size_";
-    public static final String BANKER_RANDOM_ENTRY_CONFIRM_LABEL = "ls_place_bet_banker_random_";
+    public static final String BANKER_RANDOM_ENTRY_BANKER_LABEL = INTERACTION_LABEL_PREFIX + "place_bet_banker_random_bankersel_";
+    public static final String BANKER_RANDOM_ENTRY_BANKER_OPTION_LABEL = INTERACTION_LABEL_PREFIX + "place_bet_banker_random_banker_";
+    public static final String BANKER_RANDOM_ENTRY_SIZE_LABEL = INTERACTION_LABEL_PREFIX + "place_bet_banker_random_selection_";
+    public static final String BANKER_RANDOM_ENTRY_SIZE_OPTION_LABEL = INTERACTION_LABEL_PREFIX + "place_bet_banker_random_size_";
+    public static final String BANKER_RANDOM_ENTRY_CONFIRM_LABEL = INTERACTION_LABEL_PREFIX + "place_bet_banker_random_";
 
-    public static final String PLACE_BET_CONFIRM_MULTIPLE_DRAW_LABEL = "ls_place_bet_multiple_draw_selection_";
-    public static final String PLACE_BET_CONFIRM_MULTIPLE_DRAW_OPTION_LABEL = "ls_place_bet_multiple_draw_option_";
-    public static final String PLACE_BET_CONFIRM_LABEL = "ls_place_bet_{Number}_{Unit}";
-    public static final Pattern PLACE_BET_CONFIRM_LABEL_PATTERN = Pattern.compile("^ls_place_bet_([^_]+)_(.+)$");
+    public static final String PLACE_BET_CONFIRM_MULTIPLE_DRAW_LABEL = INTERACTION_LABEL_PREFIX + "place_bet_multiple_draw_selection_";
+    public static final String PLACE_BET_CONFIRM_MULTIPLE_DRAW_OPTION_LABEL = INTERACTION_LABEL_PREFIX + "place_bet_multiple_draw_option_";
+    public static final String PLACE_BET_CONFIRM_LABEL = INTERACTION_LABEL_PREFIX + "place_bet_{Number}_{Unit}";
+    public static final Pattern PLACE_BET_CONFIRM_LABEL_PATTERN = Pattern.compile("^" + INTERACTION_LABEL_PREFIX + "place_bet_([^_]+)_(.+)$");
 
     public static final Color OFFSET_WHITE = new Color(0xFFFFFE);
 

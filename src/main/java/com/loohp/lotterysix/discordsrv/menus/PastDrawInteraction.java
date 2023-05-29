@@ -55,15 +55,17 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import static com.loohp.lotterysix.discordsrv.DiscordSRVHook.INTERACTION_LABEL_PREFIX;
+
 public class PastDrawInteraction extends DiscordInteraction {
 
-    public static final String INTERACTION_LABEL = "ls_pastdraw";
-    public static final String SELECTION_YEAR_MENU_LABEL = "ls_pastdraw_year_menu_";
-    public static final String SELECTION_YEAR_OPTION_LABEL = "ls_pastdraw_year_menu_option_";
-    public static final String SELECTION_MENU_LABEL = "ls_pastdraw_menu_";
-    public static final String SELECTION_OPTION_LABEL = "ls_pastdraw_menu_option_";
-    public static final String SELECTION_MENU_NEWER_LABEL = "ls_pastdraw_menu_newer";
-    public static final String SELECTION_MENU_OLDER_LABEL = "ls_pastdraw_menu_older";
+    public static final String INTERACTION_LABEL = INTERACTION_LABEL_PREFIX + "pastdraw";
+    public static final String SELECTION_YEAR_MENU_LABEL = INTERACTION_LABEL_PREFIX + "pastdraw_year_menu_";
+    public static final String SELECTION_YEAR_OPTION_LABEL = INTERACTION_LABEL_PREFIX + "pastdraw_year_menu_option_";
+    public static final String SELECTION_MENU_LABEL = INTERACTION_LABEL_PREFIX + "pastdraw_menu_";
+    public static final String SELECTION_OPTION_LABEL = INTERACTION_LABEL_PREFIX + "pastdraw_menu_option_";
+    public static final String SELECTION_MENU_NEWER_LABEL = INTERACTION_LABEL_PREFIX + "pastdraw_menu_newer";
+    public static final String SELECTION_MENU_OLDER_LABEL = INTERACTION_LABEL_PREFIX + "pastdraw_menu_older";
 
     public PastDrawInteraction() {
         super(INTERACTION_LABEL, false);

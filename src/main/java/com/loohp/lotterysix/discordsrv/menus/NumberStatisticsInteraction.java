@@ -36,9 +36,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
+import static com.loohp.lotterysix.discordsrv.DiscordSRVHook.INTERACTION_LABEL_PREFIX;
+
 public class NumberStatisticsInteraction extends DiscordInteraction {
 
-    public static final String INTERACTION_LABEL = "ls_number_statistics";
+    public static final String INTERACTION_LABEL = INTERACTION_LABEL_PREFIX + "number_statistics";
 
     public NumberStatisticsInteraction() {
         super(INTERACTION_LABEL, false);

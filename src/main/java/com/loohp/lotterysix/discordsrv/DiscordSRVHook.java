@@ -83,7 +83,8 @@ import java.util.concurrent.TimeUnit;
 public class DiscordSRVHook extends ListenerAdapter implements Listener, SlashCommandProvider {
 
     public static final String SLASH_COMMAND_LABEL = "lottery";
-    public static final String MAIN_MENU_LABEL = "ls_main_menu";
+    public static final String INTERACTION_LABEL_PREFIX = "ls_";
+    public static final String MAIN_MENU_LABEL = INTERACTION_LABEL_PREFIX + "main_menu";
 
     public static List<ActionRow> buildActionRows(Collection<DiscordInteraction> interactions, String discordUserId) {
         UUID uuid = discordUserId == null ? null : DiscordSRV.getPlugin().getAccountLinkManager().getUuid(discordUserId);
@@ -276,11 +277,17 @@ public class DiscordSRVHook extends ListenerAdapter implements Listener, SlashCo
 
     @Override
     public Set<PluginSlashCommand> getSlashCommands() {
+        if (!LotterySixPlugin.getInstance().discordSRVSlashCommandsEnableLotteryCommand) {
+            return Collections.emptySet();
+        }
         return Collections.singleton(new PluginSlashCommand(LotterySixPlugin.plugin, new CommandData(SLASH_COMMAND_LABEL, LotterySixPlugin.getInstance().discordSRVSlashCommandsGlobalDescription), DiscordSRV.getPlugin().getMainGuild().getId()));
     }
 
     @SlashCommand(path = "*")
     public void onSlashCommand(SlashCommandEvent event) {
+        if (!LotterySixPlugin.getInstance().discordSRVSlashCommandsEnableLotteryCommand) {
+            return;
+        }
         Guild guild = DiscordSRV.getPlugin().getMainGuild();
         if (event.getGuild().getIdLong() != guild.getIdLong()) {
             return;
@@ -332,6 +339,17 @@ public class DiscordSRVHook extends ListenerAdapter implements Listener, SlashCo
 
         @Override
         public void onGenericComponentInteractionCreate(GenericComponentInteractionCreateEvent event) {
+            if (!LotterySixPlugin.getInstance().discordSRVSlashCommandsEnableLotteryCommand) {
+                return;
+            }
+            Component component = event.getComponent();
+            if (component == null) {
+                return;
+            }
+            String id = component.getId();
+            if (id == null || !id.startsWith(INTERACTION_LABEL_PREFIX)) {
+                return;
+            }
             event.deferEdit().queue();
             if (LotterySixPlugin.getInstance().isGameLocked()) {
                 event.getHook().editOriginal(ChatColor.stripColor(LotterySixPlugin.getInstance().messageGameLocked)).setEmbeds().setActionRows().retainFiles(Collections.emptyList()).queue();
@@ -344,7 +362,6 @@ public class DiscordSRVHook extends ListenerAdapter implements Listener, SlashCo
                 }
                 data.setInteractionHook(event.getHook());
                 try {
-                    String id = event.getComponent().getId();
                     if (id.startsWith(MAIN_MENU_LABEL)) {
                         handle(event, false);
                         return;
