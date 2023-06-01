@@ -190,5 +190,4 @@ public class SkinUtils {
         throw new RuntimeException("Unable to retrieve skin url from Mojang servers for the player " + uuid);
     }
 
-
 }

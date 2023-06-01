@@ -22,22 +22,22 @@ package com.loohp.lotterysix.proxy.bungee;
 
 import com.loohp.lotterysix.game.lottery.CompletedLotterySixGame;
 import com.loohp.lotterysix.game.lottery.PlayableLotterySixGame;
-import com.loohp.lotterysix.game.player.LotteryPlayer;
 import com.loohp.lotterysix.game.objects.PlayerBets;
 import com.loohp.lotterysix.game.objects.PlayerPreferenceKey;
 import com.loohp.lotterysix.game.objects.PlayerStatsKey;
 import com.loohp.lotterysix.game.objects.PlayerWinnings;
+import com.loohp.lotterysix.game.player.LotteryPlayer;
 import com.loohp.lotterysix.utils.StringUtils;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.ProxyServer;
-import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.event.ServerSwitchEvent;
 import net.md_5.bungee.api.plugin.Listener;
 import net.md_5.bungee.event.EventHandler;
 
 import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 public class DebugBungee implements Listener {
@@ -52,15 +52,15 @@ public class DebugBungee implements Listener {
     }
 
     @SuppressWarnings("deprecation")
-    public static void debugLotteryPlayer(CommandSender sender, ProxiedPlayer player, int maxPastGames) {
+    public static void debugLotteryPlayer(CommandSender sender, String name, UUID uuid, int maxPastGames) {
         sender.sendMessage(ChatColor.AQUA + "LotterySix Player Info ----");
-        sender.sendMessage(ChatColor.YELLOW + "Name: " + player.getName());
-        sender.sendMessage(ChatColor.YELLOW + "UUID: " + player.getUniqueId());
+        sender.sendMessage(ChatColor.YELLOW + "Name: " + name);
+        sender.sendMessage(ChatColor.YELLOW + "UUID: " + uuid);
         sender.sendMessage("");
-        long limit = LotterySixBungee.getInstance().getPlayerBetLimit(player.getUniqueId());
+        long limit = LotterySixBungee.getInstance().getPlayerBetLimit(uuid);
         sender.sendMessage(ChatColor.GREEN + "Bet Limit By Permission: " + (limit <= 0 ? "Unlimited" : limit));
         sender.sendMessage("");
-        LotteryPlayer lotteryPlayer = LotterySixBungee.getInstance().getLotteryPlayerManager().getLotteryPlayer(player.getUniqueId());
+        LotteryPlayer lotteryPlayer = LotterySixBungee.getInstance().getLotteryPlayerManager().getLotteryPlayer(uuid);
         sender.sendMessage(ChatColor.AQUA + "Preferences ----");
         for (PlayerPreferenceKey key : PlayerPreferenceKey.values()) {
             sender.sendMessage(ChatColor.GREEN + key.name() + ": " + lotteryPlayer.getPreference(key, key.getValueTypeClass()));
@@ -79,14 +79,18 @@ public class DebugBungee implements Listener {
             sender.sendMessage(ChatColor.YELLOW + "Game ID: " + currentGame.getGameId());
             sender.sendMessage(ChatColor.YELLOW + "Game Number: " + currentGame.getGameNumber());
             sender.sendMessage(ChatColor.YELLOW + "Date: " + LotterySixBungee.getInstance().dateFormat.format(new Date(currentGame.getDatetime())));
-            List<PlayerBets> bets = currentGame.getPlayerBets(player.getUniqueId());
+            List<PlayerBets> bets = currentGame.getPlayerBets(uuid);
             sender.sendMessage(ChatColor.GREEN + "Total Bet Placed By Player: $" + StringUtils.formatComma(bets.stream().mapToLong(each -> each.getBet()).sum()));
             sender.sendMessage("");
             for (int i = 0; i < bets.size(); i++) {
                 PlayerBets bet = bets.get(i);
                 sender.sendMessage((i + 1) + ". " + bet.getChosenNumbers().toFormattedString());
+                sender.sendMessage("    " + ChatColor.GOLD + "Bet ID: " + bet.getBetId());
                 sender.sendMessage("    " + ChatColor.GOLD + "Type: " + bet.getChosenNumbers().getType().name());
                 sender.sendMessage("    " + ChatColor.GOLD + "Price: $" + StringUtils.formatComma(bet.getBet()));
+                if (bet.isMultipleDraw()) {
+                    sender.sendMessage("    " + ChatColor.BLUE + "Multiple Draws: " + bet.getDrawsRemaining() + "/" + bet.getMultipleDraw());
+                }
                 sender.sendMessage("");
             }
         }
@@ -104,24 +108,32 @@ public class DebugBungee implements Listener {
                     sender.sendMessage(ChatColor.YELLOW + "Date: " + LotterySixBungee.getInstance().dateFormat.format(new Date(game.getDatetime())));
                     sender.sendMessage(ChatColor.YELLOW + "Result: " + game.getDrawResult().toFormattedString());
                     sender.sendMessage("");
-                    List<PlayerWinnings> winningsList = game.getSortedPlayerWinnings(player.getUniqueId());
+                    List<PlayerWinnings> winningsList = game.getSortedPlayerWinnings(uuid);
                     int u = 1;
                     for (PlayerWinnings winnings : winningsList.subList(0, Math.min(50, winningsList.size()))) {
                         sender.sendMessage(u++ + ". " + winnings.getWinningBet(game).getChosenNumbers().toFormattedString());
                         if (winnings.isCombination(game)) {
                             sender.sendMessage("    (" + winnings.getWinningCombination().toFormattedString() + ")");
                         }
-                        sender.sendMessage("    " + ChatColor.GOLD + "" + winnings.getTier().getShortHand() + " $" + StringUtils.formatComma(winnings.getWinnings()));
+                        sender.sendMessage("    " + ChatColor.GOLD + winnings.getTier().getShortHand() + " $" + StringUtils.formatComma(winnings.getWinnings()));
+                        sender.sendMessage("    " + ChatColor.GOLD + "Bet ID: " + winnings.getWinningBetId());
                         sender.sendMessage("    " + ChatColor.GOLD + "Type: " + winnings.getWinningBet(game).getChosenNumbers().getType().name());
                         sender.sendMessage("    " + ChatColor.GOLD + "Price: $" + StringUtils.formatComma(winnings.getWinningBet(game).getBet()));
+                        if (winnings.getWinningBet(game).isMultipleDraw()) {
+                            sender.sendMessage("    " + ChatColor.BLUE + "Multiple Draws: " + winnings.getWinningBet(game).getDrawsRemaining() + "/" + winnings.getWinningBet(game).getMultipleDraw());
+                        }
                         sender.sendMessage("");
                     }
-                    for (PlayerBets bet : game.getPlayerBets(player.getUniqueId())) {
+                    for (PlayerBets bet : game.getPlayerBets(uuid)) {
                         if (winningsList.stream().noneMatch(each -> each.getWinningBet(game).getBetId().equals(bet.getBetId()))) {
                             sender.sendMessage(u++ + ". " + bet.getChosenNumbers().toFormattedString());
                             sender.sendMessage("    " + ChatColor.GOLD + "No Winnings $0");
+                            sender.sendMessage("    " + ChatColor.GOLD + "Bet ID: " + bet.getBetId());
                             sender.sendMessage("    " + ChatColor.GOLD + "Type: " + bet.getChosenNumbers().getType().name());
                             sender.sendMessage("    " + ChatColor.GOLD + "Price: $" + StringUtils.formatComma(bet.getBet()));
+                            if (bet.isMultipleDraw()) {
+                                sender.sendMessage("    " + ChatColor.BLUE + "Multiple Draws: " + bet.getDrawsRemaining() + "/" + bet.getMultipleDraw());
+                            }
                             sender.sendMessage("");
                         }
                     }

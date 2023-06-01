@@ -80,8 +80,12 @@ public class Debug implements Listener {
             for (int i = 0; i < bets.size(); i++) {
                 PlayerBets bet = bets.get(i);
                 sender.sendMessage((i + 1) + ". " + bet.getChosenNumbers().toFormattedString());
+                sender.sendMessage("    " + ChatColor.GOLD + "Bet ID: " + bet.getBetId());
                 sender.sendMessage("    " + ChatColor.GOLD + "Type: " + bet.getChosenNumbers().getType().name());
                 sender.sendMessage("    " + ChatColor.GOLD + "Price: $" + StringUtils.formatComma(bet.getBet()));
+                if (bet.isMultipleDraw()) {
+                    sender.sendMessage("    " + ChatColor.BLUE + "Multiple Draws: " + bet.getDrawsRemaining() + "/" + bet.getMultipleDraw());
+                }
                 sender.sendMessage("");
             }
         }
@@ -106,17 +110,25 @@ public class Debug implements Listener {
                         if (winnings.isCombination(game)) {
                             sender.sendMessage("    (" + winnings.getWinningCombination().toFormattedString() + ")");
                         }
-                        sender.sendMessage("    " + ChatColor.GOLD + "" + winnings.getTier().getShortHand() + " $" + StringUtils.formatComma(winnings.getWinnings()));
+                        sender.sendMessage("    " + ChatColor.GOLD + winnings.getTier().getShortHand() + " $" + StringUtils.formatComma(winnings.getWinnings()));
+                        sender.sendMessage("    " + ChatColor.GOLD + "Bet ID: " + winnings.getWinningBetId());
                         sender.sendMessage("    " + ChatColor.GOLD + "Type: " + winnings.getWinningBet(game).getChosenNumbers().getType().name());
                         sender.sendMessage("    " + ChatColor.GOLD + "Price: $" + StringUtils.formatComma(winnings.getWinningBet(game).getBet()));
+                        if (winnings.getWinningBet(game).isMultipleDraw()) {
+                            sender.sendMessage("    " + ChatColor.BLUE + "Multiple Draws: " + winnings.getWinningBet(game).getDrawsRemaining() + "/" + winnings.getWinningBet(game).getMultipleDraw());
+                        }
                         sender.sendMessage("");
                     }
                     for (PlayerBets bet : game.getPlayerBets(player.getUniqueId())) {
                         if (winningsList.stream().noneMatch(each -> each.getWinningBet(game).getBetId().equals(bet.getBetId()))) {
                             sender.sendMessage(u++ + ". " + bet.getChosenNumbers().toFormattedString());
                             sender.sendMessage("    " + ChatColor.GOLD + "No Winnings $0");
+                            sender.sendMessage("    " + ChatColor.GOLD + "Bet ID: " + bet.getBetId());
                             sender.sendMessage("    " + ChatColor.GOLD + "Type: " + bet.getChosenNumbers().getType().name());
                             sender.sendMessage("    " + ChatColor.GOLD + "Price: $" + StringUtils.formatComma(bet.getBet()));
+                            if (bet.isMultipleDraw()) {
+                                sender.sendMessage("    " + ChatColor.BLUE + "Multiple Draws: " + bet.getDrawsRemaining() + "/" + bet.getMultipleDraw());
+                            }
                             sender.sendMessage("");
                         }
                     }

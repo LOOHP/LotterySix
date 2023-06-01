@@ -24,6 +24,7 @@ import com.cronutils.model.Cron;
 import com.loohp.lotterysix.debug.Debug;
 import com.loohp.lotterysix.game.lottery.PlayableLotterySixGame;
 import com.loohp.lotterysix.game.objects.Pair;
+import com.loohp.lotterysix.game.objects.PlayerBets;
 import com.loohp.lotterysix.game.objects.PlayerPreferenceKey;
 import com.loohp.lotterysix.game.objects.PlayerStatsKey;
 import com.loohp.lotterysix.game.objects.WinningNumbers;
@@ -405,23 +406,34 @@ public class Commands implements CommandExecutor, TabCompleter {
             return true;
         } else if (args[0].equalsIgnoreCase("invalidatebets")) {
             if (sender.hasPermission("lotterysix.invalidatebets")) {
-                if (args.length > 2) {
+                if (args.length > 3) {
                     if (LotterySixPlugin.getInstance().getCurrentGame() == null) {
                         sender.sendMessage(LotterySixPlugin.getInstance().messageNoGameRunning);
                     } else {
-                        if (args[1].equals("*")) {
-                            LotterySixPlugin.getInstance().getCurrentGame().invalidateBetsIf(bet -> true, Boolean.parseBoolean(args[2]));
-                        } else {
-                            UUID uuid;
-                            try {
-                                uuid = UUID.fromString(args[1]);
-                            } catch (IllegalArgumentException e) {
-                                uuid = Bukkit.getOfflinePlayer(args[1]).getUniqueId();
+                        if (args[1].equalsIgnoreCase("player")) {
+                            if (args[2].equals("*")) {
+                                LotterySixPlugin.getInstance().getCurrentGame().invalidateBetsIf(bet -> true, Boolean.parseBoolean(args[3]));
+                            } else {
+                                UUID uuid;
+                                try {
+                                    uuid = UUID.fromString(args[2]);
+                                } catch (IllegalArgumentException e) {
+                                    uuid = Bukkit.getOfflinePlayer(args[2]).getUniqueId();
+                                }
+                                UUID finalUuid = uuid;
+                                LotterySixPlugin.getInstance().getCurrentGame().invalidateBetsIf(bet -> bet.getPlayer().equals(finalUuid), Boolean.parseBoolean(args[3]));
                             }
-                            UUID finalUuid = uuid;
-                            LotterySixPlugin.getInstance().getCurrentGame().invalidateBetsIf(bet -> bet.getPlayer().equals(finalUuid), Boolean.parseBoolean(args[2]));
+                            sender.sendMessage(LotterySixPlugin.getInstance().messageGameSettingsUpdated);
+                        } else if (args[1].equalsIgnoreCase("bet")) {
+                            try {
+                                UUID uuid = UUID.fromString(args[2]);
+                                LotterySixPlugin.getInstance().getCurrentGame().invalidateBetsIf(bet -> bet.getBetId().equals(uuid), Boolean.parseBoolean(args[3]));
+                            } catch (IllegalArgumentException e) {
+                                sender.sendMessage(LotterySixPlugin.getInstance().messageInvalidUsage);
+                            }
+                        } else {
+                            sender.sendMessage(LotterySixPlugin.getInstance().messageInvalidUsage);
                         }
-                        sender.sendMessage(LotterySixPlugin.getInstance().messageGameSettingsUpdated);
                     }
                 } else {
                     sender.sendMessage(LotterySixPlugin.getInstance().messageInvalidUsage);
@@ -622,13 +634,11 @@ public class Commands implements CommandExecutor, TabCompleter {
                 }
                 if (sender.hasPermission("lotterysix.invalidatebets")) {
                     if ("invalidatebets".equalsIgnoreCase(args[0])) {
-                        for (Player player : Bukkit.getOnlinePlayers()) {
-                            if (player.getName().toLowerCase().startsWith(args[1].toLowerCase())) {
-                                tab.add(player.getName());
-                            }
+                        if ("player".startsWith(args[1].toLowerCase())) {
+                            tab.add("player");
                         }
-                        if ("*".startsWith(args[1].toLowerCase())) {
-                            tab.add("*");
+                        if ("bet".startsWith(args[1].toLowerCase())) {
+                            tab.add("bet");
                         }
                     }
                 }
@@ -661,10 +671,32 @@ public class Commands implements CommandExecutor, TabCompleter {
                 }
                 if (sender.hasPermission("lotterysix.invalidatebets")) {
                     if ("invalidatebets".equalsIgnoreCase(args[0])) {
-                        if ("true".startsWith(args[2].toLowerCase())) {
-                            tab.add("true");
-                        } else if ("false".startsWith(args[2].toLowerCase())) {
-                            tab.add("false");
+                        if ("player".equalsIgnoreCase(args[1])) {
+                            for (Player player : Bukkit.getOnlinePlayers()) {
+                                if (player.getName().toLowerCase().startsWith(args[2].toLowerCase())) {
+                                    tab.add(player.getName());
+                                }
+                            }
+                            if ("*".startsWith(args[2].toLowerCase())) {
+                                tab.add("*");
+                            }
+                        } else if ("bet".equalsIgnoreCase(args[1])) {
+                            PlayableLotterySixGame game = LotterySixPlugin.getInstance().getCurrentGame();
+                            if (game == null) {
+                                tab.add("<bet-id>");
+                            } else {
+                                try {
+                                    UUID betId = UUID.fromString(args[2]);
+                                    PlayerBets bet = game.getBet(betId);
+                                    if (bet == null) {
+                                        tab.add("<bet-id>");
+                                    } else {
+                                        tab.add(bet.getName() + " > " + LotterySixPlugin.getInstance().betNumbersTypeNames.get(bet.getChosenNumbers().getType()));
+                                    }
+                                } catch (IllegalArgumentException e) {
+                                    tab.add("<bet-id>");
+                                }
+                            }
                         }
                     }
                 }
@@ -681,6 +713,16 @@ public class Commands implements CommandExecutor, TabCompleter {
                             if (player.getName().toLowerCase().startsWith(args[3].toLowerCase())) {
                                 tab.add(player.getName());
                             }
+                        }
+                    }
+                }
+                if (sender.hasPermission("lotterysix.invalidatebets")) {
+                    if ("invalidatebets".equalsIgnoreCase(args[0])) {
+                        if ("true".startsWith(args[3].toLowerCase())) {
+                            tab.add("true");
+                        }
+                        if ("false".startsWith(args[3].toLowerCase())) {
+                            tab.add("false");
                         }
                     }
                 }

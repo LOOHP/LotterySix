@@ -1095,7 +1095,7 @@ public class LotterySix implements AutoCloseable {
                     }
                     if (detailFile.exists()) {
                         if (gameIndex.isDetailsComplete()) {
-                            completedGames.add(gameIndex);
+                            completedGames.addUnloaded(gameIndex);
                         } else {
                             needSaving = true;
                             completedGames.add(loadFromFile(detailFile));

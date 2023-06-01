@@ -190,13 +190,11 @@ public class LazyCompletedLotterySixGameList implements List<CompletedLotterySix
         dirtyGames.put(gameIndex.getGameId(), element);
     }
 
-    @Deprecated
-    public boolean add(CompletedLotterySixGameIndex gameIndex) {
+    public boolean addUnloaded(CompletedLotterySixGameIndex gameIndex) {
         return gameIndexes.add(gameIndex);
     }
 
-    @Deprecated
-    public void add(int index, CompletedLotterySixGameIndex gameIndex) {
+    public void addUnloaded(int index, CompletedLotterySixGameIndex gameIndex) {
         gameIndexes.add(index, gameIndex);
     }
 
