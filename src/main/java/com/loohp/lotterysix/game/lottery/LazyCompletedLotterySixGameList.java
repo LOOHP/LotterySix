@@ -37,7 +37,6 @@ import java.util.RandomAccess;
 import java.util.Spliterator;
 import java.util.TimeZone;
 import java.util.UUID;
-import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Function;
@@ -59,7 +58,8 @@ public class LazyCompletedLotterySixGameList implements List<CompletedLotterySix
         Cache<UUID, CompletedLotterySixGame> cache = CacheBuilder.newBuilder().maximumSize(20).build();
         this.cachedGames = cache.asMap();
         this.dirtyGames = new ConcurrentHashMap<>();
-        this.gameLoadingLock = Collections.synchronizedMap(new WeakHashMap<>());
+        Cache<UUID, Object> loadingLock = CacheBuilder.newBuilder().weakValues().build();
+        this.gameLoadingLock = loadingLock.asMap();
     }
 
     private LazyCompletedLotterySixGameList(Function<CompletedLotterySixGameIndex, CompletedLotterySixGame> gameLoader, List<CompletedLotterySixGameIndex> gameIndexes, Map<UUID, CompletedLotterySixGame> cachedGames, Map<UUID, CompletedLotterySixGame> dirtyGames, Map<UUID, Object> gameLoadingLock) {
@@ -96,6 +96,13 @@ public class LazyCompletedLotterySixGameList implements List<CompletedLotterySix
 
     public Iterable<CompletedLotterySixGame> dirtyGamesIterable() {
         return () -> dirtyGamesIterator();
+    }
+
+    public CompletedLotterySixGame getLatest() {
+        if (gameIndexes.isEmpty()) {
+            return null;
+        }
+        return get(gameIndexes.get(0));
     }
 
     @Override

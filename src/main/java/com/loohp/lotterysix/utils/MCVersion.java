@@ -1,5 +1,5 @@
 /*
- * This file is part of InteractiveChat.
+ * This file is part of LotterySix.
  *
  * Copyright (C) 2022. LoohpJames <jamesloohp@gmail.com>
  * Copyright (C) 2022. Contributors

@@ -58,7 +58,7 @@ public class NumberStatisticsInteraction extends DiscordInteraction {
 
     @Override
     public void handle(GenericComponentInteractionCreateEvent event) {
-        CompletedLotterySixGame game = instance.getCompletedGames().isEmpty() ? null : instance.getCompletedGames().get(0);
+        CompletedLotterySixGame game = instance.getCompletedGames().getLatest();
         EmbedBuilder builder = new EmbedBuilder()
                 .setColor(Color.CYAN)
                 .setTitle(ChatColor.stripColor(LotteryUtils.formatPlaceholders(null, instance.guiNumberStatisticsTitle, instance, game)))

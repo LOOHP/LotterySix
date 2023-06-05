@@ -332,6 +332,8 @@ public class LotterySix implements AutoCloseable {
     public boolean numberItemsSetStackSize;
     public int numberItemsCustomModelData;
 
+    public boolean borderPaneItemsHideAll;
+
     private final ExecutorService saveDataService;
     private final AtomicLong lastSaveBegin;
     private final Queue<Future<?>> saveTasks;
@@ -556,7 +558,7 @@ public class LotterySix implements AutoCloseable {
             throw new IllegalStateException("method cannot be ran on backend server while on bungeecord mode");
         }
         nextWinningNumbers = null;
-        CompletedLotterySixGame lastGame = completedGames.isEmpty() ? null : completedGames.get(0);
+        CompletedLotterySixGame lastGame = completedGames.getLatest();
         List<PlayerBets> placedBets = new ArrayList<>();
         for (UUID uuid : lotteryPlayerManager.getAllLotteryPlayerUUIDs()) {
             placedBets.addAll(lotteryPlayerManager.getLotteryPlayer(uuid).getMultipleDrawPlayerBets());
@@ -1048,6 +1050,8 @@ public class LotterySix implements AutoCloseable {
         numberItemsType = typeStr.equalsIgnoreCase("DEFAULT") ? null : XMaterial.valueOf(typeStr.toUpperCase());
         numberItemsSetStackSize = config.getConfiguration().getBoolean("NumberItems.SetStackSize");
         numberItemsCustomModelData = config.getConfiguration().getInt("NumberItems.StartingCustomModelData");
+
+        borderPaneItemsHideAll = config.getConfiguration().getBoolean("BorderPaneItems.HideAll");
 
         int seventhTierMultiplier = config.getConfiguration().getInt("LotterySix.PrizeTierSettings.SEVENTH.FixedPrizeMultiplier");
         int sixthTierMultiplier = config.getConfiguration().getInt("LotterySix.PrizeTierSettings.SIXTH.MultiplierFromLast");

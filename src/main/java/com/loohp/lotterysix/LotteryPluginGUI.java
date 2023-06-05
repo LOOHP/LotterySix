@@ -206,6 +206,10 @@ public class LotteryPluginGUI implements Listener {
         return ChatColorUtils.getNumberColor(number);
     }
 
+    private static ItemStack getFillerItem(ItemStack itemStack) {
+        return LotterySixPlugin.getInstance().borderPaneItemsHideAll ? new ItemStack(Material.AIR) : itemStack;
+    }
+
     private final LotterySixPlugin plugin;
     private final LotterySix instance;
     private final Map<Player, Long> lastGuiClick;
@@ -329,11 +333,11 @@ public class LotteryPluginGUI implements Listener {
                 "         "
         };
         InventoryGui gui = new InventoryGui(plugin, LotteryUtils.formatPlaceholders(player, instance.guiMainMenuTitle, instance), guiSetup);
-        gui.setFiller(XMaterial.YELLOW_STAINED_GLASS_PANE.parseItem());
+        gui.setFiller(getFillerItem(XMaterial.YELLOW_STAINED_GLASS_PANE.parseItem()));
         gui.addElement(new StaticGuiElement('a', new ItemStack(Material.AIR), ChatColor.LIGHT_PURPLE.toString()));
-        gui.addElement(new StaticGuiElement('y', XMaterial.ORANGE_STAINED_GLASS_PANE.parseItem(), ChatColor.LIGHT_PURPLE.toString()));
+        gui.addElement(new StaticGuiElement('y', getFillerItem(XMaterial.ORANGE_STAINED_GLASS_PANE.parseItem()), ChatColor.LIGHT_PURPLE.toString()));
 
-        CompletedLotterySixGame completedGame = instance.getCompletedGames().isEmpty() ? null : instance.getCompletedGames().get(0);
+        CompletedLotterySixGame completedGame = instance.getCompletedGames().getLatest();
         gui.addElement(new StaticGuiElement('b', completedGame != null && completedGame.hasPlayerWinnings(player.getUniqueId()) ? setEnchanted(XMaterial.CLOCK.parseItem()) : XMaterial.CLOCK.parseItem(), click -> {
             Scheduler.runTaskLater(plugin, () -> close(click.getWhoClicked(), gui, false), 1, player);
             Scheduler.runTaskLater(plugin, () -> getPastResults((Player) click.getWhoClicked(), completedGame).show(click.getWhoClicked()), 2, player);
@@ -369,7 +373,7 @@ public class LotteryPluginGUI implements Listener {
             }
         }));
         gui.addElement(new StaticGuiElement('e', XMaterial.OAK_SIGN.parseItem(), click -> {
-            Scheduler.runTaskLater(plugin, () -> getNumberStatistics((Player) click.getWhoClicked(), instance.getCompletedGames().isEmpty() ? null : instance.getCompletedGames().get(0)).show(click.getWhoClicked()), 1, player);
+            Scheduler.runTaskLater(plugin, () -> getNumberStatistics((Player) click.getWhoClicked(), instance.getCompletedGames().getLatest()).show(click.getWhoClicked()), 1, player);
             return true;
         }, LotteryUtils.formatPlaceholders(player, instance.guiMainMenuStatistics, instance)));
         gui.addElement(new StaticGuiElement('z', XMaterial.COMPASS.parseItem(), click -> {
@@ -415,9 +419,9 @@ public class LotteryPluginGUI implements Listener {
                 "         "
         };
         InventoryGui gui = new InventoryGui(plugin, LotteryUtils.formatPlaceholders(player, instance.guiBettingAccountTitle, instance), guiSetup);
-        gui.setFiller(XMaterial.BLUE_STAINED_GLASS_PANE.parseItem());
+        gui.setFiller(getFillerItem(XMaterial.BLUE_STAINED_GLASS_PANE.parseItem()));
         gui.addElement(new StaticGuiElement('a', new ItemStack(Material.AIR), ChatColor.LIGHT_PURPLE.toString()));
-        gui.addElement(new StaticGuiElement('z', XMaterial.LIGHT_BLUE_STAINED_GLASS_PANE.parseItem(), ChatColor.LIGHT_PURPLE.toString()));
+        gui.addElement(new StaticGuiElement('z', getFillerItem(XMaterial.LIGHT_BLUE_STAINED_GLASS_PANE.parseItem()), ChatColor.LIGHT_PURPLE.toString()));
         gui.addElement(new StaticGuiElement('b', SkinUtils.getSkull(player.getUniqueId()), LotteryUtils.formatPlaceholders(player, instance.guiBettingAccountProfile, instance)));
 
         AtomicBoolean flipLeftRightClick = new AtomicBoolean(false);
@@ -599,9 +603,9 @@ public class LotteryPluginGUI implements Listener {
                 "         "
         };
         InventoryGui gui = new InventoryGui(plugin, LotteryUtils.formatPlaceholders(player, instance.guiAccountFundTransferTitle, instance), guiSetup);
-        gui.setFiller(XMaterial.BLUE_STAINED_GLASS_PANE.parseItem());
+        gui.setFiller(getFillerItem(XMaterial.BLUE_STAINED_GLASS_PANE.parseItem()));
         gui.addElement(new StaticGuiElement('a', new ItemStack(Material.AIR), ChatColor.LIGHT_PURPLE.toString()));
-        gui.addElement(new StaticGuiElement('z', XMaterial.ORANGE_STAINED_GLASS_PANE.parseItem(), ChatColor.LIGHT_PURPLE.toString()));
+        gui.addElement(new StaticGuiElement('z', getFillerItem(XMaterial.ORANGE_STAINED_GLASS_PANE.parseItem()), ChatColor.LIGHT_PURPLE.toString()));
         gui.addElement(new StaticGuiElement('b', SkinUtils.getSkull(player.getUniqueId()), LotteryUtils.formatPlaceholders(player, instance.guiBettingAccountProfile, instance)));
 
         LotteryPlayer lotteryPlayer = instance.getLotteryPlayerManager().getLotteryPlayer(player.getUniqueId());
@@ -738,7 +742,7 @@ public class LotteryPluginGUI implements Listener {
                     "         "
             };
             InventoryGui gui = new InventoryGui(plugin, LotteryUtils.formatPlaceholders(player, instance.guiAccountFundTransferPlacingBetTitle, instance), guiSetup);
-            gui.setFiller(XMaterial.RED_STAINED_GLASS_PANE.parseItem());
+            gui.setFiller(getFillerItem(XMaterial.RED_STAINED_GLASS_PANE.parseItem()));
             gui.addElement(new StaticGuiElement('a', new ItemStack(Material.AIR), ChatColor.LIGHT_PURPLE.toString()));
             gui.addElement(new StaticGuiElement('b', XMaterial.EMERALD.parseItem(), click -> {
                 Scheduler.runTaskAsynchronously(plugin, () -> {
@@ -831,7 +835,7 @@ public class LotteryPluginGUI implements Listener {
                 "         "
         };
         InventoryGui gui = new InventoryGui(plugin, LotteryUtils.formatPlaceholders(player, instance.guiSelectNewBetTypeTitle, instance), guiSetup);
-        gui.setFiller(XMaterial.ORANGE_STAINED_GLASS_PANE.parseItem());
+        gui.setFiller(getFillerItem(XMaterial.ORANGE_STAINED_GLASS_PANE.parseItem()));
         gui.addElement(new StaticGuiElement('a', new ItemStack(Material.AIR), ChatColor.LIGHT_PURPLE.toString()));
         gui.addElement(new StaticGuiElement('b', XMaterial.BRICK.parseItem(), click -> {
             Scheduler.runTaskLater(plugin, () -> getNumberChooser((Player) click.getWhoClicked(), game, BetNumbersBuilder.single(1, instance.numberOfChoices)).show(click.getWhoClicked()), 1, player);
@@ -863,7 +867,7 @@ public class LotteryPluginGUI implements Listener {
                 "         "
         };
         InventoryGui gui = new InventoryGui(plugin, LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryTitle, instance), guiSetup);
-        gui.setFiller(XMaterial.RED_STAINED_GLASS_PANE.parseItem());
+        gui.setFiller(getFillerItem(XMaterial.RED_STAINED_GLASS_PANE.parseItem()));
         gui.addElement(new StaticGuiElement('a', new ItemStack(Material.AIR), ChatColor.LIGHT_PURPLE.toString()));
 
         gui.addElement(new StaticGuiElement('b', type.equals(BetNumbersType.RANDOM) ? setEnchanted(XMaterial.BRICK.parseItem()) : XMaterial.BRICK.parseItem(), click -> {
@@ -1285,7 +1289,7 @@ public class LotteryPluginGUI implements Listener {
                 "         "
         };
         InventoryGui gui = new InventoryGui(plugin, LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetTitle, instance, game), guiSetup);
-        gui.setFiller(XMaterial.LIME_STAINED_GLASS_PANE.parseItem());
+        gui.setFiller(getFillerItem(XMaterial.LIME_STAINED_GLASS_PANE.parseItem()));
         gui.addElement(new StaticGuiElement('z', new ItemStack(Material.AIR), ChatColor.LIGHT_PURPLE.toString()));
 
         char c = 'a';
@@ -1382,7 +1386,7 @@ public class LotteryPluginGUI implements Listener {
                 "         "
         };
         InventoryGui gui = new InventoryGui(plugin, LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetTitle, instance, game), guiSetup);
-        gui.setFiller(XMaterial.LIME_STAINED_GLASS_PANE.parseItem());
+        gui.setFiller(getFillerItem(XMaterial.LIME_STAINED_GLASS_PANE.parseItem()));
         gui.addElement(new StaticGuiElement('z', new ItemStack(Material.AIR), ChatColor.LIGHT_PURPLE.toString()));
 
         AtomicInteger multipleDraw = new AtomicInteger(1);
@@ -1538,7 +1542,7 @@ public class LotteryPluginGUI implements Listener {
         };
         int entriesTotal = betNumbers.stream().mapToInt(each -> each.getSetsSize()).sum();
         InventoryGui gui = new InventoryGui(plugin, LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetTitle, instance, game), guiSetup);
-        gui.setFiller(XMaterial.LIME_STAINED_GLASS_PANE.parseItem());
+        gui.setFiller(getFillerItem(XMaterial.LIME_STAINED_GLASS_PANE.parseItem()));
         gui.addElement(new StaticGuiElement('z', new ItemStack(Material.AIR), ChatColor.LIGHT_PURPLE.toString()));
 
         AtomicInteger multipleDraw = new AtomicInteger(1);
@@ -1633,7 +1637,7 @@ public class LotteryPluginGUI implements Listener {
         };
         int entriesTotal = betNumbers.stream().mapToInt(each -> each.getSetsSize()).sum();
         InventoryGui gui = new InventoryGui(plugin, LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetTitle, instance, game), guiSetup);
-        gui.setFiller(XMaterial.LIME_STAINED_GLASS_PANE.parseItem());
+        gui.setFiller(getFillerItem(XMaterial.LIME_STAINED_GLASS_PANE.parseItem()));
         gui.addElement(new StaticGuiElement('z', new ItemStack(Material.AIR), ChatColor.LIGHT_PURPLE.toString()));
 
         AtomicInteger multipleDraw = new AtomicInteger(1);
@@ -1928,7 +1932,7 @@ public class LotteryPluginGUI implements Listener {
                 return true;
             }, LotteryUtils.formatPlaceholders(player, instance.guiLastResultsListHistoricGames, instance, game)));
         }
-        gui.setFiller(XMaterial.YELLOW_STAINED_GLASS_PANE.parseItem());
+        gui.setFiller(getFillerItem(XMaterial.YELLOW_STAINED_GLASS_PANE.parseItem()));
         gui.addElement(new StaticGuiElement('z', new ItemStack(Material.AIR), ChatColor.LIGHT_PURPLE.toString()));
         gui.setCloseAction(action -> {
             Scheduler.runTaskLater(plugin, () -> checkReopen(action.getPlayer()), 5, player);
@@ -1957,7 +1961,7 @@ public class LotteryPluginGUI implements Listener {
         guiSetup[5] = " \0  \1  \2 ";
         InventoryGui gui = new InventoryGui(plugin, LotteryUtils.formatPlaceholders(player, instance.guiLastResultsHistoricGameListTitle
                 .replace("{FromGameNumber}", list.getFirst().getGameNumber() + "").replace("{ToGameNumber}", list.getLast().getGameNumber() + ""), instance, lastSelectedGame), guiSetup);
-        gui.setFiller(XMaterial.BLACK_STAINED_GLASS_PANE.parseItem());
+        gui.setFiller(getFillerItem(XMaterial.BLACK_STAINED_GLASS_PANE.parseItem()));
         if (startPosition >= 5) {
             gui.addElement(new StaticGuiElement('\0', XMaterial.ARROW.parseItem(), click -> {
                 Scheduler.runTaskLater(plugin, () -> {
@@ -1967,7 +1971,7 @@ public class LotteryPluginGUI implements Listener {
                 return true;
             }, LotteryUtils.formatPlaceholders(player, instance.guiLastResultsHistoricNewerGames, instance, lastSelectedGame)));
         } else {
-            gui.addElement(new StaticGuiElement('\0', XMaterial.BLACK_STAINED_GLASS_PANE.parseItem(), ChatColor.LIGHT_PURPLE.toString()));
+            gui.addElement(new StaticGuiElement('\0', getFillerItem(XMaterial.BLACK_STAINED_GLASS_PANE.parseItem()), ChatColor.LIGHT_PURPLE.toString()));
         }
         if (startPosition + 5 < completedGames.size()) {
             gui.addElement(new StaticGuiElement('\2', XMaterial.ARROW.parseItem(), click -> {
@@ -1978,7 +1982,7 @@ public class LotteryPluginGUI implements Listener {
                 return true;
             }, LotteryUtils.formatPlaceholders(player, instance.guiLastResultsHistoricOlderGames, instance, lastSelectedGame)));
         } else {
-            gui.addElement(new StaticGuiElement('\2', XMaterial.BLACK_STAINED_GLASS_PANE.parseItem(), ChatColor.LIGHT_PURPLE.toString()));
+            gui.addElement(new StaticGuiElement('\2', getFillerItem(XMaterial.BLACK_STAINED_GLASS_PANE.parseItem()), ChatColor.LIGHT_PURPLE.toString()));
         }
         char c = 'a';
         for (CompletedLotterySixGameIndex gameIndex : list) {

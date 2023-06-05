@@ -645,6 +645,12 @@ NumberItems:
   #The item for number 2 when selected as banker will have Custom Model Data of 1202, etc.
   StartingCustomModelData: 1000
 
+#If you have custom textures for menus and would like to customize the glass pane borders in all GUI menus
+#This section would be useful for you
+BorderPaneItems:
+  #Hide all glass pane borders in all GUI menus
+  HideAll: false
+
 PlaceholderAPI:
   HideResultsWhileGameIsLocked: true
 
