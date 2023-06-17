@@ -31,6 +31,7 @@ public class GameNumber implements Comparable<GameNumber> {
     public static final DateTimeFormatter YEAR_FORMAT = DateTimeFormatter.ofPattern("yy");
     public static final DecimalFormat NUMBER_FORMAT = new DecimalFormat("000");
     public static final Comparator<GameNumber> COMPARATOR = Comparator.comparing(GameNumber::getYear).thenComparing(GameNumber::getNumber);
+    public static final GameNumber UNKNOWN = new GameNumber(Year.of(1970), 0);
 
     public static GameNumber fromString(String input) {
         String[] sections = input.split("/");

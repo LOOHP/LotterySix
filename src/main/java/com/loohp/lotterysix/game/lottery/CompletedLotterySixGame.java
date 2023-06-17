@@ -127,7 +127,7 @@ public class CompletedLotterySixGame implements ILotterySixGame {
 
     @Override
     public String getDataFileName() {
-        return gameNumber.toString().replace("/", "_") + "_" + datetime + ".json";
+        return (gameNumber == null ? GameNumber.UNKNOWN : gameNumber).toString().replace("/", "_") + "_" + datetime + ".json";
     }
 
     public CompletedLotterySixGameIndex toGameIndex() {
