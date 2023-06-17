@@ -20,6 +20,12 @@
 
 package com.loohp.lotterysix.game.lottery;
 
+import com.google.gson.TypeAdapter;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+
+import java.io.IOException;
 import java.text.DecimalFormat;
 import java.time.Year;
 import java.time.format.DateTimeFormatter;
@@ -41,16 +47,17 @@ public class GameNumber implements Comparable<GameNumber> {
         return new GameNumber(Year.from(YEAR_FORMAT.parse(sections[0])), Integer.parseInt(sections[1]));
     }
 
-    private final int year;
+    @JsonAdapter(YearJsonAdapter.class)
+    private final Year year;
     private final int number;
 
     public GameNumber(Year year, int number) {
-        this.year = year.getValue();
+        this.year = year;
         this.number = number;
     }
 
     public Year getYear() {
-        return Year.of(year);
+        return year;
     }
 
     public int getNumber() {
@@ -59,7 +66,7 @@ public class GameNumber implements Comparable<GameNumber> {
 
     @Override
     public String toString() {
-        return YEAR_FORMAT.format(getYear()) + "/" + NUMBER_FORMAT.format(number);
+        return YEAR_FORMAT.format(year) + "/" + NUMBER_FORMAT.format(number);
     }
 
     @Override
@@ -67,7 +74,7 @@ public class GameNumber implements Comparable<GameNumber> {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         GameNumber that = (GameNumber) o;
-        return year == that.year && number == that.number;
+        return number == that.number && Objects.equals(year, that.year);
     }
 
     @Override
@@ -79,4 +86,18 @@ public class GameNumber implements Comparable<GameNumber> {
     public int compareTo(GameNumber o) {
         return COMPARATOR.compare(this, o);
     }
+
+    public static class YearJsonAdapter extends TypeAdapter<Year> {
+
+        @Override
+        public void write(JsonWriter out, Year year) throws IOException {
+            out.value(year.getValue());
+        }
+
+        @Override
+        public Year read(JsonReader in) throws IOException {
+            return Year.of((int) in.nextLong());
+        }
+    }
+
 }
