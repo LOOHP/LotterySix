@@ -522,7 +522,10 @@ public class LotteryPluginGUI implements Listener {
                     Scheduler.runTaskLater(plugin, () -> new AnvilGUI.Builder().plugin(plugin)
                             .title(LotteryUtils.formatPlaceholders(player, instance.guiBettingAccountSetBetLimitPerRoundTitle, instance))
                             .itemLeft(left)
-                            .onComplete(completion -> {
+                            .onClick((slot, completion) -> {
+                                if (slot != AnvilGUI.Slot.OUTPUT) {
+                                    return Collections.emptyList();
+                                }
                                 Scheduler.runTaskAsynchronously(plugin, () -> {
                                     String input = completion.getText().trim();
                                     try {
@@ -670,7 +673,10 @@ public class LotteryPluginGUI implements Listener {
         return new AnvilGUI.Builder().plugin(plugin)
                 .title(LotteryUtils.formatPlaceholders(player, transactionMode.equals(AccountTransactionMode.WITHDRAW) ? instance.guiAccountFundTransferWithdrawInputTitle : instance.guiAccountFundTransferDepositInputTitle, instance))
                 .itemLeft(left)
-                .onComplete(completion -> {
+                .onClick((slot, completion) -> {
+                    if (slot != AnvilGUI.Slot.OUTPUT) {
+                        return Collections.emptyList();
+                    }
                     Scheduler.runTaskAsynchronously(plugin, () -> {
                         String input = completion.getText().trim();
                         try {
@@ -2019,7 +2025,10 @@ public class LotteryPluginGUI implements Listener {
             Scheduler.runTaskLater(plugin, () -> new AnvilGUI.Builder().plugin(plugin)
                     .title(LotteryUtils.formatPlaceholders(player, instance.guiGameNumberInputTitle, instance, lastSelectedGame))
                     .itemLeft(left)
-                    .onComplete(completion -> {
+                    .onClick((slot, completion) -> {
+                        if (slot != AnvilGUI.Slot.OUTPUT) {
+                            return Collections.emptyList();
+                        }
                         Scheduler.runTaskAsynchronously(plugin, () -> {
                             String input = completion.getText().trim();
                             try {
