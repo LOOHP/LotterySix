@@ -625,11 +625,15 @@ public class LotteryPluginGUI implements Listener {
             }, ChatColor.RED + "-"));
             gui.addElement(new StaticGuiElement('f', new ItemStack(Material.AIR), ChatColor.LIGHT_PURPLE.toString()));
         } else {
-            gui.addElement(new StaticGuiElement(money > 0 ? 'd' : 'e', XMaterial.EMERALD.parseItem(), click -> {
-                Scheduler.runTaskLater(plugin, () -> close(player, gui, false), 1, player);
-                Scheduler.runTaskLater(plugin, () -> getTransactionInput(player, AccountTransactionMode.DEPOSIT).open(player), 2, player);
-                return true;
-            }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiAccountFundTransferDeposit, instance)).map(s -> s.replace("{Amount}", StringUtils.formatComma(money))).toArray(String[]::new)));
+            if (instance.hideManuelAccountFundTransferDeposit) {
+                gui.addElement(new StaticGuiElement(money > 0 ? 'd' : 'e', XMaterial.BARRIER.parseItem(), Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiAccountFundTransferDepositRestricted, instance)).map(s -> s.replace("{Amount}", StringUtils.formatComma(money))).toArray(String[]::new)));
+            } else {
+                gui.addElement(new StaticGuiElement(money > 0 ? 'd' : 'e', XMaterial.EMERALD.parseItem(), click -> {
+                    Scheduler.runTaskLater(plugin, () -> close(player, gui, false), 1, player);
+                    Scheduler.runTaskLater(plugin, () -> getTransactionInput(player, AccountTransactionMode.DEPOSIT).open(player), 2, player);
+                    return true;
+                }, Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiAccountFundTransferDeposit, instance)).map(s -> s.replace("{Amount}", StringUtils.formatComma(money))).toArray(String[]::new)));
+            }
             if (money > 0) {
                 gui.addElement(new StaticGuiElement('e', XMaterial.RED_DYE.parseItem(), click -> {
                     Scheduler.runTaskLater(plugin, () -> close(player, gui, false), 1, player);

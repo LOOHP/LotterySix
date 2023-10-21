@@ -242,6 +242,7 @@ public class LotterySix implements AutoCloseable {
     public String guiAccountFundTransferTitle;
     public String[] guiAccountFundTransferCurrentBalance;
     public String[] guiAccountFundTransferDeposit;
+    public String[] guiAccountFundTransferDepositRestricted;
     public String[] guiAccountFundTransferWithdraw;
     public String[] guiAccountFundTransferWithdrawAll;
     public String guiAccountFundTransferWithdrawInputTitle;
@@ -327,6 +328,7 @@ public class LotterySix implements AutoCloseable {
     public Map<String, Long> playerBetLimit;
     public UUID lotteriesFundAccount;
     public long maximumChancePerSelection;
+    public boolean hideManuelAccountFundTransferDeposit;
 
     public XMaterial numberItemsType;
     public boolean numberItemsSetStackSize;
@@ -952,6 +954,7 @@ public class LotterySix implements AutoCloseable {
         guiAccountFundTransferTitle = config.getConfiguration().getString("GUI.AccountFundTransfer.Title");
         guiAccountFundTransferCurrentBalance = config.getConfiguration().getStringList("GUI.AccountFundTransfer.CurrentBalance").toArray(new String[0]);
         guiAccountFundTransferDeposit = config.getConfiguration().getStringList("GUI.AccountFundTransfer.Deposit").toArray(new String[0]);
+        guiAccountFundTransferDepositRestricted = config.getConfiguration().getStringList("GUI.AccountFundTransfer.DepositRestricted").toArray(new String[0]);
         guiAccountFundTransferWithdraw = config.getConfiguration().getStringList("GUI.AccountFundTransfer.Withdraw").toArray(new String[0]);
         guiAccountFundTransferWithdrawAll = config.getConfiguration().getStringList("GUI.AccountFundTransfer.WithdrawAll").toArray(new String[0]);
         guiAccountFundTransferWithdrawInputTitle = config.getConfiguration().getString("GUI.AccountFundTransfer.WithdrawInputTitle");
@@ -1045,6 +1048,7 @@ public class LotterySix implements AutoCloseable {
             lotteriesFundAccount = null;
         }
         maximumChancePerSelection = config.getConfiguration().getLong("Restrictions.MaximumChancePerSelection");
+        hideManuelAccountFundTransferDeposit = config.getConfiguration().getBoolean("Restrictions.HideManuelAccountFundTransferDeposit");
 
         String typeStr = config.getConfiguration().getString("NumberItems.ItemType");
         numberItemsType = typeStr.equalsIgnoreCase("DEFAULT") ? null : XMaterial.valueOf(typeStr.toUpperCase());

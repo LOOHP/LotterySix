@@ -159,6 +159,8 @@ Restrictions:
   #in one go in multiple selection
   #Default is 2760681 (Combinations of selecting 38 numbers)
   MaximumChancePerSelection: 2760681
+  #This option is not recommended as it really doesn't help you and can easily be circumnavigated
+  HideManuelAccountFundTransferDeposit: false
 
 #For available placeholders, check out this page
 #https://github.com/LOOHP/LotterySix/wiki/Config-Placeholders
@@ -407,6 +409,8 @@ GUI:
       - "&7As well as given out to you when you win bets!"
     Deposit:
       - "&aClick to Deposit"
+    DepositRestricted:
+      - "&cManuel Deposit has been Restricted"
     Withdraw:
       - "&cClick to Withdraw"
     WithdrawAll:
