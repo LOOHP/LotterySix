@@ -104,7 +104,7 @@ public enum PrizeTier {
 
         public double probability(int numberOfChoices) {
             int notMatched = (requireSpecialNumber ? LotteryRegistry.NUMBERS_PER_BET - 1 : LotteryRegistry.NUMBERS_PER_BET) - matchNumbers;
-            return probabilityFormula(LotteryRegistry.NUMBERS_PER_BET, matchNumbers) * probabilityFormula(numberOfChoices - LotteryRegistry.NUMBERS_PER_BET + 1, notMatched) / probabilityFormula(numberOfChoices, LotteryRegistry.NUMBERS_PER_BET);
+            return probabilityFormula(LotteryRegistry.NUMBERS_PER_BET, matchNumbers) * probabilityFormula(numberOfChoices - LotteryRegistry.NUMBERS_PER_BET - 1, notMatched) / probabilityFormula(numberOfChoices, LotteryRegistry.NUMBERS_PER_BET);
         }
 
         public double oneOverProbability(int numberOfChoices) {
