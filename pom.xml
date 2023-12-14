@@ -25,7 +25,7 @@
     <groupId>com.loohp</groupId>
     <artifactId>LotterySix</artifactId>
     <name>LotterySix</name>
-    <version>1.10.10.0</version>
+    <version>1.10.11.0</version>
 
     <description>Lottery game in Minecraft inspired by the game 'Mark Six' by the HKJC</description>
     <url>https://github.com/LOOHP/LotterySix/</url>
