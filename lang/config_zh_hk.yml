@@ -25,6 +25,8 @@ Messages:
   InvalidNumber: '&c那不是一個有效的數字'
   InvalidBetNumbers: '&c投注號碼無效'
   PlayerBalance: '&a{Player} &7現在的投注賬戶中有 &b${Balance}&7'
+  # Message only used if installed on Bungeecord
+  LotterySixNotOnCurrentBackend: '&c此分流不設六合彩投注服務'
 
 Explanation:
   Message: '&a關於六合彩如何運作的解釋，請訪問： &bhttps://github.com/LOOHP/LotterySix/wiki/LotterySix-Draw-&-Prizes-Explanation'
@@ -369,6 +371,10 @@ GUI:
       - '&7暫停自己在接下來的 1 週內投注'
       - '&7左鍵單擊以添加 1 週/右鍵單擊以解除暫停'
       - '&7當前暫停至: &c{Value}'
+    FlipLeftRightClick:
+      - '&a互換左右鍵點擊'
+      - '&7只適用於此頁面的輔助功能'
+      - '&7當前狀態: {Status}'
   RandomEntry:
     Title: '&c選擇運財號碼'
     BetCountValueSimple:
