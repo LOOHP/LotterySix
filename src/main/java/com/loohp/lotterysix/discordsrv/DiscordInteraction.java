@@ -22,14 +22,10 @@ package com.loohp.lotterysix.discordsrv;
 
 import com.loohp.lotterysix.LotterySixPlugin;
 import com.loohp.lotterysix.game.LotterySix;
-import com.loohp.lotterysix.utils.LotteryUtils;
 import github.scarsz.discordsrv.DiscordSRV;
 import github.scarsz.discordsrv.dependencies.jda.api.events.interaction.GenericComponentInteractionCreateEvent;
 import github.scarsz.discordsrv.dependencies.jda.api.interactions.components.ActionRow;
 import github.scarsz.discordsrv.dependencies.jda.api.interactions.components.Button;
-import net.md_5.bungee.api.ChatColor;
-import org.bukkit.Bukkit;
-import org.bukkit.OfflinePlayer;
 
 import java.util.List;
 import java.util.UUID;

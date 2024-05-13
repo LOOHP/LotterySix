@@ -87,17 +87,31 @@ import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 public class LotterySix implements AutoCloseable {
 
     public static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
-    public static CompletedLotterySixGame loadFromFile(File file) {
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(Files.newInputStream(file.toPath()), StandardCharsets.UTF_8))) {
-            return GSON.fromJson(reader, CompletedLotterySixGame.class);
-        } catch (IOException e) {
-            throw new IllegalStateException("Do not remove LotterySix game data from the file system while the server is running, please restart the server now", e);
+    public static CompletedLotterySixGame loadFromDirectory(File folder, CompletedLotterySixGameIndex index) {
+        File file = new File(folder, index.getDataFileName("json"));
+        if (file.exists()) {
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(Files.newInputStream(file.toPath()), StandardCharsets.UTF_8))) {
+                return GSON.fromJson(reader, CompletedLotterySixGame.class);
+            } catch (IOException e) {
+                throw new IllegalStateException("Do not remove LotterySix game data from the file system while the server is running, please restart the server now", e);
+            }
         }
+        File compressedFile = new File(folder, index.getDataFileName("json.gz"));
+        if (compressedFile.exists()) {
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(new GZIPInputStream(Files.newInputStream(compressedFile.toPath())), StandardCharsets.UTF_8))) {
+                return GSON.fromJson(reader, CompletedLotterySixGame.class);
+            } catch (IOException e) {
+                throw new IllegalStateException("Do not remove LotterySix game data from the file system while the server is running, please restart the server now", e);
+            }
+        }
+        throw new IllegalStateException("Do not remove LotterySix game data from the file system while the server is running, please restart the server now");
     }
 
     private final TimerTask lotteryTask;
@@ -386,7 +400,7 @@ public class LotterySix implements AutoCloseable {
 
         File lotteryDataFolder = new File(getDataFolder(), "data");
         lotteryDataFolder.mkdirs();
-        this.completedGames = new LazyCompletedLotterySixGameList(gameIndex -> loadFromFile(new File(lotteryDataFolder, gameIndex.getDataFileName())));
+        this.completedGames = new LazyCompletedLotterySixGameList(gameIndex -> loadFromDirectory(lotteryDataFolder, gameIndex));
 
         if (!getDataFolder().exists()) {
             getDataFolder().mkdirs();
@@ -793,6 +807,7 @@ public class LotterySix implements AutoCloseable {
         return limit;
     }
 
+    @SuppressWarnings("deprecation")
     public void reloadConfig() {
         Config config = Config.getConfig(configId);
         config.reload();
@@ -1094,19 +1109,34 @@ public class LotterySix implements AutoCloseable {
                 JsonArray array = GSON.fromJson(reader, JsonArray.class);
                 for (JsonElement element : array) {
                     CompletedLotterySixGameIndex gameIndex = GSON.fromJson(element.getAsJsonObject(), CompletedLotterySixGameIndex.class);
-                    File detailFile = new File(lotteryDataFolder, gameIndex.getDataFileName());
-                    if (!detailFile.exists()) {
+                    File detailFile = new File(lotteryDataFolder, gameIndex.getDataFileName("json"));
+                    File detailCompressedFile = new File(lotteryDataFolder, gameIndex.getDataFileName("json.gz"));
+                    if (!detailFile.exists() && !detailCompressedFile.exists()) {
                         File oldLocation = new File(lotteryDataFolder, gameIndex.getDatetime() + ".json");
                         if (oldLocation.exists()) {
                             Files.move(oldLocation.toPath(), detailFile.toPath());
                         }
                     }
                     if (detailFile.exists()) {
+                        try (
+                            BufferedReader uncompressedReader = new BufferedReader(new InputStreamReader(Files.newInputStream(detailFile.toPath()), StandardCharsets.UTF_8));
+                            PrintWriter pw = new PrintWriter(new OutputStreamWriter(new GZIPOutputStream(Files.newOutputStream(detailCompressedFile.toPath())), StandardCharsets.UTF_8))
+                        ) {
+                            uncompressedReader.lines().forEach(l -> pw.println(l));
+                            pw.flush();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    if (detailCompressedFile.exists()) {
+                        if (detailFile.exists()) {
+                            detailFile.delete();
+                        }
                         if (gameIndex.isDetailsComplete()) {
                             completedGames.addUnloaded(gameIndex);
                         } else {
                             needSaving = true;
-                            completedGames.add(loadFromFile(detailFile));
+                            completedGames.add(loadFromDirectory(lotteryDataFolder, gameIndex));
                         }
                     }
                 }
@@ -1197,8 +1227,8 @@ public class LotterySix implements AutoCloseable {
             Iterator<CompletedLotterySixGame> itr = completedGames.dirtyGamesIterator();
             while (itr.hasNext()) {
                 CompletedLotterySixGame game = itr.next();
-                File file = new File(lotteryDataFolder, game.getDataFileName());
-                try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(Files.newOutputStream(file.toPath()), StandardCharsets.UTF_8))) {
+                File file = new File(lotteryDataFolder, game.getDataFileName("json.gz"));
+                try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(new GZIPOutputStream(Files.newOutputStream(file.toPath())), StandardCharsets.UTF_8))) {
                     pw.println(GSON.toJson(game));
                     itr.remove();
                     pw.flush();

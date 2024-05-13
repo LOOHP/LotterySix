@@ -35,11 +35,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -126,8 +124,8 @@ public class CompletedLotterySixGame implements ILotterySixGame {
     }
 
     @Override
-    public String getDataFileName() {
-        return (gameNumber == null ? GameNumber.UNKNOWN : gameNumber).toString().replace("/", "_") + "_" + datetime + ".json";
+    public String getDataFileName(String extension) {
+        return (gameNumber == null ? GameNumber.UNKNOWN : gameNumber).toString().replace("/", "_") + "_" + datetime + "." + extension;
     }
 
     public CompletedLotterySixGameIndex toGameIndex() {

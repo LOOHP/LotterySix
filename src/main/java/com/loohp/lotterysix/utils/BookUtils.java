@@ -23,17 +23,14 @@ package com.loohp.lotterysix.utils;
 import com.cryptomorin.xseries.XMaterial;
 import com.loohp.lotterysix.LotterySixPlugin;
 import com.loohp.lotterysix.floodgate.FloodgateHook;
-import io.github.bananapuncher714.nbteditor.NBTEditor;
 import net.md_5.bungee.api.chat.BaseComponent;
 import net.md_5.bungee.api.chat.TextComponent;
-import net.md_5.bungee.chat.ComponentSerializer;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta;
 import xyz.upperlevel.spigot.book.BookUtil;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -80,20 +77,10 @@ public class BookUtils {
         if (!book.getType().equals(MATERIAL_WRITTEN_BOOK)) {
             throw new IllegalArgumentException("Book must be Material.WRITTEN_BOOK");
         }
-        List<String> pages = pagesComponent.stream().map(each -> ComponentSerializer.toString(each)).collect(Collectors.toList());
+        List<BaseComponent[]> pages = pagesComponent.stream().map(each -> new BaseComponent[] {each}).collect(Collectors.toList());
         BookMeta meta = (BookMeta) book.getItemMeta();
-        List<String> dummy = new ArrayList<>(pages.size());
-        for (int i = 0; i < pages.size(); i++) {
-            dummy.add("");
-        }
-        meta.setPages(dummy);
+        meta.spigot().setPages(pages);
         book.setItemMeta(meta);
-        for (int i = 0; i < pages.size(); i++) {
-            if (!NBTEditor.contains(book, "pages", i)) {
-                break;
-            }
-            book = NBTEditor.set(book, pages.get(i), "pages", i);
-        }
         return book;
     }
 

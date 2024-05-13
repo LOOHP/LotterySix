@@ -1,8 +1,8 @@
 /*
  * This file is part of LotterySix.
  *
- * Copyright (C) 2023. LoohpJames <jamesloohp@gmail.com>
- * Copyright (C) 2023. Contributors
+ * Copyright (C) 2024. LoohpJames <jamesloohp@gmail.com>
+ * Copyright (C) 2024. Contributors
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,10 +18,12 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.loohp.lotterysix.game.lottery;
+package com.loohp.lotterysix.proxy.velocity;
 
-public interface PersistentGame {
+import com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier;
 
-    String getDataFileName(String extension);
+public class LSChannelIdentifier {
+
+    public static final MinecraftChannelIdentifier INSTANCE = MinecraftChannelIdentifier.from("lotterysix:main");
 
 }

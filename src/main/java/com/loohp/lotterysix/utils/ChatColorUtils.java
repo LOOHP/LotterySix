@@ -20,15 +20,21 @@
 
 package com.loohp.lotterysix.utils;
 
-import net.md_5.bungee.api.ChatColor;
-
-import static net.md_5.bungee.api.ChatColor.RED;
-import static net.md_5.bungee.api.ChatColor.AQUA;
-import static net.md_5.bungee.api.ChatColor.GREEN;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 public class ChatColorUtils {
 
-    private static final ChatColor[] NUMBER_COLOR = new ChatColor[] {
+    public static char COLOR_CHAR = '\u00a7';
+    public static Set<Character> VALID_COLORS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'k', 'l', 'm', 'n', 'o', 'r')));
+
+    public static String RED = COLOR_CHAR + "c";
+    public static String AQUA = COLOR_CHAR + "b";
+    public static String GREEN = COLOR_CHAR + "a";
+
+    private static final String[] NUMBER_COLOR = new String[] {
             RED, RED, AQUA, AQUA, GREEN, GREEN, RED, RED, AQUA,
             GREEN, RED, RED, AQUA, AQUA, GREEN, GREEN, RED, RED,
             GREEN, GREEN, RED, RED, AQUA, AQUA, GREEN, GREEN, RED,
@@ -38,10 +44,10 @@ public class ChatColorUtils {
     };
 
     public static String applyNumberColor(int i) {
-        return getNumberColor(i) + "" + i;
+        return getNumberColor(i) + i;
     }
 
-    public static ChatColor getNumberColor(int i) {
+    public static String getNumberColor(int i) {
         return NUMBER_COLOR[(i - 1) % NUMBER_COLOR.length];
     }
 
@@ -58,10 +64,10 @@ public class ChatColorUtils {
             if (text.charAt(i) == code) {
                 if (text.charAt(i + 1) == 'x' && text.length() > (i + 14)) {
                     String section = text.substring(i, i + 14);
-                    String translated = section.replace(code, '\u00a7');
+                    String translated = section.replace(code, COLOR_CHAR);
                     text = text.replace(section, translated);
-                } else if (ChatColor.getByChar(text.charAt(i + 1)) != null) {
-                    text = text.substring(0, i) + "\u00a7" + text.substring(i + 1);
+                } else if (VALID_COLORS.contains(text.charAt(i + 1))) {
+                    text = text.substring(0, i) + COLOR_CHAR + text.substring(i + 1);
                 }
             }
         }

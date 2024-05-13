@@ -159,8 +159,8 @@ public class PlayableLotterySixGame implements ILotterySixGame {
     }
 
     @Override
-    public String getDataFileName() {
-        return "current.json";
+    public String getDataFileName(String extension) {
+        return "current." + extension;
     }
 
     public void setDatetime(long scheduledDateTime, GameNumber gameNumber) {

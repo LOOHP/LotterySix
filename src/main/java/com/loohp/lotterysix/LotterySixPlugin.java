@@ -108,7 +108,7 @@ public class LotterySixPlugin extends JavaPlugin implements Listener {
         Metrics metrics = new Metrics(this, BSTATS_PLUGIN_ID);
 
         exactMinecraftVersion = Bukkit.getVersion().substring(Bukkit.getVersion().indexOf("(") + 5, Bukkit.getVersion().indexOf(")"));
-        version = MCVersion.fromPackageName(getServer().getClass().getPackage().getName());
+        version = MCVersion.resolve();
 
         if (!version.isSupported()) {
             getServer().getConsoleSender().sendMessage(org.bukkit.ChatColor.RED + "[LotterySix] This version of minecraft is unsupported! (" + version.toString() + ")");

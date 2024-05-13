@@ -1,0 +1,8 @@
+{
+  "id": "lotterysix",
+  "name": "LotterySix",
+  "version": "${project.version}",
+  "authors": ["LOOHP"],
+  "dependencies": [],
+  "main": "com.loohp.lotterysix.proxy.velocity.LotterySixVelocity"
+}

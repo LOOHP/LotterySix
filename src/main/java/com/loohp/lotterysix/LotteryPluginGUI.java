@@ -47,6 +47,7 @@ import com.loohp.lotterysix.objects.Scheduler;
 import com.loohp.lotterysix.utils.BookUtils;
 import com.loohp.lotterysix.utils.ChatColorUtils;
 import com.loohp.lotterysix.utils.LotteryUtils;
+import com.loohp.lotterysix.utils.MCVersion;
 import com.loohp.lotterysix.utils.SkinUtils;
 import com.loohp.lotterysix.utils.StringUtils;
 import de.themoep.inventorygui.DynamicGuiElement;
@@ -54,13 +55,13 @@ import de.themoep.inventorygui.GuiElement;
 import de.themoep.inventorygui.GuiStateElement;
 import de.themoep.inventorygui.InventoryGui;
 import de.themoep.inventorygui.StaticGuiElement;
-import io.github.bananapuncher714.nbteditor.NBTEditor;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.chat.BaseComponent;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.TextComponent;
 import net.wesjd.anvilgui.AnvilGUI;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.HumanEntity;
@@ -142,12 +143,12 @@ public class LotteryPluginGUI implements Listener {
             } else {
                 switch (selectedState) {
                     case NOT_SELECTED: {
-                        ChatColor color = ChatColorUtils.getNumberColor(number);
-                        if (color.equals(ChatColor.RED)) {
+                        String color = ChatColorUtils.getNumberColor(number);
+                        if (color.equals(ChatColor.RED.toString())) {
                             material = XMaterial.RED_WOOL;
-                        } else if (color.equals(ChatColor.AQUA)) {
+                        } else if (color.equals(ChatColor.AQUA.toString())) {
                             material = XMaterial.LIGHT_BLUE_WOOL;
-                        } else if (color.equals(ChatColor.GREEN)) {
+                        } else if (color.equals(ChatColor.GREEN.toString())) {
                             material = XMaterial.LIME_WOOL;
                         } else {
                             material = XMaterial.RED_WOOL;
@@ -179,8 +180,15 @@ public class LotteryPluginGUI implements Listener {
             itemStack = setEnchanted(itemStack);
         }
         int itemModelData = LotterySixPlugin.getInstance().numberItemsCustomModelData + selectedState.getCustomModelDataOffset() + number;
-        itemStack = NBTEditor.set(itemStack, itemModelData, "CustomModelData");
-        return NBTEditor.set(itemStack, number, "LotterySixNumber");
+        ItemMeta meta = itemStack.getItemMeta();
+        meta.setCustomModelData(itemModelData);
+        itemStack.setItemMeta(meta);
+        if (LotterySixPlugin.version.isNewerOrEqualTo(MCVersion.V1_20_5)) {
+            itemStack = Bukkit.getUnsafe().modifyItemStack(itemStack, itemStack.getType().getKey() + "[custom_data={LotterySixNumber:" + number + "}]");
+        } else {
+            itemStack = Bukkit.getUnsafe().modifyItemStack(itemStack, "{LotterySixNumber: " + number + "}");
+        }
+        return itemStack;
     }
 
     private static ItemStack setItemSize(ItemStack item, int amount) {
@@ -202,7 +210,7 @@ public class LotteryPluginGUI implements Listener {
         return item;
     }
 
-    private static ChatColor getNumberColor(int number) {
+    private static String getNumberColor(int number) {
         return ChatColorUtils.getNumberColor(number);
     }
 
