@@ -20,6 +20,7 @@
 
 package com.loohp.lotterysix;
 
+import com.cryptomorin.xseries.XEnchantment;
 import com.cryptomorin.xseries.XMaterial;
 import com.loohp.lotterysix.game.LotteryRegistry;
 import com.loohp.lotterysix.game.LotterySix;
@@ -199,11 +200,12 @@ public class LotteryPluginGUI implements Listener {
         return item;
     }
 
+    @SuppressWarnings("DataFlowIssue")
     private static ItemStack setEnchanted(ItemStack item) {
         if (item == null) {
             return null;
         }
-        item.addUnsafeEnchantment(Enchantment.LUCK, 10);
+        item.addUnsafeEnchantment(XEnchantment.FORTUNE.getEnchant(), 8);
         ItemMeta itemMeta = item.getItemMeta();
         itemMeta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
         item.setItemMeta(itemMeta);
@@ -1227,7 +1229,7 @@ public class LotteryPluginGUI implements Listener {
                             },
                             "false",
                             getNumberItem(number, NumberSelectedState.NOT_SELECTED),
-                            getNumberColor(number) + "" + number
+                            getNumberColor(number) + number
                     )
             );
             element.setState("false");
@@ -1312,7 +1314,7 @@ public class LotteryPluginGUI implements Listener {
 
         char c = 'a';
         for (int i : betNumbers.getNumbers()) {
-            gui.addElement(new StaticGuiElement(c++, getNumberItem(i, NumberSelectedState.NOT_SELECTED), getNumberColor(i) + "" + i));
+            gui.addElement(new StaticGuiElement(c++, getNumberItem(i, NumberSelectedState.NOT_SELECTED), getNumberColor(i) + i));
         }
 
         AtomicInteger multipleDraw = new AtomicInteger(1);
@@ -2019,7 +2021,7 @@ public class LotteryPluginGUI implements Listener {
             }
             WinningNumbers winningNumbers = gameIndex.getDrawResult();
             for (int i : winningNumbers.getNumbersOrdered()) {
-                gui.addElement(new StaticGuiElement(c++, getNumberItem(i, NumberSelectedState.NOT_SELECTED), getNumberColor(i) + "" + i));
+                gui.addElement(new StaticGuiElement(c++, getNumberItem(i, NumberSelectedState.NOT_SELECTED), getNumberColor(i) + i));
             }
             int specialNumber = winningNumbers.getSpecialNumber();
             gui.addElement(new StaticGuiElement(c++, getNumberItem(specialNumber, true, NumberSelectedState.NOT_SELECTED), getNumberColor(specialNumber) + "" + specialNumber));
@@ -2079,7 +2081,7 @@ public class LotteryPluginGUI implements Listener {
             int number = i + 1;
             NumberStatistics stats = game == null ? NumberStatistics.NOT_EVER_DRAWN : game.getNumberStatistics(number);
             gui.addElement(new StaticGuiElement(c++, getNumberItem(number, stats.getLastDrawn() == 0, NumberSelectedState.NOT_SELECTED),
-                    getNumberColor(number) + "" + number,
+                    getNumberColor(number) + number,
                     LotteryUtils.formatPlaceholders(player, instance.guiNumberStatisticsLastDrawn.replace("{Number}", number + ""), instance, game),
                     LotteryUtils.formatPlaceholders(player, instance.guiNumberStatisticsTimesDrawn.replace("{Number}", number + ""), instance, game)
             ));
