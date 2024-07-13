@@ -815,7 +815,6 @@ public class LotteryPluginGUI implements Listener {
         BookMeta meta = (BookMeta) itemStack.getItemMeta();
         meta.setAuthor("LotterySix");
         meta.setTitle("LotterySix");
-        itemStack.setItemMeta(meta);
 
         List<String> pages = new ArrayList<>();
 
@@ -843,7 +842,10 @@ public class LotteryPluginGUI implements Listener {
             }
         }
 
-        return BookUtils.setPages(itemStack, pages);
+        meta.setPages(pages);
+        itemStack.setItemMeta(meta);
+
+        return itemStack;
     }
 
     public InventoryGui getBetTypeChooser(Player player, PlayableLotterySixGame game) {
@@ -1936,12 +1938,12 @@ public class LotteryPluginGUI implements Listener {
                             pages.add(new TextComponent(winningNumberStr + "\n\n" + String.join("\n", LotteryUtils.formatPlaceholders(player, instance.guiLastResultsNothing, instance, game)) + "\n"));
                         }
                         ItemStack itemStack = XMaterial.WRITTEN_BOOK.parseItem();
+                        BookUtils.setPagesComponent(itemStack, pages);
                         BookMeta meta = (BookMeta) itemStack.getItemMeta();
                         meta.setAuthor("LotterySix");
                         meta.setTitle("LotterySix");
                         itemStack.setItemMeta(meta);
-                        ItemStack book = BookUtils.setPagesComponent(itemStack, pages);
-                        Scheduler.runTaskLater(plugin, () -> BookUtils.openBook((Player) click.getWhoClicked(), book), 1, player);
+                        Scheduler.runTaskLater(plugin, () -> BookUtils.openBook((Player) click.getWhoClicked(), itemStack), 1, player);
                     }, 1);
                 }, 1, player);
                 return true;

@@ -24,7 +24,6 @@ import com.cryptomorin.xseries.XMaterial;
 import com.loohp.lotterysix.LotterySixPlugin;
 import com.loohp.lotterysix.floodgate.FloodgateHook;
 import net.md_5.bungee.api.chat.BaseComponent;
-import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -66,11 +65,7 @@ public class BookUtils {
         }
     }
 
-    public static ItemStack setPages(ItemStack book, List<String> pages) {
-        return setPagesComponent(book, pages.stream().map(each -> new TextComponent(each)).collect(Collectors.toList()));
-    }
-
-    public static ItemStack setPagesComponent(ItemStack book, List<BaseComponent> pagesComponent) {
+    public static void setPagesComponent(ItemStack book, List<BaseComponent> pagesComponent) {
         if (book == null) {
             throw new IllegalArgumentException("Book cannot be null");
         }
@@ -81,7 +76,6 @@ public class BookUtils {
         BookMeta meta = (BookMeta) book.getItemMeta();
         meta.spigot().setPages(pages);
         book.setItemMeta(meta);
-        return book;
     }
 
 }
