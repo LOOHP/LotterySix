@@ -4,7 +4,7 @@
 
 https://www.spigotmc.org/resources/107573/
 
-Lottery game in Minecraft inspired by the game 'Mark Six' by the HKJC
+Lottery game in Minecraft inspired by the game '[Mark Six 六合彩](https://en.wikipedia.org/wiki/Mark_Six)' of the [HKJC](https://en.wikipedia.org/wiki/Hong_Kong_Jockey_Club).
 
 More information (screenshots, commands, permissions) about the plugin can be found on the Spigot page linked above.
 
