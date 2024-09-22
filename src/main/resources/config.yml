@@ -115,13 +115,13 @@ LotterySix:
   #HKJC mode is an IRL prize money calculation method used by the HKJC
   #Where the LowestTopPlacesPrize is only applied to 1st tier instead of all 1st - 3rd
   #NOT recommended unless you have a large server that buys a LOT of tickets (>50000)
-  #MODES: DEFAULT, HKJC
-  PrizeCalculationMode: "DEFAULT"
+  #MODES: UNREALISTIC_FOR_FUN, HKJC
+  PrizeCalculationMode: "UNREALISTIC_FOR_FUN"
   #Choose carry-over fund calculation mode
   #The difference between DEFAULT & ONLY_TICKET_SALES is that the for
   #ONLY_TICKET_SALES that half of LowestTopPlacesPrize does not carry over to the next game
-  #MODES: DEFAULT, ONLY_TICKET_SALES
-  CarryOverMode: "DEFAULT"
+  #MODES: ONLY_TICKET_SALES, PRIZE_AND_SALES
+  CarryOverMode: "ONLY_TICKET_SALES"
   #If true, even if there isn't enough money to retain the lowest prize for a tier, the plugin will generate money for it
   #If false, even there isn't enough money to retain the lowest prize for a tier, each tier will be lowered proportionally
   RetainLowestPrizeForTier: false

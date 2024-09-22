@@ -20,8 +20,29 @@
 
 package com.loohp.lotterysix.game.objects;
 
+import java.util.Arrays;
+import java.util.List;
+
 public enum CarryOverMode {
 
-    DEFAULT, ONLY_TICKET_SALES;
+    ONLY_TICKET_SALES,
+    PRIZE_AND_SALES("DEFAULT");
+
+    public static final CarryOverMode CONFIG_DEFAULT = ONLY_TICKET_SALES;
+
+    public static CarryOverMode fromName(String name) {
+        for (CarryOverMode mode : CarryOverMode.values()) {
+            if (mode.name().equals(name) || mode.alternateNames.contains(name)) {
+                return mode;
+            }
+        }
+        throw new IllegalArgumentException();
+    }
+
+    private final List<String> alternateNames;
+
+    CarryOverMode(String... alternateNames) {
+        this.alternateNames = Arrays.asList(alternateNames);
+    }
 
 }

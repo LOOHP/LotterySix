@@ -890,8 +890,8 @@ public class LotterySix implements AutoCloseable {
         lowestTopPlacesPrize = config.getConfiguration().getLong("LotterySix.LowestTopPlacesPrize");
         estimationRoundToNearest = config.getConfiguration().getLong("LotterySix.EstimationRoundToNearest");
         taxPercentage = config.getConfiguration().getDouble("LotterySix.TaxPercentage");
-        prizeCalculationMode = PrizeCalculationMode.valueOf(config.getConfiguration().getString("LotterySix.PrizeCalculationMode").toUpperCase());
-        carryOverMode = CarryOverMode.valueOf(config.getConfiguration().getString("LotterySix.CarryOverMode").toUpperCase());
+        prizeCalculationMode = PrizeCalculationMode.fromName(config.getConfiguration().getString("LotterySix.PrizeCalculationMode").toUpperCase());
+        carryOverMode = CarryOverMode.fromName(config.getConfiguration().getString("LotterySix.CarryOverMode").toUpperCase());
         maxTopPlacesPrize = config.getConfiguration().getLong("LotterySix.MaxTopPlacesPrize");
         retainLowestPrizeForTier = config.getConfiguration().getBoolean("LotterySix.RetainLowestPrizeForTier");
 

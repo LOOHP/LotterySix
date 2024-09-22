@@ -406,17 +406,17 @@ public class PlayableLotterySixGame implements ILotterySixGame {
     }
 
     public long estimatedPrizePool(long maxTopPlacesPrize, double taxPercentage, long rounding) {
-        PrizeCalculationMode prizeCalculationMode = instance == null ? PrizeCalculationMode.DEFAULT : instance.prizeCalculationMode;
+        PrizeCalculationMode prizeCalculationMode = instance == null ? PrizeCalculationMode.CONFIG_DEFAULT : instance.prizeCalculationMode;
         if (prizeCalculationMode.equals(PrizeCalculationMode.HKJC)) {
             return MathUtils.followRound(rounding, Math.min(maxTopPlacesPrize, carryOverFund + lowestTopPlacesPrize));
         } else {
-            CarryOverMode carryOverMode = instance == null ? CarryOverMode.DEFAULT : instance.carryOverMode;
+            CarryOverMode carryOverMode = instance == null ? CarryOverMode.CONFIG_DEFAULT : instance.carryOverMode;
             switch (carryOverMode) {
-                case DEFAULT: {
-                    return MathUtils.followRound(rounding, Math.min(maxTopPlacesPrize, Math.max(lowestTopPlacesPrize, (lowestTopPlacesPrize / 2) + carryOverFund + (long) Math.floor(getTotalBets() * (1.0 - taxPercentage)))));
-                }
                 case ONLY_TICKET_SALES: {
                     return MathUtils.followRound(rounding, Math.min(maxTopPlacesPrize, Math.max(lowestTopPlacesPrize, lowestTopPlacesPrize + carryOverFund + (long) Math.floor(getTotalBets() * (1.0 - taxPercentage)))));
+                }
+                case PRIZE_AND_SALES: {
+                    return MathUtils.followRound(rounding, Math.min(maxTopPlacesPrize, Math.max(lowestTopPlacesPrize, (lowestTopPlacesPrize / 2) + carryOverFund + (long) Math.floor(getTotalBets() * (1.0 - taxPercentage)))));
                 }
                 default: {
                     throw new RuntimeException("Unknown carry over mode: " + carryOverMode);
@@ -425,22 +425,22 @@ public class PlayableLotterySixGame implements ILotterySixGame {
         }
     }
 
-    public CompletedLotterySixGame runLottery(int maxNumber, long pricePerBet, long maxTopPlacesPrize, double taxPercentage) {
-        PrizeCalculationMode prizeCalculationMode = instance == null ? PrizeCalculationMode.DEFAULT : instance.prizeCalculationMode;
-        CarryOverMode carryOverMode = instance == null ? CarryOverMode.DEFAULT : instance.carryOverMode;
+    public synchronized CompletedLotterySixGame runLottery(int maxNumber, long pricePerBet, long maxTopPlacesPrize, double taxPercentage) {
+        PrizeCalculationMode prizeCalculationMode = instance == null ? PrizeCalculationMode.CONFIG_DEFAULT : instance.prizeCalculationMode;
+        CarryOverMode carryOverMode = instance == null ? CarryOverMode.CONFIG_DEFAULT : instance.carryOverMode;
         return runLottery(maxNumber, pricePerBet, maxTopPlacesPrize, taxPercentage, prizeCalculationMode, carryOverMode);
     }
 
-    public CompletedLotterySixGame runLottery(int maxNumber, long pricePerBet, long maxTopPlacesPrize, double taxPercentage, PrizeCalculationMode prizeCalculationMode, CarryOverMode carryOverMode) {
+    public synchronized CompletedLotterySixGame runLottery(int maxNumber, long pricePerBet, long maxTopPlacesPrize, double taxPercentage, PrizeCalculationMode prizeCalculationMode, CarryOverMode carryOverMode) {
         SecureRandom random = new SecureRandom();
         List<Integer> num = random.ints(1, maxNumber + 1).distinct().limit(LotteryRegistry.NUMBERS_PER_BET + 1).boxed().collect(Collectors.toList());
         WinningNumbers winningNumbers = new WinningNumbers(num.subList(0, LotteryRegistry.NUMBERS_PER_BET), num.get(num.size() - 1));
         return runLottery(maxNumber, pricePerBet, maxTopPlacesPrize, taxPercentage, winningNumbers, prizeCalculationMode, carryOverMode);
     }
 
-    public CompletedLotterySixGame runLottery(int maxNumber, long pricePerBet, long maxTopPlacesPrize, double taxPercentage, WinningNumbers winningNumbers) {
-        PrizeCalculationMode prizeCalculationMode = instance == null ? PrizeCalculationMode.DEFAULT : instance.prizeCalculationMode;
-        CarryOverMode carryOverMode = instance == null ? CarryOverMode.DEFAULT : instance.carryOverMode;
+    public synchronized CompletedLotterySixGame runLottery(int maxNumber, long pricePerBet, long maxTopPlacesPrize, double taxPercentage, WinningNumbers winningNumbers) {
+        PrizeCalculationMode prizeCalculationMode = instance == null ? PrizeCalculationMode.CONFIG_DEFAULT : instance.prizeCalculationMode;
+        CarryOverMode carryOverMode = instance == null ? CarryOverMode.CONFIG_DEFAULT : instance.carryOverMode;
         return runLottery(maxNumber, pricePerBet, maxTopPlacesPrize, taxPercentage, winningNumbers, prizeCalculationMode, carryOverMode);
     }
 
@@ -475,19 +475,26 @@ public class PlayableLotterySixGame implements ILotterySixGame {
             }).start();
         }
 
-        if (prizeCalculationMode.equals(PrizeCalculationMode.HKJC)) {
-            return hkjcCalculation(pricePerBet, maxTopPlacesPrize, taxPercentage, tiers, winningNumbers, newNumberStats);
+        switch (prizeCalculationMode) {
+            case UNREALISTIC_FOR_FUN:
+                return completeWithUnrealisticPrizeCalculation(pricePerBet, maxTopPlacesPrize, taxPercentage, carryOverMode, tiers, winningNumbers, newNumberStats);
+            case HKJC:
+                return completeWithHkjcPrizeCalculation(pricePerBet, maxTopPlacesPrize, taxPercentage, tiers, winningNumbers, newNumberStats);
+            default:
+                throw new IllegalStateException("Unknown Prize Calculation Mode " + prizeCalculationMode);
         }
+    }
 
+    private synchronized CompletedLotterySixGame completeWithUnrealisticPrizeCalculation(long pricePerBet, long maxTopPlacesPrize, double taxPercentage, CarryOverMode carryOverMode, Map<PrizeTier, List<Pair<PlayerBets, WinningCombination>>> tiers, WinningNumbers winningNumbers, Map<Integer, NumberStatistics> newNumberStats) {
         long totalBetsFund = getTotalBets();
         long totalPrize;
         switch (carryOverMode) {
-            case DEFAULT: {
-                totalPrize = (lowestTopPlacesPrize / 2) + carryOverFund + (long) Math.floor(totalBetsFund * (1.0 - taxPercentage));
-                break;
-            }
             case ONLY_TICKET_SALES: {
                 totalPrize = lowestTopPlacesPrize + carryOverFund + (long) Math.floor(totalBetsFund * (1.0 - taxPercentage));
+                break;
+            }
+            case PRIZE_AND_SALES: {
+                totalPrize = (lowestTopPlacesPrize / 2) + carryOverFund + (long) Math.floor(totalBetsFund * (1.0 - taxPercentage));
                 break;
             }
             default: {
@@ -596,7 +603,7 @@ public class PlayableLotterySixGame implements ILotterySixGame {
                 if (firstPlaceEmpty) {
                     secondTierPrizeTotal += thirdTierPrizeTotal;
                 } else {
-                    secondTierPrizeTotal += thirdTierPrizeTotal * 0.25;
+                    secondTierPrizeTotal += (long) (thirdTierPrizeTotal * 0.25);
                 }
             }
             long secondTierPrize = (long) Math.floor(secondTierPrizeTotal / Math.max(1.0, tiers.get(PrizeTier.SECOND).stream().mapToDouble(each -> each.getFirst().getType().getUnit()).sum()));
@@ -622,7 +629,7 @@ public class PlayableLotterySixGame implements ILotterySixGame {
                 if (secondPlaceEmpty) {
                     firstTierPrizeTotal += thirdTierPrizeTotal;
                 } else {
-                    firstTierPrizeTotal += thirdTierPrizeTotal * 0.75;
+                    firstTierPrizeTotal += (long) (thirdTierPrizeTotal * 0.75);
                 }
             }
             long firstTierPrize = (long) Math.floor(firstTierPrizeTotal / Math.max(1.0, tiers.get(PrizeTier.FIRST).stream().mapToDouble(each -> each.getFirst().getType().getUnit()).sum()));
@@ -719,9 +726,10 @@ public class PlayableLotterySixGame implements ILotterySixGame {
         }
 
         return new CompletedLotterySixGame(gameId, scheduledDateTime, gameNumber, specialName, winningNumbers, newNumberStats, pricePerBet, prizeForTier, winnings, bets, totalPrizes, carryOverNext, lotteriesFunds);
+
     }
 
-    private synchronized CompletedLotterySixGame hkjcCalculation(long pricePerBet, long maxTopPlacesPrize, double taxPercentage, Map<PrizeTier, List<Pair<PlayerBets, WinningCombination>>> tiers, WinningNumbers winningNumbers, Map<Integer, NumberStatistics> newNumberStats) {
+    private synchronized CompletedLotterySixGame completeWithHkjcPrizeCalculation(long pricePerBet, long maxTopPlacesPrize, double taxPercentage, Map<PrizeTier, List<Pair<PlayerBets, WinningCombination>>> tiers, WinningNumbers winningNumbers, Map<Integer, NumberStatistics> newNumberStats) {
         PrizeTier[] prizeTiers = PrizeTier.values();
         long totalBetsFund = getTotalBets();
         long totalFund = (long) Math.floor(totalBetsFund * (1.0 - taxPercentage));
@@ -855,7 +863,7 @@ public class PlayableLotterySixGame implements ILotterySixGame {
                 if (firstPlaceEmpty) {
                     secondTierPrizeTotal += thirdTierPrizeTotal;
                 } else {
-                    secondTierPrizeTotal += thirdTierPrizeTotal * 0.25;
+                    secondTierPrizeTotal += (long) (thirdTierPrizeTotal * 0.25);
                 }
             }
             long secondTierPrize = (long) Math.floor(secondTierPrizeTotal / Math.max(1.0, tiers.get(PrizeTier.SECOND).stream().mapToDouble(each -> each.getFirst().getType().getUnit()).sum()));
@@ -892,7 +900,7 @@ public class PlayableLotterySixGame implements ILotterySixGame {
                 if (secondPlaceEmpty) {
                     firstTierPrizeTotal += thirdTierPrizeTotal;
                 } else {
-                    firstTierPrizeTotal += thirdTierPrizeTotal * 0.75;
+                    firstTierPrizeTotal += (long) (thirdTierPrizeTotal * 0.75);
                 }
             }
             long firstTierPrize = (long) Math.floor(firstTierPrizeTotal / Math.max(1.0, tiers.get(PrizeTier.FIRST).stream().mapToDouble(each -> each.getFirst().getType().getUnit()).sum()));
@@ -912,14 +920,14 @@ public class PlayableLotterySixGame implements ILotterySixGame {
             firstTierCarryOver += firstTierPrizeTotal;
         }
 
-        CarryOverMode carryOverMode = instance == null ? CarryOverMode.DEFAULT : instance.carryOverMode;
+        CarryOverMode carryOverMode = instance == null ? CarryOverMode.CONFIG_DEFAULT : instance.carryOverMode;
         switch (carryOverMode) {
-            case DEFAULT: {
-                carryOverNext += firstTierCarryOver;
-                break;
-            }
             case ONLY_TICKET_SALES: {
                 carryOverNext += Math.max(0, firstTierCarryOver - difference);
+                break;
+            }
+            case PRIZE_AND_SALES: {
+                carryOverNext += firstTierCarryOver;
                 break;
             }
             default: {

@@ -20,8 +20,28 @@
 
 package com.loohp.lotterysix.game.objects;
 
+import java.util.Arrays;
+import java.util.List;
+
 public enum PrizeCalculationMode {
 
-    DEFAULT, HKJC;
+    UNREALISTIC_FOR_FUN("DEFAULT"),
+    HKJC;
 
+    public static final PrizeCalculationMode CONFIG_DEFAULT = UNREALISTIC_FOR_FUN;
+
+    public static PrizeCalculationMode fromName(String name) {
+        for (PrizeCalculationMode mode : PrizeCalculationMode.values()) {
+            if (mode.name().equals(name) || mode.alternateNames.contains(name)) {
+                return mode;
+            }
+        }
+        throw new IllegalArgumentException();
+    }
+
+    private final List<String> alternateNames;
+
+    PrizeCalculationMode(String... alternateNames) {
+        this.alternateNames = Arrays.asList(alternateNames);
+    }
 }
