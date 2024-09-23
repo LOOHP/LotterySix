@@ -475,14 +475,23 @@ public class PlayableLotterySixGame implements ILotterySixGame {
             }).start();
         }
 
+        CompletedLotterySixGame completed;
         switch (prizeCalculationMode) {
-            case UNREALISTIC_FOR_FUN:
-                return completeWithUnrealisticPrizeCalculation(pricePerBet, maxTopPlacesPrize, taxPercentage, carryOverMode, tiers, winningNumbers, newNumberStats);
-            case HKJC:
-                return completeWithHkjcPrizeCalculation(pricePerBet, maxTopPlacesPrize, taxPercentage, tiers, winningNumbers, newNumberStats);
-            default:
+            case UNREALISTIC_FOR_FUN: {
+                completed = completeWithUnrealisticPrizeCalculation(pricePerBet, maxTopPlacesPrize, taxPercentage, carryOverMode, tiers, winningNumbers, newNumberStats);
+                break;
+            }
+            case HKJC: {
+                completed = completeWithHkjcPrizeCalculation(pricePerBet, maxTopPlacesPrize, taxPercentage, carryOverMode, tiers, winningNumbers, newNumberStats);
+                break;
+            }
+            default: {
                 throw new IllegalStateException("Unknown Prize Calculation Mode " + prizeCalculationMode);
+            }
         }
+
+        this.valid = false;
+        return completed;
     }
 
     private synchronized CompletedLotterySixGame completeWithUnrealisticPrizeCalculation(long pricePerBet, long maxTopPlacesPrize, double taxPercentage, CarryOverMode carryOverMode, Map<PrizeTier, List<Pair<PlayerBets, WinningCombination>>> tiers, WinningNumbers winningNumbers, Map<Integer, NumberStatistics> newNumberStats) {
@@ -711,17 +720,14 @@ public class PlayableLotterySixGame implements ILotterySixGame {
         }
 
         winnings.sort(Comparator.comparing((PlayerWinnings playerWinnings) -> playerWinnings.getTier()).thenComparing((PlayerWinnings playerWinnings) -> playerWinnings.getWinningBet(bets)));
-        this.valid = false;
 
-        if (instance != null) {
-            //noinspection SwitchStatementWithTooFewBranches
-            switch (instance.carryOverMode) {
-                case ONLY_TICKET_SALES: {
-                    long left = carryOverFund + (long) Math.floor(getTotalBets() * (1.0 - taxPercentage));
-                    left = Math.round((double) left * ((double) carryOverNext / (double) totalRemaining));
-                    carryOverNext = Math.max(0, Math.min(maxTopPlacesPrize - lowestTopPlacesPrize, left));
-                    break;
-                }
+        //noinspection SwitchStatementWithTooFewBranches
+        switch (carryOverMode) {
+            case ONLY_TICKET_SALES: {
+                long left = carryOverFund + (long) Math.floor(getTotalBets() * (1.0 - taxPercentage));
+                left = Math.round((double) left * ((double) carryOverNext / (double) totalRemaining));
+                carryOverNext = Math.max(0, Math.min(maxTopPlacesPrize - lowestTopPlacesPrize, left));
+                break;
             }
         }
 
@@ -729,7 +735,7 @@ public class PlayableLotterySixGame implements ILotterySixGame {
 
     }
 
-    private synchronized CompletedLotterySixGame completeWithHkjcPrizeCalculation(long pricePerBet, long maxTopPlacesPrize, double taxPercentage, Map<PrizeTier, List<Pair<PlayerBets, WinningCombination>>> tiers, WinningNumbers winningNumbers, Map<Integer, NumberStatistics> newNumberStats) {
+    private synchronized CompletedLotterySixGame completeWithHkjcPrizeCalculation(long pricePerBet, long maxTopPlacesPrize, double taxPercentage, CarryOverMode carryOverMode, Map<PrizeTier, List<Pair<PlayerBets, WinningCombination>>> tiers, WinningNumbers winningNumbers, Map<Integer, NumberStatistics> newNumberStats) {
         PrizeTier[] prizeTiers = PrizeTier.values();
         long totalBetsFund = getTotalBets();
         long totalFund = (long) Math.floor(totalBetsFund * (1.0 - taxPercentage));
@@ -920,7 +926,6 @@ public class PlayableLotterySixGame implements ILotterySixGame {
             firstTierCarryOver += firstTierPrizeTotal;
         }
 
-        CarryOverMode carryOverMode = instance == null ? CarryOverMode.CONFIG_DEFAULT : instance.carryOverMode;
         switch (carryOverMode) {
             case ONLY_TICKET_SALES: {
                 carryOverNext += Math.max(0, firstTierCarryOver - difference);
@@ -997,7 +1002,6 @@ public class PlayableLotterySixGame implements ILotterySixGame {
         }
 
         winnings.sort(Comparator.comparing((PlayerWinnings playerWinnings) -> playerWinnings.getTier()).thenComparing((PlayerWinnings playerWinnings) -> playerWinnings.getWinningBet(bets)));
-        this.valid = false;
 
         return new CompletedLotterySixGame(gameId, scheduledDateTime, gameNumber, specialName, winningNumbers, newNumberStats, pricePerBet, prizeForTier, winnings, bets, totalPrizes, carryOverNext, lotteriesFunds);
     }
