@@ -64,7 +64,6 @@ import net.md_5.bungee.api.chat.TextComponent;
 import net.wesjd.anvilgui.AnvilGUI;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
-import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -146,6 +145,19 @@ public class LotteryPluginGUI implements Listener {
                     case NOT_SELECTED: {
                         String color = ChatColorUtils.getNumberColor(number);
                         if (color.equals(ChatColor.RED.toString())) {
+                            material = XMaterial.RED_STAINED_GLASS;
+                        } else if (color.equals(ChatColor.AQUA.toString())) {
+                            material = XMaterial.LIGHT_BLUE_STAINED_GLASS;
+                        } else if (color.equals(ChatColor.GREEN.toString())) {
+                            material = XMaterial.LIME_STAINED_GLASS;
+                        } else {
+                            material = XMaterial.RED_STAINED_GLASS;
+                        }
+                        break;
+                    }
+                    case SELECTED: {
+                        String color = ChatColorUtils.getNumberColor(number);
+                        if (color.equals(ChatColor.RED.toString())) {
                             material = XMaterial.RED_WOOL;
                         } else if (color.equals(ChatColor.AQUA.toString())) {
                             material = XMaterial.LIGHT_BLUE_WOOL;
@@ -154,10 +166,6 @@ public class LotteryPluginGUI implements Listener {
                         } else {
                             material = XMaterial.RED_WOOL;
                         }
-                        break;
-                    }
-                    case SELECTED: {
-                        material = XMaterial.LIGHT_GRAY_WOOL;
                         break;
                     }
                     case SELECTED_BANKER: {
@@ -174,7 +182,7 @@ public class LotteryPluginGUI implements Listener {
             material = LotterySixPlugin.getInstance().numberItemsType;
         }
         ItemStack itemStack = material.parseItem();
-        if (selectedState.shouldSetStack() && LotterySixPlugin.getInstance().numberItemsSetStackSize) {
+        if (LotterySixPlugin.getInstance().numberItemsSetStackSize) {
             itemStack.setAmount(Math.max(1, number));
         }
         if (enchanted) {
@@ -971,7 +979,7 @@ public class LotteryPluginGUI implements Listener {
                 return true;
             }, LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryIncrementButton, instance)));
 
-            gui.addElement(new DynamicGuiElement('h', () -> new StaticGuiElement('g', getNumberItem(size.get(), NumberSelectedState.NOT_SELECTED), Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryMultipleSizeValue, instance)).map(each -> each.replace("{Count}", size.get() + "")).toArray(String[]::new))));
+            gui.addElement(new DynamicGuiElement('h', () -> new StaticGuiElement('g', getNumberItem(size.get(), NumberSelectedState.SELECTED), Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryMultipleSizeValue, instance)).map(each -> each.replace("{Count}", size.get() + "")).toArray(String[]::new))));
 
             gui.addElement(new DynamicGuiElement('l', () -> {
                 long price = LotteryUtils.calculatePrice(size.get(), 0, instance.pricePerBet);
@@ -1051,9 +1059,8 @@ public class LotteryPluginGUI implements Listener {
                 return true;
             }, LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryIncrementButton, instance)));
 
-            gui.addElement(new DynamicGuiElement('f', () -> new StaticGuiElement('f', getNumberItem(bankerSize.get(), NumberSelectedState.NOT_SELECTED), Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBankerBankersValue, instance)).map(each -> each.replace("{Count}", bankerSize.get() + "")).toArray(String[]::new))));
-            gui.addElement(new DynamicGuiElement('j', () -> new StaticGuiElement('j', getNumberItem(selectionSize.get(), NumberSelectedState.NOT_SELECTED), Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBankerSelectionsValue, instance)).map(each -> each.replace("{Count}", selectionSize.get() + "")).toArray(String[]::new))));
-
+            gui.addElement(new DynamicGuiElement('f', () -> new StaticGuiElement('f', getNumberItem(bankerSize.get(), NumberSelectedState.SELECTED), Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBankerBankersValue, instance)).map(each -> each.replace("{Count}", bankerSize.get() + "")).toArray(String[]::new))));
+            gui.addElement(new DynamicGuiElement('j', () -> new StaticGuiElement('j', getNumberItem(selectionSize.get(), NumberSelectedState.SELECTED), Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryBankerSelectionsValue, instance)).map(each -> each.replace("{Count}", selectionSize.get() + "")).toArray(String[]::new))));
 
             gui.addElement(new DynamicGuiElement('l', () -> {
                 long price = LotteryUtils.calculatePrice(selectionSize.get(), bankerSize.get(), instance.pricePerBet);
@@ -1193,7 +1200,7 @@ public class LotteryPluginGUI implements Listener {
                             },
                             "true",
                             getNumberItem(number, NumberSelectedState.SELECTED),
-                            ChatColor.GRAY + "" + number
+                            getNumberColor(number) + ChatColor.BOLD + number
                     ),
                     new GuiStateElement.State(
                             change -> {
@@ -1316,7 +1323,7 @@ public class LotteryPluginGUI implements Listener {
 
         char c = 'a';
         for (int i : betNumbers.getNumbers()) {
-            gui.addElement(new StaticGuiElement(c++, getNumberItem(i, NumberSelectedState.NOT_SELECTED), getNumberColor(i) + i));
+            gui.addElement(new StaticGuiElement(c++, getNumberItem(i, NumberSelectedState.SELECTED), getNumberColor(i) + i));
         }
 
         AtomicInteger multipleDraw = new AtomicInteger(1);
@@ -1333,7 +1340,7 @@ public class LotteryPluginGUI implements Listener {
             return true;
         }, LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetIncrementButton, instance)));
 
-        gui.addElement(new DynamicGuiElement('l', () -> new StaticGuiElement('l', getNumberItem(multipleDraw.get(), NumberSelectedState.NOT_SELECTED), Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetMultipleDrawValue, instance)).map(each -> each.replace("{Count}", multipleDrawStr(multipleDraw.get()))).toArray(String[]::new))));
+        gui.addElement(new DynamicGuiElement('l', () -> new StaticGuiElement('l', getNumberItem(multipleDraw.get(), NumberSelectedState.SELECTED), Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetMultipleDrawValue, instance)).map(each -> each.replace("{Count}", multipleDrawStr(multipleDraw.get()))).toArray(String[]::new))));
 
         LongSupplier priceProvider = () -> LotteryUtils.calculatePrice(betNumbers, instance) * multipleDraw.get();
         gui.addElement(new DynamicGuiElement('g', () -> new StaticGuiElement('g', XMaterial.DIAMOND.parseItem(), Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetLotteryInfo, instance, game))
@@ -1425,7 +1432,7 @@ public class LotteryPluginGUI implements Listener {
             return true;
         }, LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetIncrementButton, instance)));
 
-        gui.addElement(new DynamicGuiElement('l', () -> new StaticGuiElement('l', getNumberItem(multipleDraw.get(), NumberSelectedState.NOT_SELECTED), Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetMultipleDrawValue, instance)).map(each -> each.replace("{Count}", multipleDrawStr(multipleDraw.get()))).toArray(String[]::new))));
+        gui.addElement(new DynamicGuiElement('l', () -> new StaticGuiElement('l', getNumberItem(multipleDraw.get(), NumberSelectedState.SELECTED), Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetMultipleDrawValue, instance)).map(each -> each.replace("{Count}", multipleDrawStr(multipleDraw.get()))).toArray(String[]::new))));
 
         LongSupplier priceProvider = () -> LotteryUtils.calculatePrice(betNumbers, instance) * multipleDraw.get();
 
@@ -1581,7 +1588,7 @@ public class LotteryPluginGUI implements Listener {
             return true;
         }, LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetIncrementButton, instance)));
 
-        gui.addElement(new DynamicGuiElement('l', () -> new StaticGuiElement('l', getNumberItem(multipleDraw.get(), NumberSelectedState.NOT_SELECTED), Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetMultipleDrawValue, instance)).map(each -> each.replace("{Count}", multipleDrawStr(multipleDraw.get()))).toArray(String[]::new))));
+        gui.addElement(new DynamicGuiElement('l', () -> new StaticGuiElement('l', getNumberItem(multipleDraw.get(), NumberSelectedState.SELECTED), Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetMultipleDrawValue, instance)).map(each -> each.replace("{Count}", multipleDrawStr(multipleDraw.get()))).toArray(String[]::new))));
 
         LongSupplier priceProvider = () -> betNumbers.stream().mapToLong(each -> LotteryUtils.calculatePrice(each, instance)).sum() * multipleDraw.get();
 
@@ -1676,7 +1683,7 @@ public class LotteryPluginGUI implements Listener {
             return true;
         }, LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetIncrementButton, instance)));
 
-        gui.addElement(new DynamicGuiElement('l', () -> new StaticGuiElement('l', getNumberItem(multipleDraw.get(), NumberSelectedState.NOT_SELECTED), Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetMultipleDrawValue, instance)).map(each -> each.replace("{Count}", multipleDrawStr(multipleDraw.get()))).toArray(String[]::new))));
+        gui.addElement(new DynamicGuiElement('l', () -> new StaticGuiElement('l', getNumberItem(multipleDraw.get(), NumberSelectedState.SELECTED), Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetMultipleDrawValue, instance)).map(each -> each.replace("{Count}", multipleDrawStr(multipleDraw.get()))).toArray(String[]::new))));
 
         LongSupplier priceProvider = () -> betNumbers.stream().mapToLong(each -> LotteryUtils.calculatePrice(each, instance)).sum() * multipleDraw.get();
 
@@ -1824,10 +1831,10 @@ public class LotteryPluginGUI implements Listener {
             gui = new InventoryGui(plugin, LotteryUtils.formatPlaceholders(player, instance.guiLastResultsTitle, instance, game), guiSetup);
             char c = 'a';
             for (int i : game.getDrawResult().getNumbersOrdered()) {
-                gui.addElement(new StaticGuiElement(c++, getNumberItem(i, NumberSelectedState.NOT_SELECTED), getNumberColor(i) + "" + i));
+                gui.addElement(new StaticGuiElement(c++, getNumberItem(i, NumberSelectedState.SELECTED), getNumberColor(i) + i));
             }
             int specialNumber = game.getDrawResult().getSpecialNumber();
-            gui.addElement(new StaticGuiElement(c, getNumberItem(specialNumber, true, NumberSelectedState.NOT_SELECTED), getNumberColor(specialNumber) + "" + specialNumber));
+            gui.addElement(new StaticGuiElement(c, getNumberItem(specialNumber, true, NumberSelectedState.SELECTED), getNumberColor(specialNumber) + specialNumber));
             gui.addElement(new StaticGuiElement('h', XMaterial.CLOCK.parseItem(), LotteryUtils.formatPlaceholders(player, instance.guiLastResultsLotteryInfo, instance, game)));
 
             gui.addElement(new StaticGuiElement('i', game.hasPlayerWinnings(player.getUniqueId()) ? setEnchanted(XMaterial.GOLD_INGOT.parseItem()) : XMaterial.GOLD_INGOT.parseItem(), click -> {
@@ -2023,10 +2030,10 @@ public class LotteryPluginGUI implements Listener {
             }
             WinningNumbers winningNumbers = gameIndex.getDrawResult();
             for (int i : winningNumbers.getNumbersOrdered()) {
-                gui.addElement(new StaticGuiElement(c++, getNumberItem(i, NumberSelectedState.NOT_SELECTED), getNumberColor(i) + i));
+                gui.addElement(new StaticGuiElement(c++, getNumberItem(i, NumberSelectedState.SELECTED), getNumberColor(i) + i));
             }
             int specialNumber = winningNumbers.getSpecialNumber();
-            gui.addElement(new StaticGuiElement(c++, getNumberItem(specialNumber, true, NumberSelectedState.NOT_SELECTED), getNumberColor(specialNumber) + "" + specialNumber));
+            gui.addElement(new StaticGuiElement(c++, getNumberItem(specialNumber, true, NumberSelectedState.SELECTED), getNumberColor(specialNumber) + specialNumber));
         }
         while (c <= lastChar) {
             gui.addElement(new StaticGuiElement(c++, new ItemStack(Material.AIR), ChatColor.LIGHT_PURPLE.toString()));
@@ -2082,7 +2089,7 @@ public class LotteryPluginGUI implements Listener {
         for (int i = 0; i < num; i++) {
             int number = i + 1;
             NumberStatistics stats = game == null ? NumberStatistics.NOT_EVER_DRAWN : game.getNumberStatistics(number);
-            gui.addElement(new StaticGuiElement(c++, getNumberItem(number, stats.getLastDrawn() == 0, NumberSelectedState.NOT_SELECTED),
+            gui.addElement(new StaticGuiElement(c++, getNumberItem(number, stats.getLastDrawn() == 0, NumberSelectedState.SELECTED),
                     getNumberColor(number) + number,
                     LotteryUtils.formatPlaceholders(player, instance.guiNumberStatisticsLastDrawn.replace("{Number}", number + ""), instance, game),
                     LotteryUtils.formatPlaceholders(player, instance.guiNumberStatisticsTimesDrawn.replace("{Number}", number + ""), instance, game)
@@ -2095,25 +2102,20 @@ public class LotteryPluginGUI implements Listener {
 
     public enum NumberSelectedState {
 
-        NOT_SELECTED(0, true),
-        SELECTED(100, false),
-        SELECTED_BANKER(200, false);
+        NOT_SELECTED(0),
+        SELECTED(100),
+        SELECTED_BANKER(200);
 
         private final int customModelDataOffset;
-        private final boolean shouldSetStack;
 
-        NumberSelectedState(int customModelDataOffset, boolean shouldSetStack) {
+        NumberSelectedState(int customModelDataOffset) {
             this.customModelDataOffset = customModelDataOffset;
-            this.shouldSetStack = shouldSetStack;
         }
 
         public int getCustomModelDataOffset() {
             return customModelDataOffset;
         }
 
-        public boolean shouldSetStack() {
-            return shouldSetStack;
-        }
     }
 
     public enum AccountTransactionMode {

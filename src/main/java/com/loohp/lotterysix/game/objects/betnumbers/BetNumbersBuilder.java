@@ -509,9 +509,17 @@ public abstract class BetNumbersBuilder implements Iterable<Integer> {
             return bankersComplete;
         }
 
+        public boolean selectionContains(int i) {
+            return selections.contains(i);
+        }
+
+        public boolean bankerContains(int i) {
+            return bankers.contains(i);
+        }
+
         @Override
         public boolean contains(int i) {
-            return bankers.contains(i) || selections.contains(i);
+            return selectionContains(i) || bankerContains(i);
         }
 
         public boolean bankerCompleted() {
