@@ -2,7 +2,9 @@
 
 # LotterySix
 
-https://www.spigotmc.org/resources/107573/
+https://www.spigotmc.org/resources/107573/<br>
+https://modrinth.com/plugin/lotterysix<br>
+https://hangar.papermc.io/LOOHP/LotterySix
 
 Lottery game in Minecraft inspired by the game '[Mark Six 六合彩](https://en.wikipedia.org/wiki/Mark_Six)' of the [HKJC](https://en.wikipedia.org/wiki/Hong_Kong_Jockey_Club).
 
