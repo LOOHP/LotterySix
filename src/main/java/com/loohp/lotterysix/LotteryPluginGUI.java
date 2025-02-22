@@ -190,7 +190,9 @@ public class LotteryPluginGUI implements Listener {
         }
         int itemModelData = LotterySixPlugin.getInstance().numberItemsCustomModelData + selectedState.getCustomModelDataOffset() + number;
         ItemMeta meta = itemStack.getItemMeta();
-        meta.setCustomModelData(itemModelData);
+        if (LotterySixPlugin.version.isNewerOrEqualTo(MCVersion.V1_13_1)) {
+            meta.setCustomModelData(itemModelData);
+        }
         itemStack.setItemMeta(meta);
         if (LotterySixPlugin.version.isNewerOrEqualTo(MCVersion.V1_20_5)) {
             itemStack = Bukkit.getUnsafe().modifyItemStack(itemStack, itemStack.getType().getKey() + "[custom_data={LotterySixNumber:" + number + "}]");
