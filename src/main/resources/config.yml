@@ -118,7 +118,7 @@ LotterySix:
   #MODES: UNREALISTIC_FOR_FUN, HKJC
   PrizeCalculationMode: "UNREALISTIC_FOR_FUN"
   #Choose carry-over fund calculation mode
-  #The difference between DEFAULT & ONLY_TICKET_SALES is that the for
+  #The difference between ONLY_TICKET_SALES & PRIZE_AND_SALES is that the for
   #ONLY_TICKET_SALES that half of LowestTopPlacesPrize does not carry over to the next game
   #MODES: ONLY_TICKET_SALES, PRIZE_AND_SALES
   CarryOverMode: "ONLY_TICKET_SALES"
