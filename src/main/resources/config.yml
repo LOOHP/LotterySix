@@ -79,6 +79,7 @@ LotterySix:
   #How often should the lottery run
   #Put "Never" to never run automatically
   RunInterval: "0 22 * * 2,4,6"
+  #Timezone to be used for RunInterval, https://loohpjames.com/timezone/
   TimeZone: "Asia/Hong_Kong"
   #How long before the lottery runs after it had started
   #Setting this to a negative value refers to

@@ -21,8 +21,9 @@
 package com.loohp.lotterysix.updater;
 
 import com.loohp.lotterysix.LotterySixPlugin;
-import com.loohp.lotterysix.objects.Scheduler;
+
 import com.loohp.lotterysix.utils.HTTPRequestUtils;
+import com.loohp.platformscheduler.Scheduler;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.ComponentBuilder;

@@ -25,7 +25,7 @@
     <groupId>com.loohp</groupId>
     <artifactId>LotterySix</artifactId>
     <name>LotterySix</name>
-    <version>1.10.20.0</version>
+    <version>1.10.21.0</version>
 
     <description>Lottery game in Minecraft inspired by the game 'Mark Six' by the HKJC</description>
     <url>https://github.com/LOOHP/LotterySix/</url>
@@ -68,6 +68,10 @@
                             <shadedArtifactAttached>false</shadedArtifactAttached>
                             <createDependencyReducedPom>false</createDependencyReducedPom>
                             <relocations>
+                                <relocation>
+                                    <pattern>com.loohp.platformscheduler</pattern>
+                                    <shadedPattern>com.loohp.interactivechat.libs.com.loohp.platformscheduler</shadedPattern>
+                                </relocation>
                                 <relocation>
                                     <pattern>de.themoep.inventorygui</pattern>
                                     <shadedPattern>com.loohp.lotterysix.libs.de.themoep.inventorygui</shadedPattern>
@@ -283,6 +287,12 @@
 
     <dependencies>
         <dependency>
+            <groupId>com.loohp</groupId>
+            <artifactId>PlatformScheduler</artifactId>
+            <version>1.0.0</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
             <version>2.10</version>
@@ -291,7 +301,7 @@
         <dependency>
             <groupId>net.wesjd</groupId>
             <artifactId>anvilgui</artifactId>
-            <version>1.10.4-SNAPSHOT</version>
+            <version>1.10.5-SNAPSHOT</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
@@ -303,7 +313,7 @@
         <dependency>
             <groupId>de.themoep</groupId>
             <artifactId>inventorygui</artifactId>
-            <version>1.6.4-SNAPSHOT</version>
+            <version>1.6.5-SNAPSHOT</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
@@ -315,7 +325,7 @@
         <dependency>
             <groupId>com.github.cryptomorin</groupId>
             <artifactId>XSeries</artifactId>
-            <version>12.1.0</version>
+            <version>13.2.0</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
@@ -342,12 +352,6 @@
             <groupId>com.velocitypowered</groupId>
             <artifactId>velocity-api</artifactId>
             <version>3.4.0-SNAPSHOT</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>dev.folia</groupId>
-            <artifactId>folia-api</artifactId>
-            <version>1.20.6-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -395,7 +399,7 @@
         <dependency>
             <groupId>org.geysermc.floodgate</groupId>
             <artifactId>api</artifactId>
-            <version>2.2.3-SNAPSHOT</version>
+            <version>2.2.4-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>

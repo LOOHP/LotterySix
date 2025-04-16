@@ -22,6 +22,7 @@ package com.loohp.lotterysix.events;
 
 import com.loohp.lotterysix.game.LotterySix;
 import com.loohp.lotterysix.game.objects.LotterySixAction;
+import com.loohp.platformscheduler.Scheduler;
 import org.bukkit.Bukkit;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
@@ -38,7 +39,7 @@ public class LotterySixEvent extends Event {
     private final LotterySixAction action;
 
     public LotterySixEvent(LotterySix lotterySix, LotterySixAction action) {
-        super(!Bukkit.isPrimaryThread());
+        super(!Scheduler.isPrimaryThread());
         this.lotterySix = lotterySix;
         this.action = action;
     }
