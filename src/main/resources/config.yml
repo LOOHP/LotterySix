@@ -656,6 +656,115 @@ BorderPaneItems:
   #Hide all glass pane borders in all GUI menus
   HideAll: false
 
+#Advanced section for custom menus textures
+AdvancedGUICustomization:
+  StartingCustomModelData: 10000
+  GUIs:
+    MainMenu:
+      ItemType: DEFAULT
+      Layout:
+        - "         "
+        - "fyaaaaaaa"
+        - "$ybacadae"
+        - "zyaaaaaaa"
+        - "         "
+    BettingAccount:
+      ItemType: DEFAULT
+      Layout:
+        - "         "
+        - "bzacadaea"
+        - "$zaaaaaaa"
+        - "yzaafagaa"
+        - "         "
+    TransactionMenu:
+      ItemType: DEFAULT
+      Layout:
+        - "         "
+        - "bzaaacaaa"
+        - "azaaaaaaa"
+        - "azadaeafa"
+        - "         "
+    TransactionInput:
+      ItemType: DEFAULT
+    FixedTransactionDeposit:
+      ItemType: DEFAULT
+      Layout:
+        - "         "
+        - " aaaaaaa "
+        - " aabacaa "
+        - " aaaaaaa "
+        - "         "
+    BetTypeChooser:
+      ItemType: DEFAULT
+      Layout:
+        - "         "
+        - " aaaaaaa "
+        - " bacadae "
+        - " aaaaaaa "
+        - "         "
+    RandomEntryChooser:
+      ItemType: DEFAULT
+      Layout:
+        - "         "
+        - " abacada "
+        - " efghijk "
+        - " lamanao "
+        - "         "
+    NumberChooser:
+      ItemType: DEFAULT
+    SingleNumberConfirm:
+      ItemType: DEFAULT
+      Layout:
+        - "         "
+        - " abcdefg "
+        - " zzklmzz "
+        - " zhzzziz "
+        - "         "
+    ComplexNumberConfirm:
+      ItemType: DEFAULT
+      Layout:
+        - "         "
+        - " zzazgzz "
+        - " zzklmzz "
+        - " zhzizjz "
+        - "         "
+    SingleBulkNumberConfirm:
+      ItemType: DEFAULT
+      Layout:
+        - "         "
+        - " zzazgzz "
+        - " zzklmzz "
+        - " zhzzziz "
+        - "         "
+    ComplexBulkNumberConfirm:
+      ItemType: DEFAULT
+      Layout:
+        - "         "
+        - " zzazgzz "
+        - " zzklmzz "
+        - " zhzizjz "
+        - "         "
+    PastResultsNoGames:
+      ItemType: DEFAULT
+      Layout:
+        - "         "
+        - " zzzzzzz "
+        - " zzzazzz "
+        - " zzzzzzz "
+        - "         "
+    PastResults:
+      ItemType: DEFAULT
+      Layout:
+        - "         "
+        - " abcdefg "
+        - " zzzzzzz "
+        - " zhzizjz "
+        - "         "
+    PastResultsList:
+      ItemType: DEFAULT
+    NumberStatistics:
+      ItemType: DEFAULT
+
 PlaceholderAPI:
   HideResultsWhileGameIsLocked: true
 

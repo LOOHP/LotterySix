@@ -46,6 +46,8 @@ import com.loohp.lotterysix.game.objects.WinningNumbers;
 import com.loohp.lotterysix.game.objects.betnumbers.BetNumbersType;
 import com.loohp.lotterysix.game.player.LotteryPlayer;
 import com.loohp.lotterysix.game.player.LotteryPlayerManager;
+import com.loohp.lotterysix.gui.GUIInfo;
+import com.loohp.lotterysix.gui.GUIType;
 import com.loohp.lotterysix.utils.ChatColorUtils;
 import com.loohp.lotterysix.utils.CronUtils;
 
@@ -349,6 +351,9 @@ public class LotterySix implements AutoCloseable {
     public int numberItemsCustomModelData;
 
     public boolean borderPaneItemsHideAll;
+
+    public int guiCustomModelData;
+    public Map<GUIType, GUIInfo> guiInfo;
 
     private final ExecutorService saveDataService;
     private final AtomicLong lastSaveBegin;
@@ -1071,6 +1076,17 @@ public class LotterySix implements AutoCloseable {
         numberItemsCustomModelData = config.getConfiguration().getInt("NumberItems.StartingCustomModelData");
 
         borderPaneItemsHideAll = config.getConfiguration().getBoolean("BorderPaneItems.HideAll");
+
+        guiCustomModelData = config.getConfiguration().getInt("AdvancedGUICustomization.StartingCustomModelData");
+        guiInfo = new HashMap<>();
+        for (GUIType type : GUIType.values()) {
+            String key = type.getKey();
+            String itemTypeStr = config.getConfiguration().getString("AdvancedGUICustomization.GUIs." + key + ".ItemType");
+            XMaterial itemType = itemTypeStr.equalsIgnoreCase("DEFAULT") ? null : XMaterial.valueOf(itemTypeStr.toUpperCase());
+            List<String> layout = config.getConfiguration().getStringList("AdvancedGUICustomization.GUIs." + key + ".Layout");
+            int customModelDataOffset = guiCustomModelData + type.ordinal() * 1000;
+            guiInfo.put(type, new GUIInfo(type, itemType, layout, customModelDataOffset));
+        }
 
         int seventhTierMultiplier = config.getConfiguration().getInt("LotterySix.PrizeTierSettings.SEVENTH.FixedPrizeMultiplier");
         int sixthTierMultiplier = config.getConfiguration().getInt("LotterySix.PrizeTierSettings.SIXTH.MultiplierFromLast");

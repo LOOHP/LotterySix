@@ -109,13 +109,14 @@ public class PluginMessageVelocity {
             if (!event.getIdentifier().getId().equals("lotterysix:main")) {
                 return;
             }
+
+            event.setResult(PluginMessageEvent.ForwardResult.handled());
+
             ChannelMessageSource source = event.getSource();
 
             if (!(source instanceof ServerConnection)) {
                 return;
             }
-
-            event.setResult(PluginMessageEvent.ForwardResult.handled());
 
             RegisteredServer senderServer = ((ServerConnection) source).getServer();
 

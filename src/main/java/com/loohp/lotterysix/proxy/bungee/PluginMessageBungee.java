@@ -41,8 +41,10 @@ import com.loohp.lotterysix.game.player.LotteryPlayer;
 import com.loohp.lotterysix.utils.ArrayUtils;
 import com.loohp.lotterysix.utils.DataTypeIO;
 import com.loohp.lotterysix.utils.SyncUtils;
+import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.ProxyServer;
 import net.md_5.bungee.api.config.ServerInfo;
+import net.md_5.bungee.api.connection.Connection;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.connection.Server;
 import net.md_5.bungee.api.event.PluginMessageEvent;
@@ -112,7 +114,16 @@ public class PluginMessageBungee implements Listener {
             }
             event.setCancelled(true);
 
-            Server senderServer = (Server) event.getSender();
+            Connection source = event.getSender();
+
+            if (!(source instanceof Server)) {
+                if (source instanceof ProxiedPlayer) {
+                    ProxyServer.getInstance().getLogger().info(ChatColor.RED + "[LotterySix] Suspicious client to server plugin message received from " + ((ProxiedPlayer) source).getName() + ", they might be using a modified client for exploits.");
+                }
+                return;
+            }
+
+            Server senderServer = (Server) source;
 
             byte[] packet = Arrays.copyOf(event.getData(), event.getData().length);
             DataInputStream inputStream = new DataInputStream(new ByteArrayInputStream(packet));
