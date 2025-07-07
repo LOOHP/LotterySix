@@ -303,7 +303,10 @@ GUI:
       - '&e總金額: &a${Price}'
       - '&e部份注項單位: &a${PricePartial}'
   ConfirmNewBet:
-    Title: '&2確認投注'
+    SingleTitle: '&2確認投注'
+    ComplexTitle: '&2確認投注'
+    BulkSingleTitle: '&2確認投注'
+    BulkComplexTitle: '&2確認投注'
     LotteryInfo:
       - '&e博彩要有節制 切勿沉迷賭博'
     Confirm:

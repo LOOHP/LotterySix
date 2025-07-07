@@ -1304,7 +1304,7 @@ public class LotteryPluginGUI implements Listener {
     public InventoryGui getSingleNumberConfirm(Player player, PlayableLotterySixGame game, BetNumbers betNumbers) {
         GUIInfo guiInfo = LotterySixPlugin.getInstance().guiInfo.get(GUIType.SINGLE_NUMBER_CONFIRM);
         String[] guiSetup = guiInfo.getLayout();
-        InventoryGui gui = new InventoryGui(plugin, LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetTitle, instance, game), guiSetup);
+        InventoryGui gui = new InventoryGui(plugin, LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetSingleTitle, instance, game), guiSetup);
         gui.setFiller(getFillerItem(XMaterial.LIME_STAINED_GLASS_PANE.parseItem()));
         gui.addElement(new StaticGuiElement('z', new ItemStack(Material.AIR), ChatColor.LIGHT_PURPLE.toString()));
 
@@ -1396,7 +1396,7 @@ public class LotteryPluginGUI implements Listener {
     public InventoryGui getComplexNumberConfirm(Player player, PlayableLotterySixGame game, BetNumbers betNumbers) {
         GUIInfo guiInfo = LotterySixPlugin.getInstance().guiInfo.get(GUIType.COMPLEX_NUMBER_CONFIRM);
         String[] guiSetup = guiInfo.getLayout();
-        InventoryGui gui = new InventoryGui(plugin, LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetTitle, instance, game), guiSetup);
+        InventoryGui gui = new InventoryGui(plugin, LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetComplexTitle, instance, game), guiSetup);
         gui.setFiller(getFillerItem(XMaterial.LIME_STAINED_GLASS_PANE.parseItem()));
         gui.addElement(new StaticGuiElement('z', new ItemStack(Material.AIR), ChatColor.LIGHT_PURPLE.toString()));
 
@@ -1547,7 +1547,7 @@ public class LotteryPluginGUI implements Listener {
         GUIInfo guiInfo = LotterySixPlugin.getInstance().guiInfo.get(GUIType.SINGLE_BULK_NUMBER_CONFIRM);
         String[] guiSetup = guiInfo.getLayout();
         int entriesTotal = betNumbers.stream().mapToInt(each -> each.getSetsSize()).sum();
-        InventoryGui gui = new InventoryGui(plugin, LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetTitle, instance, game), guiSetup);
+        InventoryGui gui = new InventoryGui(plugin, LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetBulkSingleTitle, instance, game), guiSetup);
         gui.setFiller(getFillerItem(XMaterial.LIME_STAINED_GLASS_PANE.parseItem()));
         gui.addElement(new StaticGuiElement('z', new ItemStack(Material.AIR), ChatColor.LIGHT_PURPLE.toString()));
 
@@ -1637,7 +1637,7 @@ public class LotteryPluginGUI implements Listener {
         GUIInfo guiInfo = LotterySixPlugin.getInstance().guiInfo.get(GUIType.COMPLEX_BULK_NUMBER_CONFIRM);
         String[] guiSetup = guiInfo.getLayout();
         int entriesTotal = betNumbers.stream().mapToInt(each -> each.getSetsSize()).sum();
-        InventoryGui gui = new InventoryGui(plugin, LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetTitle, instance, game), guiSetup);
+        InventoryGui gui = new InventoryGui(plugin, LotteryUtils.formatPlaceholders(player, instance.guiConfirmNewBetBulkComplexTitle, instance, game), guiSetup);
         gui.setFiller(getFillerItem(XMaterial.LIME_STAINED_GLASS_PANE.parseItem()));
         gui.addElement(new StaticGuiElement('z', new ItemStack(Material.AIR), ChatColor.LIGHT_PURPLE.toString()));
 

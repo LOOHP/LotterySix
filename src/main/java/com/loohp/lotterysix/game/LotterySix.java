@@ -232,7 +232,10 @@ public class LotterySix implements AutoCloseable {
     public String[] guiRandomEntryBankerTab;
     public String[] guiRandomEntryBankerBankersValue;
     public String[] guiRandomEntryBankerSelectionsValue;
-    public String guiConfirmNewBetTitle;
+    public String guiConfirmNewBetSingleTitle;
+    public String guiConfirmNewBetComplexTitle;
+    public String guiConfirmNewBetBulkSingleTitle;
+    public String guiConfirmNewBetBulkComplexTitle;
     public String[] guiConfirmNewBetLotteryInfo;
     public String[] guiConfirmNewBetBulkRandom;
     public String[] guiConfirmNewBetMultipleDrawValue;
@@ -948,7 +951,10 @@ public class LotterySix implements AutoCloseable {
         guiRandomEntryBankerTab = config.getConfiguration().getStringList("GUI.RandomEntry.Banker.Tab").toArray(new String[0]);
         guiRandomEntryBankerBankersValue = config.getConfiguration().getStringList("GUI.RandomEntry.Banker.BankersValue").toArray(new String[0]);
         guiRandomEntryBankerSelectionsValue = config.getConfiguration().getStringList("GUI.RandomEntry.Banker.SelectionsValue").toArray(new String[0]);
-        guiConfirmNewBetTitle = config.getConfiguration().getString("GUI.ConfirmNewBet.Title");
+        guiConfirmNewBetSingleTitle = config.getConfiguration().getString("GUI.ConfirmNewBet.SingleTitle");
+        guiConfirmNewBetComplexTitle = config.getConfiguration().getString("GUI.ConfirmNewBet.ComplexTitle");
+        guiConfirmNewBetBulkSingleTitle = config.getConfiguration().getString("GUI.ConfirmNewBet.BulkSingleTitle");
+        guiConfirmNewBetBulkComplexTitle = config.getConfiguration().getString("GUI.ConfirmNewBet.BulkComplexTitle");
         guiConfirmNewBetLotteryInfo = config.getConfiguration().getStringList("GUI.ConfirmNewBet.LotteryInfo").toArray(new String[0]);
         guiConfirmNewBetBulkRandom = config.getConfiguration().getStringList("GUI.ConfirmNewBet.BulkRandom").toArray(new String[0]);
         guiConfirmNewBetMultipleDrawValue = config.getConfiguration().getStringList("GUI.ConfirmNewBet.MultipleDrawValue").toArray(new String[0]);

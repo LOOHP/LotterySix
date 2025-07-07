@@ -335,7 +335,10 @@ GUI:
     FinishBankers:
       - "&eClick to finish banker selection"
   ConfirmNewBet:
-    Title: "&2Confirm Bet"
+    SingleTitle: "&2Confirm Bet"
+    ComplexTitle: "&2Confirm Bet"
+    BulkSingleTitle: "&2Confirm Bet"
+    BulkComplexTitle: "&2Confirm Bet"
     LotteryInfo:
       - "&ePlease bet responsibly"
     BulkRandom:
