@@ -221,7 +221,9 @@ public class LotterySix implements AutoCloseable {
     public String[] guiNewBetFinishSimple;
     public String[] guiNewBetFinishComplex;
     public String[] guiNewBetFinishBankers;
-    public String guiRandomEntryTitle;
+    public String guiRandomEntrySingleTitle;
+    public String guiRandomEntryMultipleTitle;
+    public String guiRandomEntryBankerTitle;
     public String[] guiRandomEntryBetCountValueSimple;
     public String[] guiRandomEntryBetCountValueComplex;
     public String[] guiRandomEntryIncrementButton;
@@ -319,6 +321,10 @@ public class LotterySix implements AutoCloseable {
     public String discordSRVSlashCommandsPlaceBetNoGame;
     public String discordSRVSlashCommandsPlaceBetTitle;
     public String[] discordSRVSlashCommandsPlaceBetSubTitle;
+    public String discordSRVSlashCommandsComponentsSingleTitle;
+    public String discordSRVSlashCommandsComponentsMultipleTitle;
+    public String discordSRVSlashCommandsComponentsBankerTitle;
+    public String discordSRVSlashCommandsComponentsRandomTitle;
     public String discordSRVSlashCommandsComponentsNotYetFinish;
     public String discordSRVSlashCommandsComponentsAddRandom;
     public String discordSRVSlashCommandsComponentsFinish;
@@ -940,7 +946,9 @@ public class LotterySix implements AutoCloseable {
         guiNewBetFinishSimple = config.getConfiguration().getStringList("GUI.NewBet.FinishSimple").toArray(new String[0]);
         guiNewBetFinishComplex = config.getConfiguration().getStringList("GUI.NewBet.FinishComplex").toArray(new String[0]);
         guiNewBetFinishBankers = config.getConfiguration().getStringList("GUI.NewBet.FinishBankers").toArray(new String[0]);
-        guiRandomEntryTitle = config.getConfiguration().getString("GUI.RandomEntry.Title");
+        guiRandomEntrySingleTitle = config.getConfiguration().getString("GUI.RandomEntry.SingleTitle");
+        guiRandomEntryMultipleTitle = config.getConfiguration().getString("GUI.RandomEntry.MultipleTitle");
+        guiRandomEntryBankerTitle = config.getConfiguration().getString("GUI.RandomEntry.BankerTitle");
         guiRandomEntryBetCountValueSimple = config.getConfiguration().getStringList("GUI.RandomEntry.BetCountValueSimple").toArray(new String[0]);
         guiRandomEntryBetCountValueComplex = config.getConfiguration().getStringList("GUI.RandomEntry.BetCountValueComplex").toArray(new String[0]);
         guiRandomEntryIncrementButton = config.getConfiguration().getStringList("GUI.RandomEntry.IncrementButton").toArray(new String[0]);
@@ -1038,6 +1046,10 @@ public class LotterySix implements AutoCloseable {
         discordSRVSlashCommandsPlaceBetNoGame = config.getConfiguration().getString("DiscordSRV.SlashCommands.PlaceBet.NoGame");
         discordSRVSlashCommandsPlaceBetTitle = config.getConfiguration().getString("DiscordSRV.SlashCommands.PlaceBet.Title");
         discordSRVSlashCommandsPlaceBetSubTitle = config.getConfiguration().getStringList("DiscordSRV.SlashCommands.PlaceBet.SubTitle").toArray(new String[0]);
+        discordSRVSlashCommandsComponentsSingleTitle = config.getConfiguration().getString("DiscordSRV.SlashCommands.PlaceBet.Components.SingleTitle");
+        discordSRVSlashCommandsComponentsMultipleTitle = config.getConfiguration().getString("DiscordSRV.SlashCommands.PlaceBet.Components.MultipleTitle");
+        discordSRVSlashCommandsComponentsBankerTitle = config.getConfiguration().getString("DiscordSRV.SlashCommands.PlaceBet.Components.BankerTitle");
+        discordSRVSlashCommandsComponentsRandomTitle = config.getConfiguration().getString("DiscordSRV.SlashCommands.PlaceBet.Components.RandomTitle");
         discordSRVSlashCommandsComponentsNotYetFinish = config.getConfiguration().getString("DiscordSRV.SlashCommands.PlaceBet.Components.NotYetFinish");
         discordSRVSlashCommandsComponentsAddRandom = config.getConfiguration().getString("DiscordSRV.SlashCommands.PlaceBet.Components.AddRandom");
         discordSRVSlashCommandsComponentsFinish = config.getConfiguration().getString("DiscordSRV.SlashCommands.PlaceBet.Components.Finish");

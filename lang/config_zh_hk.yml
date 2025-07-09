@@ -279,7 +279,7 @@ GUI:
     Title: '&c選擇運財號碼投注數'
     Value: '&a{Count}'
   NewBet:
-    SingleTitle: '&2選擇6個號碼'
+    SingleTitle: '&2選擇 6 個號碼'
     MultipleTitle: '&2選擇超過 7 個號碼'
     BankerTitle: '&2選擇膽拖和配腳數字'
     Finish:
@@ -379,7 +379,9 @@ GUI:
       - '&7只適用於此頁面的輔助功能'
       - '&7當前狀態: {Status}'
   RandomEntry:
-    Title: '&c選擇運財號碼'
+    SingleTitle: '&c選擇運財號碼'
+    MultipleTitle: '&c選擇運財號碼'
+    BankerTitle: '&c選擇運財號碼'
     BetCountValueSimple:
       - '&e注項數目: &a{Count}'
       - '&e注數: &a{BetUnits}'
@@ -648,6 +650,10 @@ DiscordSRV:
         - '**投注類型: {BetNumbersType}**'
       ThumbnailURL: https://resources.loohpjames.com/spigot/plugins/lotterysix/icon.png
       Components:
+        SingleTitle: '選擇 6 個號碼'
+        MultipleTitle: '選擇超過 7 個號碼'
+        BankerTitle: '選擇膽拖和配腳數字'
+        RandomTitle: '選擇運財號碼'
         NotYetFinish: 請選擇您的號碼！
         Finish: 完成選擇
         FinishBankers: 完成膽拖選擇

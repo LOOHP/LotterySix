@@ -281,7 +281,9 @@ GUI:
       - "&7No idea what numbers to pick?"
       - "&7Let the computer pick random numbers for you!"
   RandomEntry:
-    Title: "&cChoose Random Entry Bet"
+    SingleTitle: "&cChoose Random Entry Bet"
+    MultipleTitle: "&cChoose Random Entry Bet"
+    BankerTitle: "&cChoose Random Entry Bet"
     BetCountValueSimple:
       - "&eNumber of Entries: &a{Count}"
       - "&eNumber of Bets: &a{BetUnits}"
@@ -605,6 +607,10 @@ DiscordSRV:
         - "**Betting Account Balance: $%lotterysix_stats_account_balance%**"
         - "**Entry Type: {BetNumbersType}**"
       Components:
+        SingleTitle: "Pick 6 Numbers"
+        MultipleTitle: "Pick More Than 7 Numbers"
+        BankerTitle: "Pick Bankers & Numbers"
+        RandomTitle: "Choose Random Entry Bet"
         NotYetFinish: "Please choose your numbers!"
         AddRandom: "Add Random"
         Finish: "Finish selection"

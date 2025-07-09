@@ -887,7 +887,17 @@ public class LotteryPluginGUI implements Listener {
         BetNumbersType type = selectedType.isRandom() ? selectedType : BetNumbersType.RANDOM;
         GUIInfo guiInfo = LotterySixPlugin.getInstance().guiInfo.get(GUIType.RANDOM_ENTRY_CHOOSER);
         String[] guiSetup = guiInfo.getLayout();
-        InventoryGui gui = new InventoryGui(plugin, LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryTitle, instance), guiSetup);
+        String title;
+        if (type.equals(BetNumbersType.RANDOM)) {
+            title = instance.guiRandomEntrySingleTitle;
+        } else if (type.equals(BetNumbersType.MULTIPLE_RANDOM)) {
+            title = instance.guiRandomEntryMultipleTitle;
+        } else if (type.equals(BetNumbersType.BANKER_RANDOM)) {
+            title = instance.guiRandomEntryBankerTitle;
+        } else {
+            title = "";
+        }
+        InventoryGui gui = new InventoryGui(plugin, LotteryUtils.formatPlaceholders(player, title, instance), guiSetup);
         gui.setFiller(getFillerItem(XMaterial.RED_STAINED_GLASS_PANE.parseItem()));
         gui.addElement(new StaticGuiElement('a', new ItemStack(Material.AIR), ChatColor.LIGHT_PURPLE.toString()));
 

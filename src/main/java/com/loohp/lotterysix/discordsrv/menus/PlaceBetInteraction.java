@@ -233,7 +233,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
             EmbedBuilder embed = new EmbedBuilder()
                     .setTitle(ChatColor.stripColor(instance.betNumbersTypeNames.get(BetNumbersType.SINGLE)))
                     .setColor(Color.ORANGE)
-                    .setDescription("**" + ChatColor.stripColor(LotteryUtils.formatPlaceholders(player, instance.guiNewBetSingleTitle, instance)) + "**");
+                    .setDescription("**" + ChatColor.stripColor(LotteryUtils.formatPlaceholders(player, instance.discordSRVSlashCommandsComponentsSingleTitle, instance)) + "**");
 
             UUID selectionId = UUID.randomUUID();
             String menuId = SINGLE_ENTRY_SELECTION_LABEL + selectionId + "_";
@@ -273,7 +273,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
                 actionRows.add(actionRow);
             }
 
-            String description = "**" + ChatColor.stripColor(LotteryUtils.formatPlaceholders(player, instance.guiNewBetSingleTitle, instance)) + "**";
+            String description = "**" + ChatColor.stripColor(LotteryUtils.formatPlaceholders(player, instance.discordSRVSlashCommandsComponentsSingleTitle, instance)) + "**";
 
             if (builder.size() == LotteryRegistry.NUMBERS_PER_BET) {
                 Button randomButton = Button.danger(SINGLE_ENTRY_SELECTION_RANDOM_LABEL + selectionId, instance.discordSRVSlashCommandsComponentsAddRandom).withEmoji(Emoji.fromUnicode("\uD83D\uDD22")).asDisabled();
@@ -327,7 +327,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
                 actionRows.add(actionRow);
             }
 
-            String description = "**" + ChatColor.stripColor(LotteryUtils.formatPlaceholders(player, instance.guiNewBetSingleTitle, instance)) + "**";
+            String description = "**" + ChatColor.stripColor(LotteryUtils.formatPlaceholders(player, instance.discordSRVSlashCommandsComponentsSingleTitle, instance)) + "**";
 
             if (builder.size() == LotteryRegistry.NUMBERS_PER_BET) {
                 Button randomButton = Button.danger(SINGLE_ENTRY_SELECTION_RANDOM_LABEL + selectionId, instance.discordSRVSlashCommandsComponentsAddRandom).withEmoji(Emoji.fromUnicode("\uD83D\uDD22")).asDisabled();
@@ -368,7 +368,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
             EmbedBuilder embed = new EmbedBuilder()
                     .setTitle(ChatColor.stripColor(instance.betNumbersTypeNames.get(BetNumbersType.MULTIPLE)))
                     .setColor(OFFSET_WHITE)
-                    .setDescription("**" + ChatColor.stripColor(LotteryUtils.formatPlaceholders(player, instance.guiNewBetMultipleTitle, instance)) + "**");
+                    .setDescription("**" + ChatColor.stripColor(LotteryUtils.formatPlaceholders(player, instance.discordSRVSlashCommandsComponentsMultipleTitle, instance)) + "**");
 
             UUID selectionId = UUID.randomUUID();
             String menuId = MULTIPLE_ENTRY_SELECTION_LABEL + selectionId + "_";
@@ -413,7 +413,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
                 actionRows.add(actionRow);
             }
 
-            String description = "**" + ChatColor.stripColor(LotteryUtils.formatPlaceholders(player, instance.guiNewBetMultipleTitle, instance)) + "**";
+            String description = "**" + ChatColor.stripColor(LotteryUtils.formatPlaceholders(player, instance.discordSRVSlashCommandsComponentsMultipleTitle, instance)) + "**";
 
             if (builder.size() >= LotteryRegistry.NUMBERS_PER_BET + 1) {
                 long units = MathUtils.combinationsCount(builder.size(), 0);
@@ -478,7 +478,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
                 actionRows.add(actionRow);
             }
 
-            String description = "**" + ChatColor.stripColor(LotteryUtils.formatPlaceholders(player, instance.guiNewBetMultipleTitle, instance)) + "**";
+            String description = "**" + ChatColor.stripColor(LotteryUtils.formatPlaceholders(player, instance.discordSRVSlashCommandsComponentsMultipleTitle, instance)) + "**";
 
             if (builder.size() >= LotteryRegistry.NUMBERS_PER_BET + 1) {
                 long units = MathUtils.combinationsCount(builder.size(), 0);
@@ -545,7 +545,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
                 actionRows.add(actionRow);
             }
 
-            String description = "**" + ChatColor.stripColor(LotteryUtils.formatPlaceholders(player, instance.guiNewBetMultipleTitle, instance)) + "**";
+            String description = "**" + ChatColor.stripColor(LotteryUtils.formatPlaceholders(player, instance.discordSRVSlashCommandsComponentsMultipleTitle, instance)) + "**";
 
             if (builder.size() >= LotteryRegistry.NUMBERS_PER_BET + 1) {
                 long units = MathUtils.combinationsCount(builder.size(), 0);
@@ -596,7 +596,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
             EmbedBuilder embed = new EmbedBuilder()
                     .setTitle(ChatColor.stripColor(instance.betNumbersTypeNames.get(BetNumbersType.BANKER)))
                     .setColor(Color.YELLOW)
-                    .setDescription("**" + ChatColor.stripColor(LotteryUtils.formatPlaceholders(player, instance.guiNewBetBankerTitle, instance)) + "**");
+                    .setDescription("**" + ChatColor.stripColor(LotteryUtils.formatPlaceholders(player, instance.discordSRVSlashCommandsComponentsBankerTitle, instance)) + "**");
 
             UUID selectionId = UUID.randomUUID();
             String menuId = BANKER_ENTRY_SELECTION_LABEL + selectionId + "_";
@@ -641,7 +641,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
                 actionRows.add(actionRow);
             }
 
-            String description = "**" + ChatColor.stripColor(LotteryUtils.formatPlaceholders(player, instance.guiNewBetBankerTitle, instance)) + "**";
+            String description = "**" + ChatColor.stripColor(LotteryUtils.formatPlaceholders(player, instance.discordSRVSlashCommandsComponentsBankerTitle, instance)) + "**";
 
             if (builder.size() >= LotteryRegistry.NUMBERS_PER_BET + 1 - builder.bankerSize()) {
                 long units = MathUtils.combinationsCount(builder.size(), builder.bankerSize());
@@ -716,7 +716,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
                     actionRows.add(actionRow);
                 }
 
-                String description = "**" + ChatColor.stripColor(LotteryUtils.formatPlaceholders(player, instance.guiNewBetBankerTitle, instance)) + "**";
+                String description = "**" + ChatColor.stripColor(LotteryUtils.formatPlaceholders(player, instance.discordSRVSlashCommandsComponentsBankerTitle, instance)) + "**";
 
                 if (builder.bankerSize() > 0 && builder.bankerSize() <= LotteryRegistry.NUMBERS_PER_BET - 1) {
                     Button selectAllButton = Button.secondary(BANKER_ENTRY_SELECTION_SELECT_ALL_LABEL + selectionId, instance.guiNewBetSelectAll).withEmoji(Emoji.fromUnicode("\uD83D\uDFE7")).asDisabled();
@@ -770,7 +770,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
                     actionRows.add(actionRow);
                 }
 
-                String description = "**" + ChatColor.stripColor(LotteryUtils.formatPlaceholders(player, instance.guiNewBetBankerTitle, instance)) + "**";
+                String description = "**" + ChatColor.stripColor(LotteryUtils.formatPlaceholders(player, instance.discordSRVSlashCommandsComponentsBankerTitle, instance)) + "**";
 
                 if (builder.size() >= LotteryRegistry.NUMBERS_PER_BET + 1 - builder.bankerSize()) {
                     long units = MathUtils.combinationsCount(builder.size(), builder.bankerSize());
@@ -849,7 +849,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
                     actionRows.add(actionRow);
                 }
 
-                String description = "**" + ChatColor.stripColor(LotteryUtils.formatPlaceholders(player, instance.guiNewBetBankerTitle, instance)) + "**";
+                String description = "**" + ChatColor.stripColor(LotteryUtils.formatPlaceholders(player, instance.discordSRVSlashCommandsComponentsBankerTitle, instance)) + "**";
 
                 if (builder.bankerSize() > 0 && builder.bankerSize() <= LotteryRegistry.NUMBERS_PER_BET - 1) {
                     Button selectAllButton = Button.secondary(BANKER_ENTRY_SELECTION_SELECT_ALL_LABEL + selectionId, instance.guiNewBetSelectAll).withEmoji(Emoji.fromUnicode("\uD83D\uDFE7")).asDisabled();
@@ -907,7 +907,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
                     actionRows.add(actionRow);
                 }
 
-                String description = "**" + ChatColor.stripColor(LotteryUtils.formatPlaceholders(player, instance.guiNewBetBankerTitle, instance)) + "**";
+                String description = "**" + ChatColor.stripColor(LotteryUtils.formatPlaceholders(player, instance.discordSRVSlashCommandsComponentsBankerTitle, instance)) + "**";
 
                 if (builder.size() >= LotteryRegistry.NUMBERS_PER_BET + 1 - builder.bankerSize()) {
                     long units = MathUtils.combinationsCount(builder.size(), builder.bankerSize());
@@ -974,7 +974,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
                 EmbedBuilder embed = new EmbedBuilder()
                         .setTitle(ChatColor.stripColor(instance.betNumbersTypeNames.get(BetNumbersType.BANKER)))
                         .setColor(Color.YELLOW)
-                        .setDescription("**" + ChatColor.stripColor(LotteryUtils.formatPlaceholders(player, instance.guiNewBetBankerTitle, instance)) + "**\n\n**" + bankerStr + "**");
+                        .setDescription("**" + ChatColor.stripColor(LotteryUtils.formatPlaceholders(player, instance.discordSRVSlashCommandsComponentsBankerTitle, instance)) + "**\n\n**" + bankerStr + "**");
 
                 String menuId = BANKER_ENTRY_SELECTION_LABEL + selectionId + "_";
                 List<ActionRow> actionRows = createNumberSelectionMenu(menuId, BANKER_ENTRY_SELECTION_OPTION_LABEL, builder.getBankers()).stream()
@@ -999,7 +999,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
             EmbedBuilder embed = new EmbedBuilder()
                     .setTitle(instance.discordSRVSlashCommandsPlaceBetTitle)
                     .setColor(Color.RED)
-                    .setDescription(ChatColor.stripColor(LotteryUtils.formatPlaceholders(player, instance.guiRandomEntryTitle, instance)));
+                    .setDescription(ChatColor.stripColor(LotteryUtils.formatPlaceholders(player, instance.discordSRVSlashCommandsComponentsRandomTitle, instance)));
 
             event.getHook().editOriginalEmbeds(embed.build()).setActionRows(ActionRow.of(single, multiple, banker), ActionRow.of(getMainMenuButton().withId(INTERACTION_LABEL))).retainFiles(Collections.emptyList()).queue();
         } else if (componentId.equals(SINGLE_RANDOM_ENTRY_LABEL)) {
