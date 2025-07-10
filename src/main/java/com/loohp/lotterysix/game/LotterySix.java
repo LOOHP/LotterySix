@@ -260,6 +260,7 @@ public class LotterySix implements AutoCloseable {
     public String[] guiBettingAccountSetBetLimitPerRound;
     public String guiBettingAccountSetBetLimitPerRoundTitle;
     public String[] guiBettingAccountSuspendAccountForAWeek;
+    public String guiAccountFundTransferTitleNoMoney;
     public String guiAccountFundTransferTitle;
     public String[] guiAccountFundTransferCurrentBalance;
     public String[] guiAccountFundTransferDeposit;
@@ -985,6 +986,7 @@ public class LotterySix implements AutoCloseable {
         guiBettingAccountSetBetLimitPerRound = config.getConfiguration().getStringList("GUI.BettingAccount.SetBetLimitPerRound").toArray(new String[0]);
         guiBettingAccountSetBetLimitPerRoundTitle = config.getConfiguration().getString("GUI.BettingAccount.SetBetLimitPerRoundTitle");
         guiBettingAccountSuspendAccountForAWeek = config.getConfiguration().getStringList("GUI.BettingAccount.SuspendAccountForAWeek").toArray(new String[0]);
+        guiAccountFundTransferTitleNoMoney = config.getConfiguration().getString("GUI.AccountFundTransfer.NoMoneyTitle");
         guiAccountFundTransferTitle = config.getConfiguration().getString("GUI.AccountFundTransfer.Title");
         guiAccountFundTransferCurrentBalance = config.getConfiguration().getStringList("GUI.AccountFundTransfer.CurrentBalance").toArray(new String[0]);
         guiAccountFundTransferDeposit = config.getConfiguration().getStringList("GUI.AccountFundTransfer.Deposit").toArray(new String[0]);

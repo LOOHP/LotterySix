@@ -625,16 +625,18 @@ public class LotteryPluginGUI implements Listener {
     }
 
     public InventoryGui getTransactionMenu(Player player) {
+        LotteryPlayer lotteryPlayer = instance.getLotteryPlayerManager().getLotteryPlayer(player.getUniqueId());
+        long money = lotteryPlayer.getStats(PlayerStatsKey.ACCOUNT_BALANCE, long.class);
+
         GUIInfo guiInfo = LotterySixPlugin.getInstance().guiInfo.get(GUIType.TRANSACTION_MENU);
         String[] guiSetup = guiInfo.getLayout();
-        InventoryGui gui = new InventoryGui(plugin, LotteryUtils.formatPlaceholders(player, instance.guiAccountFundTransferTitle, instance), guiSetup);
+        String title = money > 0 ? instance.guiAccountFundTransferTitle : instance.guiAccountFundTransferTitleNoMoney;
+        InventoryGui gui = new InventoryGui(plugin, LotteryUtils.formatPlaceholders(player, title, instance), guiSetup);
         gui.setFiller(getFillerItem(XMaterial.BLUE_STAINED_GLASS_PANE.parseItem()));
         gui.addElement(new StaticGuiElement('a', new ItemStack(Material.AIR), ChatColor.LIGHT_PURPLE.toString()));
         gui.addElement(new StaticGuiElement('z', getFillerItem(XMaterial.ORANGE_STAINED_GLASS_PANE.parseItem()), ChatColor.LIGHT_PURPLE.toString()));
         gui.addElement(new StaticGuiElement('b', setInfo(SkinUtils.getSkull(player.getUniqueId()), guiInfo, 0), LotteryUtils.formatPlaceholders(player, instance.guiBettingAccountProfile, instance)));
 
-        LotteryPlayer lotteryPlayer = instance.getLotteryPlayerManager().getLotteryPlayer(player.getUniqueId());
-        long money = lotteryPlayer.getStats(PlayerStatsKey.ACCOUNT_BALANCE, long.class);
         gui.addElement(new StaticGuiElement('c', setInfo(XMaterial.GOLD_INGOT.parseItem(), guiInfo, 1), Arrays.stream(LotteryUtils.formatPlaceholders(player, instance.guiAccountFundTransferCurrentBalance, instance)).map(s -> s.replace("{Amount}", StringUtils.formatComma(money))).toArray(String[]::new)));
 
         long time = lotteryPlayer.getPreference(PlayerPreferenceKey.SUSPEND_ACCOUNT_UNTIL, long.class);

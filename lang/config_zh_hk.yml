@@ -414,6 +414,7 @@ GUI:
         - '&e選擇配腳號碼數量: &a{Count}'
   AccountFundTransfer:
     Title: '&5投注賬戶存款'
+    NoMoneyTitle: '&5投注賬戶存款'
     CurrentBalance:
       - '&e當前餘額: &a${Amount}'
       - '&7這是投注時使用的餘額，'

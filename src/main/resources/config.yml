@@ -409,6 +409,7 @@ GUI:
       - "&7Current Suspension Until: &c{Value}"
   AccountFundTransfer:
     Title: "&5Account Fund Transfer"
+    NoMoneyTitle: "&5Account Fund Transfer"
     CurrentBalance:
       - "&eCurrent Balance: &a${Amount}"
       - "&7This is the balance used when placing new bets,"
