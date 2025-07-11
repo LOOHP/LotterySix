@@ -1,0 +1,356 @@
+{
+  "model": {
+    "type": "minecraft:select",
+    "property": "minecraft:component",
+    "component": "minecraft:custom_data",
+    "cases": [
+      {
+        "when": "{\"LotterySixNumber\": 1}",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/lotterysix/01"
+        }
+      },
+      {
+        "when": "{\"LotterySixNumber\": 2}",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/lotterysix/02"
+        }
+      },
+      {
+        "when": "{\"LotterySixNumber\": 3}",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/lotterysix/03"
+        }
+      },
+      {
+        "when": "{\"LotterySixNumber\": 4}",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/lotterysix/04"
+        }
+      },
+      {
+        "when": "{\"LotterySixNumber\": 5}",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/lotterysix/05"
+        }
+      },
+      {
+        "when": "{\"LotterySixNumber\": 6}",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/lotterysix/06"
+        }
+      },
+      {
+        "when": "{\"LotterySixNumber\": 7}",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/lotterysix/07"
+        }
+      },
+      {
+        "when": "{\"LotterySixNumber\": 8}",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/lotterysix/08"
+        }
+      },
+      {
+        "when": "{\"LotterySixNumber\": 9}",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/lotterysix/09"
+        }
+      },
+      {
+        "when": "{\"LotterySixNumber\": 10}",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/lotterysix/10"
+        }
+      },
+      {
+        "when": "{\"LotterySixNumber\": 11}",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/lotterysix/11"
+        }
+      },
+      {
+        "when": "{\"LotterySixNumber\": 12}",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/lotterysix/12"
+        }
+      },
+      {
+        "when": "{\"LotterySixNumber\": 13}",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/lotterysix/13"
+        }
+      },
+      {
+        "when": "{\"LotterySixNumber\": 14}",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/lotterysix/14"
+        }
+      },
+      {
+        "when": "{\"LotterySixNumber\": 15}",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/lotterysix/15"
+        }
+      },
+      {
+        "when": "{\"LotterySixNumber\": 16}",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/lotterysix/16"
+        }
+      },
+      {
+        "when": "{\"LotterySixNumber\": 17}",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/lotterysix/17"
+        }
+      },
+      {
+        "when": "{\"LotterySixNumber\": 18}",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/lotterysix/18"
+        }
+      },
+      {
+        "when": "{\"LotterySixNumber\": 19}",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/lotterysix/19"
+        }
+      },
+      {
+        "when": "{\"LotterySixNumber\": 20}",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/lotterysix/20"
+        }
+      },
+      {
+        "when": "{\"LotterySixNumber\": 21}",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/lotterysix/21"
+        }
+      },
+      {
+        "when": "{\"LotterySixNumber\": 22}",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/lotterysix/22"
+        }
+      },
+      {
+        "when": "{\"LotterySixNumber\": 23}",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/lotterysix/23"
+        }
+      },
+      {
+        "when": "{\"LotterySixNumber\": 24}",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/lotterysix/24"
+        }
+      },
+      {
+        "when": "{\"LotterySixNumber\": 25}",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/lotterysix/25"
+        }
+      },
+      {
+        "when": "{\"LotterySixNumber\": 26}",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/lotterysix/26"
+        }
+      },
+      {
+        "when": "{\"LotterySixNumber\": 27}",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/lotterysix/27"
+        }
+      },
+      {
+        "when": "{\"LotterySixNumber\": 28}",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/lotterysix/28"
+        }
+      },
+      {
+        "when": "{\"LotterySixNumber\": 29}",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/lotterysix/29"
+        }
+      },
+      {
+        "when": "{\"LotterySixNumber\": 30}",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/lotterysix/30"
+        }
+      },
+      {
+        "when": "{\"LotterySixNumber\": 31}",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/lotterysix/31"
+        }
+      },
+      {
+        "when": "{\"LotterySixNumber\": 32}",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/lotterysix/32"
+        }
+      },
+      {
+        "when": "{\"LotterySixNumber\": 33}",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/lotterysix/33"
+        }
+      },
+      {
+        "when": "{\"LotterySixNumber\": 34}",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/lotterysix/34"
+        }
+      },
+      {
+        "when": "{\"LotterySixNumber\": 35}",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/lotterysix/35"
+        }
+      },
+      {
+        "when": "{\"LotterySixNumber\": 36}",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/lotterysix/36"
+        }
+      },
+      {
+        "when": "{\"LotterySixNumber\": 37}",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/lotterysix/37"
+        }
+      },
+      {
+        "when": "{\"LotterySixNumber\": 38}",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/lotterysix/38"
+        }
+      },
+      {
+        "when": "{\"LotterySixNumber\": 39}",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/lotterysix/39"
+        }
+      },
+      {
+        "when": "{\"LotterySixNumber\": 40}",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/lotterysix/40"
+        }
+      },
+      {
+        "when": "{\"LotterySixNumber\": 41}",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/lotterysix/41"
+        }
+      },
+      {
+        "when": "{\"LotterySixNumber\": 42}",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/lotterysix/42"
+        }
+      },
+      {
+        "when": "{\"LotterySixNumber\": 43}",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/lotterysix/43"
+        }
+      },
+      {
+        "when": "{\"LotterySixNumber\": 44}",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/lotterysix/44"
+        }
+      },
+      {
+        "when": "{\"LotterySixNumber\": 45}",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/lotterysix/45"
+        }
+      },
+      {
+        "when": "{\"LotterySixNumber\": 46}",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/lotterysix/46"
+        }
+      },
+      {
+        "when": "{\"LotterySixNumber\": 47}",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/lotterysix/47"
+        }
+      },
+      {
+        "when": "{\"LotterySixNumber\": 48}",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/lotterysix/48"
+        }
+      },
+      {
+        "when": "{\"LotterySixNumber\": 49}",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/lotterysix/49"
+        }
+      }
+    ],
+    "fallback": {
+      "type": "minecraft:model",
+      "model": "minecraft:block/red_wool"
+    }
+  }
+}
