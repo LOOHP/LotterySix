@@ -2028,10 +2028,11 @@ public class LotteryPluginGUI implements Listener {
             gui.addElement(new StaticGuiElement(c++, new ItemStack(Material.AIR), ChatColor.LIGHT_PURPLE.toString()));
         }
 
-        ItemStack left = XMaterial.PAPER.parseItem();
-        ItemMeta leftMeta = left.getItemMeta();
+        ItemStack leftPre = XMaterial.PAPER.parseItem();
+        ItemMeta leftMeta = leftPre.getItemMeta();
         leftMeta.setDisplayName(lastSelectedGame.getGameNumber() == null ? " " : lastSelectedGame.getGameNumber().toString());
-        left.setItemMeta(leftMeta);
+        leftPre.setItemMeta(leftMeta);
+        ItemStack left = setInfo(leftPre, guiInfo, 5);
         gui.addElement(new StaticGuiElement('\1', setInfo(XMaterial.MAP.parseItem(), guiInfo, 4), click -> {
             Scheduler.runTaskLater(plugin, () -> close(click.getWhoClicked(), click.getGui(), false), 1, player);
             Scheduler.runTaskLater(plugin, () -> new AnvilGUI.Builder().plugin(plugin)
