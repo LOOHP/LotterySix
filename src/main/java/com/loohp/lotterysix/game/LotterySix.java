@@ -21,7 +21,6 @@
 package com.loohp.lotterysix.game;
 
 import com.cronutils.model.Cron;
-import com.cryptomorin.xseries.XMaterial;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
@@ -356,7 +355,7 @@ public class LotterySix implements AutoCloseable {
     public long maximumChancePerSelection;
     public boolean hideManuelAccountFundTransferDeposit;
 
-    public XMaterial numberItemsType;
+    public String numberItemsType;
     public boolean numberItemsSetStackSize;
     public int numberItemsCustomModelData;
 
@@ -1090,8 +1089,7 @@ public class LotterySix implements AutoCloseable {
         maximumChancePerSelection = config.getConfiguration().getLong("Restrictions.MaximumChancePerSelection");
         hideManuelAccountFundTransferDeposit = config.getConfiguration().getBoolean("Restrictions.HideManuelAccountFundTransferDeposit");
 
-        String typeStr = config.getConfiguration().getString("NumberItems.ItemType");
-        numberItemsType = typeStr.equalsIgnoreCase("DEFAULT") ? null : XMaterial.valueOf(typeStr.toUpperCase());
+        numberItemsType = config.getConfiguration().getString("NumberItems.ItemType");
         numberItemsSetStackSize = config.getConfiguration().getBoolean("NumberItems.SetStackSize");
         numberItemsCustomModelData = config.getConfiguration().getInt("NumberItems.StartingCustomModelData");
 
@@ -1101,8 +1099,7 @@ public class LotterySix implements AutoCloseable {
         guiInfo = new HashMap<>();
         for (GUIType type : GUIType.values()) {
             String key = type.getKey();
-            String itemTypeStr = config.getConfiguration().getString("AdvancedGUICustomization.GUIs." + key + ".ItemType");
-            XMaterial itemType = itemTypeStr.equalsIgnoreCase("DEFAULT") ? null : XMaterial.valueOf(itemTypeStr.toUpperCase());
+            String itemType = config.getConfiguration().getString("AdvancedGUICustomization.GUIs." + key + ".ItemType");
             List<String> layout = config.getConfiguration().getStringList("AdvancedGUICustomization.GUIs." + key + ".Layout");
             int customModelDataOffset = guiCustomModelData + type.ordinal() * 1000;
             guiInfo.put(type, new GUIInfo(type, itemType, layout, customModelDataOffset));

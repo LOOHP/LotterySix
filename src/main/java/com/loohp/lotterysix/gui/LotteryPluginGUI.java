@@ -133,7 +133,8 @@ public class LotteryPluginGUI implements Listener {
 
     private static ItemStack getNumberItem(int number, boolean enchanted, NumberSelectedState selectedState) {
         XMaterial material;
-        if (LotterySixPlugin.getInstance().numberItemsType == null) {
+        XMaterial parsedNumberItemsType = parse(LotterySixPlugin.getInstance().numberItemsType);
+        if (parsedNumberItemsType == null) {
             if (number == 0) {
                 if (selectedState.equals(NumberSelectedState.NOT_SELECTED)) {
                     material = XMaterial.ORANGE_WOOL;
@@ -179,7 +180,7 @@ public class LotteryPluginGUI implements Listener {
                 }
             }
         } else {
-            material = LotterySixPlugin.getInstance().numberItemsType;
+            material = parsedNumberItemsType;
         }
         ItemStack itemStack = material.parseItem();
         if (LotterySixPlugin.getInstance().numberItemsSetStackSize) {
@@ -231,8 +232,9 @@ public class LotteryPluginGUI implements Listener {
     }
 
     private static ItemStack setInfo(ItemStack itemStack, GUIInfo info, int index) {
-        if (info.hasItemType()) {
-            itemStack = info.getItemType().parseItem();
+        XMaterial parsedItemType = parse(info.getItemType());
+        if (parsedItemType != null) {
+            itemStack = parsedItemType.parseItem();
         }
         return setCustomModelData(itemStack, info.getCustomModelDataOffset(), index);
     }
@@ -245,6 +247,18 @@ public class LotteryPluginGUI implements Listener {
         }
         itemStack.setItemMeta(meta);
         return itemStack;
+    }
+
+    private static XMaterial parse(String material) {
+        try {
+            if (material == null || material.equalsIgnoreCase("DEFAULT")) {
+                return null;
+            }
+            return XMaterial.valueOf(material.toUpperCase());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
     private final LotterySixPlugin plugin;

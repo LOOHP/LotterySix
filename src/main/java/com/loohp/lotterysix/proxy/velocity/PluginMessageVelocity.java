@@ -237,7 +237,7 @@ public class PluginMessageVelocity {
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-            });
+            }).schedule();
         } catch (IOException e) {
             e.printStackTrace();
         }

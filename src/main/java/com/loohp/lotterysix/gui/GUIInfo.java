@@ -20,18 +20,16 @@
 
 package com.loohp.lotterysix.gui;
 
-import com.cryptomorin.xseries.XMaterial;
-
 import java.util.List;
 
 public class GUIInfo {
 
     private final GUIType type;
-    private final XMaterial itemType;
+    private final String itemType;
     private final String[] layout;
     private final int customModelDataOffset;
 
-    public GUIInfo(GUIType type, XMaterial itemType, List<String> layout, int customModelDataOffset) {
+    public GUIInfo(GUIType type, String itemType, List<String> layout, int customModelDataOffset) {
         this.type = type;
         this.itemType = itemType;
         this.layout = layout == null ? null : layout.toArray(new String[0]);
@@ -42,11 +40,7 @@ public class GUIInfo {
         return type;
     }
 
-    public boolean hasItemType() {
-        return itemType != null;
-    }
-
-    public XMaterial getItemType() {
+    public String getItemType() {
         return itemType;
     }
 
