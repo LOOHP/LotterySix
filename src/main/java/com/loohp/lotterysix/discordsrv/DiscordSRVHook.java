@@ -270,7 +270,7 @@ public class DiscordSRVHook extends ListenerAdapter implements Listener, SlashCo
                         break;
                     }
                 }
-                hook.editOriginal(message).setActionRows().setEmbeds().retainFiles(Collections.emptyList()).queue();
+                hook.editOriginal(ChatColor.stripColor(message)).setActionRows().setEmbeds().retainFiles(Collections.emptyList()).queue();
             }
         }
     }
