@@ -474,7 +474,9 @@ public class PluginMessageBungee implements Listener {
             out.writeLong(price);
             out.writeInt(result.ordinal());
             DataTypeIO.writeString(out, GSON.toJson(numbers), StandardCharsets.UTF_8);
-            sendData(player.getServer().getInfo(), 0x08, outputStream.toByteArray());
+            for (ServerInfo info : ProxyServer.getInstance().getServers().values()) {
+                sendData(info, 0x08, outputStream.toByteArray());
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }

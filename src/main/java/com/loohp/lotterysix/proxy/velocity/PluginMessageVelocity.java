@@ -470,7 +470,9 @@ public class PluginMessageVelocity {
             out.writeLong(price);
             out.writeInt(result.ordinal());
             DataTypeIO.writeString(out, GSON.toJson(numbers), StandardCharsets.UTF_8);
-            player.getCurrentServer().ifPresent(s -> sendData(s.getServer(), 0x08, outputStream.toByteArray()));
+            for (RegisteredServer info : LotterySixVelocity.proxyServer.getAllServers()) {
+                sendData(info, 0x08, outputStream.toByteArray());
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
