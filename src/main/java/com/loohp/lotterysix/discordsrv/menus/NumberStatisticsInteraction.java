@@ -61,7 +61,7 @@ public class NumberStatisticsInteraction extends DiscordInteraction {
         CompletedLotterySixGame game = instance.getCompletedGames().getLatest();
         EmbedBuilder builder = new EmbedBuilder()
                 .setColor(Color.CYAN)
-                .setTitle(ChatColor.stripColor(LotteryUtils.formatPlaceholders(null, instance.guiNumberStatisticsTitle, instance, game)))
+                .setTitle(ChatColor.stripColor(LotteryUtils.formatPlaceholders(null, instance.discordSRVSlashCommandsViewNumberStatisticsTitle, instance, game)))
                 .setFooter(ChatColor.stripColor(String.join("\n", LotteryUtils.formatPlaceholders(null, instance.guiNumberStatisticsNote, instance, game))))
                 .setThumbnail(instance.discordSRVSlashCommandsViewNumberStatisticsThumbnailURL);
 
