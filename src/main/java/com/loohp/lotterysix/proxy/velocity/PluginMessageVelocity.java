@@ -462,11 +462,11 @@ public class PluginMessageVelocity {
         }
     }
 
-    public void callPlayerBetEvent(Player player, BetNumbers numbers, long price, AddBetResult result) {
+    public void callPlayerBetEvent(UUID uuid, BetNumbers numbers, long price, AddBetResult result) {
         try {
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             DataOutputStream out = new DataOutputStream(outputStream);
-            DataTypeIO.writeUUID(out, player.getUniqueId());
+            DataTypeIO.writeUUID(out, uuid);
             out.writeLong(price);
             out.writeInt(result.ordinal());
             DataTypeIO.writeString(out, GSON.toJson(numbers), StandardCharsets.UTF_8);

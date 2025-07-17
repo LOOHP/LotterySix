@@ -74,7 +74,7 @@ public class ViewBetsInteraction extends DiscordInteraction {
 
         PlayableLotterySixGame game = instance.getCurrentGame();
         if (game == null) {
-            event.getHook().editOriginal(instance.discordSRVSlashCommandsViewCurrentBetsNoGame).setActionRows().setEmbeds().retainFiles(Collections.emptyList()).queue();
+            event.getHook().editOriginalEmbeds(getGenericEmbed(instance.discordSRVSlashCommandsViewCurrentBetsNoGame, Color.RED)).setActionRows(ActionRow.of(getMainMenuButton())).retainFiles(Collections.emptyList()).queue();
         } else {
             OfflinePlayer player = uuid == null ? null : Bukkit.getOfflinePlayer(uuid);
             StringBuilder sb = new StringBuilder();

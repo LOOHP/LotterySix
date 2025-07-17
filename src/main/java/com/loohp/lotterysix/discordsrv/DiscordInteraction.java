@@ -23,10 +23,12 @@ package com.loohp.lotterysix.discordsrv;
 import com.loohp.lotterysix.LotterySixPlugin;
 import com.loohp.lotterysix.game.LotterySix;
 import github.scarsz.discordsrv.DiscordSRV;
+import github.scarsz.discordsrv.dependencies.jda.api.entities.MessageEmbed;
 import github.scarsz.discordsrv.dependencies.jda.api.events.interaction.GenericComponentInteractionCreateEvent;
 import github.scarsz.discordsrv.dependencies.jda.api.interactions.components.ActionRow;
 import github.scarsz.discordsrv.dependencies.jda.api.interactions.components.Button;
 
+import java.awt.Color;
 import java.util.List;
 import java.util.UUID;
 
@@ -38,6 +40,10 @@ public abstract class DiscordInteraction {
 
     protected static Button getMainMenuButton() {
         return LotterySixPlugin.discordSRVHook.getMainMenuButton();
+    }
+
+    protected static MessageEmbed getGenericEmbed(String message, Color color) {
+        return LotterySixPlugin.discordSRVHook.getGenericEmbed(message, color);
     }
 
     protected final String interactionLabelStartWith;

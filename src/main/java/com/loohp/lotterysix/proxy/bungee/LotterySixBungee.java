@@ -108,9 +108,11 @@ public class LotterySixBungee extends Plugin implements Listener {
             }
         }, (uuid, result, price, bets) -> {
             ProxiedPlayer player = getProxy().getPlayer(uuid);
-            pluginMessageBungee.addBetResult(player, result, price);
+            if (player != null) {
+                pluginMessageBungee.addBetResult(player, result, price);
+            }
             for (PlayerBets bet : bets) {
-                callPlayerBetEvent(player, bet.getChosenNumbers(), price, result);
+                callPlayerBetEvent(uuid, bet.getChosenNumbers(), price, result);
             }
         }, playerBets -> {
             pluginMessageBungee.updateCurrentGameData();
@@ -162,9 +164,9 @@ public class LotterySixBungee extends Plugin implements Listener {
         pluginMessageBungee.callLotterySixEvent(action);
     }
 
-    public static void callPlayerBetEvent(ProxiedPlayer player, BetNumbers numbers, long price, AddBetResult result) {
+    public static void callPlayerBetEvent(UUID uuid, BetNumbers numbers, long price, AddBetResult result) {
         pluginMessageBungee.updateCurrentGameData();
-        pluginMessageBungee.callPlayerBetEvent(player, numbers, price, result);
+        pluginMessageBungee.callPlayerBetEvent(uuid, numbers, price, result);
     }
 
     public static void sendFormattedTitle(ProxiedPlayer player, ILotterySixGame game, String title, int fadeIn, int stay, int fadeOut) {

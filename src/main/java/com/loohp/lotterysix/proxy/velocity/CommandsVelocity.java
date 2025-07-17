@@ -37,6 +37,8 @@ import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.command.SimpleCommand;
 import com.velocitypowered.api.proxy.Player;
 import net.kyori.adventure.text.TextComponent;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.md_5.bungee.api.ProxyServer;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
@@ -59,8 +61,8 @@ public class CommandsVelocity implements SimpleCommand {
         String[] args = invocation.arguments();
 
         if (args.length == 0) {
-            sender.sendMessage(m(TextColor.RED + "LotterySix written by LOOHP!"));
-            sender.sendMessage(m(TextColor.GOLD + "You are running LotterySix version: " + LotterySixVelocity.plugin.getDescription().getVersion()));
+            sender.sendMessage(m(NamedTextColor.RED, "LotterySix written by LOOHP!"));
+            sender.sendMessage(m(NamedTextColor.GOLD, "You are running LotterySix version: " + LotterySixVelocity.plugin.getDescription().getVersion()));
             return;
         }
 
@@ -78,7 +80,7 @@ public class CommandsVelocity implements SimpleCommand {
                 if (sender instanceof Player) {
                     LotterySixVelocity.getPluginMessageHandler().updater((Player) sender);
                 } else {
-                    sender.sendMessage(m(TextColor.RED + "Please execute this command on the backend console or as a player."));
+                    sender.sendMessage(m(NamedTextColor.RED, "Please execute this command on the backend console or as a player."));
                 }
             } else {
                 sender.sendMessage(m(LotterySixVelocity.getInstance().messageNoPermission));
@@ -730,6 +732,10 @@ public class CommandsVelocity implements SimpleCommand {
 
     private static TextComponent m(String m) {
         return LegacyComponentSerializer.legacySection().deserialize(m);
+    }
+
+    private static TextComponent m(TextColor textColor, String m) {
+        return LegacyComponentSerializer.legacySection().deserialize(m).color(textColor);
     }
 
 }

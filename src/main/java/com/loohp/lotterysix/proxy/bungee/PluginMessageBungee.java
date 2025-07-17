@@ -118,7 +118,7 @@ public class PluginMessageBungee implements Listener {
 
             if (!(source instanceof Server)) {
                 if (source instanceof ProxiedPlayer) {
-                    ProxyServer.getInstance().getLogger().info(ChatColor.RED + "[LotterySix] Suspicious client to server plugin message received from " + ((ProxiedPlayer) source).getName() + ", they might be using a modified client for exploits.");
+                    ProxyServer.getInstance().getConsole().sendMessage(ChatColor.RED + "[LotterySix] Suspicious client to server plugin message received from " + ((ProxiedPlayer) source).getName() + ", they might be using a modified client for exploits.");
                 }
                 return;
             }
@@ -466,11 +466,11 @@ public class PluginMessageBungee implements Listener {
         }
     }
 
-    public void callPlayerBetEvent(ProxiedPlayer player, BetNumbers numbers, long price, AddBetResult result) {
+    public void callPlayerBetEvent(UUID uuid, BetNumbers numbers, long price, AddBetResult result) {
         try {
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             DataOutputStream out = new DataOutputStream(outputStream);
-            DataTypeIO.writeUUID(out, player.getUniqueId());
+            DataTypeIO.writeUUID(out, uuid);
             out.writeLong(price);
             out.writeInt(result.ordinal());
             DataTypeIO.writeString(out, GSON.toJson(numbers), StandardCharsets.UTF_8);

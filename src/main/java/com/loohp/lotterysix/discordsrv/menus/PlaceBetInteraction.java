@@ -196,12 +196,12 @@ public class PlaceBetInteraction extends DiscordInteraction {
         String discordUserId = event.getUser().getId();
         UUID uuid = DiscordSRV.getPlugin().getAccountLinkManager().getUuid(discordUserId);
         if (uuid == null) {
-            event.getHook().editOriginal(instance.discordSRVSlashCommandsGlobalMessagesNotLinked).setActionRows().setEmbeds().retainFiles(Collections.emptyList()).queue();
+            event.getHook().editOriginalEmbeds(getGenericEmbed(instance.discordSRVSlashCommandsGlobalMessagesNotLinked, Color.RED)).setActionRows(ActionRow.of(getMainMenuButton())).retainFiles(Collections.emptyList()).queue();
             return;
         }
         PlayableLotterySixGame game = instance.getCurrentGame();
         if (game == null) {
-            event.getHook().editOriginal(instance.discordSRVSlashCommandsPlaceBetNoGame).setActionRows().setEmbeds().retainFiles(Collections.emptyList()).queue();
+            event.getHook().editOriginalEmbeds(getGenericEmbed(instance.discordSRVSlashCommandsPlaceBetNoGame, Color.RED)).setActionRows(ActionRow.of(getMainMenuButton())).retainFiles(Collections.emptyList()).queue();
             return;
         }
         OfflinePlayer player = Bukkit.getOfflinePlayer(uuid);
@@ -360,7 +360,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
             UUID selectionId = UUID.fromString(componentId.substring(SINGLE_ENTRY_CONFIRM_LABEL.length()));
             BetNumbersBuilder builder = chosenNumbers.remove(selectionId);
             if (builder == null) {
-                event.getHook().editOriginal(instance.discordSRVSlashCommandsGlobalMessagesTimeOut).setActionRows().setEmbeds().retainFiles(Collections.emptyList()).queue();
+                event.getHook().editOriginalEmbeds(getGenericEmbed(instance.discordSRVSlashCommandsGlobalMessagesTimeOut, Color.RED)).setActionRows().retainFiles(Collections.emptyList()).queue();
                 return;
             }
             handleConfirm(event, player, BetNumbersType.SINGLE, Collections.singletonList(builder.build()), () -> chosenNumbers.put(selectionId, builder));
@@ -588,7 +588,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
             UUID selectionId = UUID.fromString(componentId.substring(MULTIPLE_ENTRY_CONFIRM_LABEL.length()));
             BetNumbersBuilder builder = chosenNumbers.remove(selectionId);
             if (builder == null) {
-                event.getHook().editOriginal(instance.discordSRVSlashCommandsGlobalMessagesTimeOut).setActionRows().setEmbeds().retainFiles(Collections.emptyList()).queue();
+                event.getHook().editOriginalEmbeds(getGenericEmbed(instance.discordSRVSlashCommandsGlobalMessagesTimeOut, Color.RED)).setActionRows().retainFiles(Collections.emptyList()).queue();
                 return;
             }
             handleConfirm(event, player, BetNumbersType.MULTIPLE, Collections.singletonList(builder.build()), () -> chosenNumbers.put(selectionId, builder));
@@ -961,7 +961,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
             UUID selectionId = UUID.fromString(componentId.substring(BANKER_ENTRY_CONFIRM_LABEL.length()));
             BetNumbersBuilder.BankerBuilder builder = (BetNumbersBuilder.BankerBuilder) chosenNumbers.get(selectionId);
             if (builder == null) {
-                event.getHook().editOriginal(instance.discordSRVSlashCommandsGlobalMessagesTimeOut).setActionRows().setEmbeds().retainFiles(Collections.emptyList()).queue();
+                event.getHook().editOriginalEmbeds(getGenericEmbed(instance.discordSRVSlashCommandsGlobalMessagesTimeOut, Color.RED)).setActionRows().retainFiles(Collections.emptyList()).queue();
                 return;
             }
             if (!builder.inSelectionPhase()) {
@@ -1255,7 +1255,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
             int multipleDraw = Integer.parseInt(selectedValues.get(0).substring(PLACE_BET_CONFIRM_MULTIPLE_DRAW_OPTION_LABEL.length()));
             long[] data = multipleDrawSelection.get(betNumbersId);
             if (data == null) {
-                event.getHook().editOriginal(instance.discordSRVSlashCommandsGlobalMessagesTimeOut).setActionRows().setEmbeds().retainFiles(Collections.emptyList()).queue();
+                event.getHook().editOriginalEmbeds(getGenericEmbed(instance.discordSRVSlashCommandsGlobalMessagesTimeOut, Color.RED)).setActionRows().retainFiles(Collections.emptyList()).queue();
                 return;
             }
             data[0] = multipleDraw;
@@ -1287,7 +1287,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
             UUID backId = UUID.fromString(componentId.substring(CONFIRM_SCREEN_BACK.length()));
             ConfirmBackData data = confirmBack.remove(backId);
             if (data == null) {
-                event.getHook().editOriginal(instance.discordSRVSlashCommandsGlobalMessagesTimeOut).setActionRows().setEmbeds().retainFiles(Collections.emptyList()).queue();
+                event.getHook().editOriginalEmbeds(getGenericEmbed(instance.discordSRVSlashCommandsGlobalMessagesTimeOut, Color.RED)).setActionRows().retainFiles(Collections.emptyList()).queue();
                 return;
             }
             data.repopulateData();
@@ -1297,7 +1297,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
             if (matcher.find()) {
                 event.getHook().editOriginalComponents(ActionRow.of(event.getMessage().getButtons().stream().map(b -> b.asDisabled()).collect(Collectors.toList()))).retainFiles(Collections.emptyList()).queue();
                 if (instance.backendBungeecordMode && Bukkit.getOnlinePlayers().isEmpty()) {
-                    event.getHook().editOriginal(instance.discordSRVSlashCommandsGlobalMessagesNoOneOnline).setActionRows().setEmbeds().retainFiles(Collections.emptyList()).queue();
+                    event.getHook().editOriginalEmbeds(getGenericEmbed(instance.discordSRVSlashCommandsGlobalMessagesTimeOut, Color.RED)).setActionRows().retainFiles(Collections.emptyList()).queue();
                     return;
                 }
                 UUID betNumbersId = UUID.fromString(matcher.group(1));
@@ -1313,44 +1313,52 @@ public class PlaceBetInteraction extends DiscordInteraction {
                 }
                 long price = betNumbers.stream().mapToLong(each -> LotteryUtils.calculatePrice(each, instance)).sum() * multipleDraw / unitType.getDivisor();
                 if (instance.backendBungeecordMode) {
-                    LotterySixPlugin.getPluginMessageHandler().requestAddBet(player.getName(), player.getUniqueId(), price / multipleDraw / betNumbers.size(), unitType, betNumbers, multipleDraw);
                     LotterySixPlugin.discordSRVHook.addBungeecordPendingBets(uuid, event.getHook());
+                    LotterySixPlugin.getPluginMessageHandler().requestAddBet(player.getName(), player.getUniqueId(), price / multipleDraw / betNumbers.size(), unitType, betNumbers, multipleDraw);
                 } else {
                     String message = "";
+                    Color color = Color.DARK_GRAY;
                     AddBetResult result = game.addBet(player.getName(), player.getUniqueId(), price / multipleDraw / betNumbers.size(), unitType, betNumbers, multipleDraw);
                     switch (result) {
                         case SUCCESS: {
                             message = instance.messageBetPlaced.replace("{Price}", StringUtils.formatComma(price));
+                            color = Color.GREEN;
                             break;
                         }
                         case GAME_LOCKED: {
                             message = instance.messageGameLocked.replace("{Price}", StringUtils.formatComma(price));
+                            color = Color.RED;
                             break;
                         }
                         case NOT_ENOUGH_MONEY: {
                             message = instance.messageNotEnoughMoney.replace("{Price}", StringUtils.formatComma(price));
+                            color = Color.RED;
                             break;
                         }
                         case LIMIT_SELF: {
                             message = instance.messageBetLimitReachedSelf.replace("{Price}", StringUtils.formatComma(price));
+                            color = Color.RED;
                             break;
                         }
                         case LIMIT_PERMISSION: {
                             message = instance.messageBetLimitReachedPermission.replace("{Price}", StringUtils.formatComma(price));
+                            color = Color.RED;
                             break;
                         }
                         case LIMIT_CHANCE_PER_SELECTION: {
                             message = instance.messageBetLimitMaximumChancePerSelection.replace("{Price}", StringUtils.formatComma(price));
+                            color = Color.RED;
                             break;
                         }
                         case ACCOUNT_SUSPENDED: {
                             long time = instance.getLotteryPlayerManager().getLotteryPlayer(player.getUniqueId()).getPreference(PlayerPreferenceKey.SUSPEND_ACCOUNT_UNTIL, long.class);
                             message = instance.messageBettingAccountSuspended.replace("{Date}", instance.dateFormat.format(new Date(time))).replace("{Price}", StringUtils.formatComma(price));
+                            color = Color.RED;
                             break;
                         }
                     }
-                    EmbedBuilder builder = new EmbedBuilder().setColor(Color.YELLOW).setAuthor(ChatColor.stripColor(message));
-                    event.getHook().editOriginalComponents().setActionRows(ActionRow.of(getMainMenuButton())).setEmbeds(builder.build()).retainFiles(Collections.emptyList()).queue();
+
+                    event.getHook().editOriginalEmbeds(getGenericEmbed(ChatColor.stripColor(message), color)).setActionRows(ActionRow.of(getMainMenuButton())).retainFiles(Collections.emptyList()).queue();
                 }
             }
         }

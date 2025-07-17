@@ -48,6 +48,8 @@ import com.velocitypowered.api.plugin.annotation.DataDirectory;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.proxy.ServerConnection;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.slf4j.Logger;
 
@@ -130,12 +132,10 @@ public class LotterySixVelocity {
         }, (uuid, message, hover, game) -> {
             getServer().getPlayer(uuid).ifPresent(value -> sendFormattedTitle(value, game, message, 10, 100, 20));
         }, (uuid, result, price, bets) -> {
-            Optional<Player> player = getServer().getPlayer(uuid);
-            if (player.isPresent()) {
-                pluginMessageVelocity.addBetResult(player.get(), result, price);
-                for (PlayerBets bet : bets) {
-                    callPlayerBetEvent(player.get(), bet.getChosenNumbers(), price, result);
-                }
+            getServer().getPlayer(uuid).ifPresent(value -> pluginMessageVelocity.addBetResult(value, result, price));
+            for (PlayerBets bet : bets) {
+                System.out.println(bet);
+                callPlayerBetEvent(uuid, bet.getChosenNumbers(), price, result);
             }
         }, playerBets -> {
             pluginMessageVelocity.updateCurrentGameData();
@@ -163,13 +163,13 @@ public class LotterySixVelocity {
             }
         }, 0, 10000);
 
-        getLogger().info(TextColor.GREEN + "[LotterySix] LotterySix (Velocity) has been enabled!");
+        proxyServer.getConsoleCommandSource().sendMessage(Component.text("[LotterySix] LotterySix (Velocity) has been enabled!").color(NamedTextColor.GREEN));
     }
 
     @Subscribe
     public void onProxyShutdown(ProxyShutdownEvent event) {
         instance.close();
-        getLogger().info(TextColor.RED + "[LotterySix] LotterySix (Velocity) has been disabled!");
+        proxyServer.getConsoleCommandSource().sendMessage(Component.text("[LotterySix] LotterySix (Velocity) has been disabled!").color(NamedTextColor.RED));
     }
 
     public File getDataFolder() {
@@ -203,9 +203,9 @@ public class LotterySixVelocity {
         pluginMessageVelocity.callLotterySixEvent(action);
     }
 
-    public static void callPlayerBetEvent(Player player, BetNumbers numbers, long price, AddBetResult result) {
+    public static void callPlayerBetEvent(UUID uuid, BetNumbers numbers, long price, AddBetResult result) {
         pluginMessageVelocity.updateCurrentGameData();
-        pluginMessageVelocity.callPlayerBetEvent(player, numbers, price, result);
+        pluginMessageVelocity.callPlayerBetEvent(uuid, numbers, price, result);
     }
 
     public static void sendFormattedTitle(Player player, ILotterySixGame game, String title, int fadeIn, int stay, int fadeOut) {
