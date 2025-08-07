@@ -134,7 +134,6 @@ public class LotterySixVelocity {
         }, (uuid, result, price, bets) -> {
             getServer().getPlayer(uuid).ifPresent(value -> pluginMessageVelocity.addBetResult(value, result, price));
             for (PlayerBets bet : bets) {
-                System.out.println(bet);
                 callPlayerBetEvent(uuid, bet.getChosenNumbers(), price, result);
             }
         }, playerBets -> {
