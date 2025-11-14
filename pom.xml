@@ -70,7 +70,7 @@
                             <relocations>
                                 <relocation>
                                     <pattern>com.loohp.platformscheduler</pattern>
-                                    <shadedPattern>com.loohp.interactivechat.libs.com.loohp.platformscheduler</shadedPattern>
+                                    <shadedPattern>com.loohp.lotterysix.libs.com.loohp.platformscheduler</shadedPattern>
                                 </relocation>
                                 <relocation>
                                     <pattern>de.themoep.inventorygui</pattern>
