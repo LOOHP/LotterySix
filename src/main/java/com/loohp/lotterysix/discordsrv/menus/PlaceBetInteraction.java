@@ -162,6 +162,23 @@ public class PlaceBetInteraction extends DiscordInteraction {
         return list;
     }
 
+    public List<ActionRow> extractNumberSelectionMenus(List<ActionRow> actionRows) {
+        List<ActionRow> list = new ArrayList<>(2);
+        for (ActionRow actionRow : actionRows) {
+            List<Component> components = actionRow.getComponents();
+            if (!components.isEmpty()) {
+                Component component = components.get(0);
+                if (component instanceof SelectionMenu) {
+                    String menuId = component.getId();
+                    if (menuId != null && menuId.endsWith("_" + (list.size() + 1))) {
+                        list.add(actionRow);
+                    }
+                }
+            }
+        }
+        return list;
+    }
+
     public List<SelectionMenu.Builder> createSizeSelectionMenu(String menuId, String optionsId, int min, int max, String optionFormat) {
         List<SelectionMenu.Builder> list = new ArrayList<>(2);
         int u = 1;
@@ -252,7 +269,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
             BetNumbersBuilder builder = chosenNumbers.computeIfAbsent(selectionId, k -> BetNumbersBuilder.single(1, instance.numberOfChoices).setValidateCompleteOnAdd(false));
             builder.addRandomNumber();
 
-            List<ActionRow> oldActionRows = new ArrayList<>(event.getMessage().getActionRows().subList(0, 2));
+            List<ActionRow> oldActionRows = extractNumberSelectionMenus(event.getMessage().getActionRows());
             List<ActionRow> actionRows = new ArrayList<>(oldActionRows.size());
             outer:
             for (ActionRow actionRow : oldActionRows) {
@@ -306,7 +323,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
             options.stream().map(s -> Integer.parseInt(s.getValue().substring(SINGLE_ENTRY_SELECTION_OPTION_LABEL.length()))).forEach(i -> builder.removeNumber(i));
             ((SelectionMenuEvent) event).getValues().stream().map(s -> Integer.parseInt(s.substring(SINGLE_ENTRY_SELECTION_OPTION_LABEL.length()))).forEach(i -> builder.addNumber(i));
 
-            List<ActionRow> oldActionRows = new ArrayList<>(event.getMessage().getActionRows().subList(0, 2));
+            List<ActionRow> oldActionRows = extractNumberSelectionMenus(event.getMessage().getActionRows());
             List<ActionRow> actionRows = new ArrayList<>(oldActionRows.size());
             outer:
             for (ActionRow actionRow : oldActionRows) {
@@ -392,7 +409,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
                 }
             }
 
-            List<ActionRow> oldActionRows = new ArrayList<>(event.getMessage().getActionRows().subList(0, 2));
+            List<ActionRow> oldActionRows = extractNumberSelectionMenus(event.getMessage().getActionRows());
             List<ActionRow> actionRows = new ArrayList<>(oldActionRows.size());
             outer:
             for (ActionRow actionRow : oldActionRows) {
@@ -457,7 +474,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
             BetNumbersBuilder builder = chosenNumbers.computeIfAbsent(selectionId, k -> BetNumbersBuilder.multiple(1, instance.numberOfChoices).setValidateCompleteOnAdd(false));
             builder.addRandomNumber();
 
-            List<ActionRow> oldActionRows = new ArrayList<>(event.getMessage().getActionRows().subList(0, 2));
+            List<ActionRow> oldActionRows = extractNumberSelectionMenus(event.getMessage().getActionRows());
             List<ActionRow> actionRows = new ArrayList<>(oldActionRows.size());
             outer:
             for (ActionRow actionRow : oldActionRows) {
@@ -524,7 +541,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
             options.stream().map(s -> Integer.parseInt(s.getValue().substring(MULTIPLE_ENTRY_SELECTION_OPTION_LABEL.length()))).forEach(i -> builder.removeNumber(i));
             ((SelectionMenuEvent) event).getValues().stream().map(s -> Integer.parseInt(s.substring(MULTIPLE_ENTRY_SELECTION_OPTION_LABEL.length()))).forEach(i -> builder.addNumber(i));
 
-            List<ActionRow> oldActionRows = new ArrayList<>(event.getMessage().getActionRows().subList(0, 2));
+            List<ActionRow> oldActionRows = extractNumberSelectionMenus(event.getMessage().getActionRows());
             List<ActionRow> actionRows = new ArrayList<>(oldActionRows.size());
             outer:
             for (ActionRow actionRow : oldActionRows) {
@@ -620,7 +637,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
                 }
             }
 
-            List<ActionRow> oldActionRows = new ArrayList<>(event.getMessage().getActionRows().subList(0, 2));
+            List<ActionRow> oldActionRows = extractNumberSelectionMenus(event.getMessage().getActionRows());
             List<ActionRow> actionRows = new ArrayList<>(oldActionRows.size());
             outer:
             for (ActionRow actionRow : oldActionRows) {
@@ -695,7 +712,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
             BetNumbersBuilder.BankerBuilder builder = (BetNumbersBuilder.BankerBuilder) chosenNumbers.computeIfAbsent(selectionId, k -> BetNumbersBuilder.banker(1, instance.numberOfChoices).setValidateCompleteOnAdd(false));
             builder.addRandomNumber();
             if (!builder.inSelectionPhase()) {
-                List<ActionRow> oldActionRows = new ArrayList<>(event.getMessage().getActionRows().subList(0, 2));
+                List<ActionRow> oldActionRows = extractNumberSelectionMenus(event.getMessage().getActionRows());
                 List<ActionRow> actionRows = new ArrayList<>(oldActionRows.size());
                 outer:
                 for (ActionRow actionRow : oldActionRows) {
@@ -749,7 +766,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
 
                 event.getHook().editOriginalComponents().setEmbeds(embed.build()).setActionRows(actionRows).retainFiles(Collections.emptyList()).queue();
             } else {
-                List<ActionRow> oldActionRows = new ArrayList<>(event.getMessage().getActionRows().subList(0, 2));
+                List<ActionRow> oldActionRows = extractNumberSelectionMenus(event.getMessage().getActionRows());
                 List<ActionRow> actionRows = new ArrayList<>(oldActionRows.size());
                 outer:
                 for (ActionRow actionRow : oldActionRows) {
@@ -828,7 +845,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
                 options.stream().map(s -> Integer.parseInt(s.getValue().substring(BANKER_ENTRY_SELECTION_OPTION_LABEL.length()))).forEach(i -> builder.removeNumber(i));
                 ((SelectionMenuEvent) event).getValues().stream().map(s -> Integer.parseInt(s.substring(BANKER_ENTRY_SELECTION_OPTION_LABEL.length()))).forEach(i -> builder.addNumber(i));
 
-                List<ActionRow> oldActionRows = new ArrayList<>(event.getMessage().getActionRows().subList(0, 2));
+                List<ActionRow> oldActionRows = extractNumberSelectionMenus(event.getMessage().getActionRows());
                 List<ActionRow> actionRows = new ArrayList<>(oldActionRows.size());
                 outer:
                 for (ActionRow actionRow : oldActionRows) {
@@ -886,7 +903,7 @@ public class PlaceBetInteraction extends DiscordInteraction {
                 options.stream().map(s -> Integer.parseInt(s.getValue().substring(BANKER_ENTRY_SELECTION_OPTION_LABEL.length()))).forEach(i -> builder.removeNumber(i));
                 ((SelectionMenuEvent) event).getValues().stream().map(s -> Integer.parseInt(s.substring(BANKER_ENTRY_SELECTION_OPTION_LABEL.length()))).forEach(i -> builder.addNumber(i));
 
-                List<ActionRow> oldActionRows = new ArrayList<>(event.getMessage().getActionRows().subList(0, 2));
+                List<ActionRow> oldActionRows = extractNumberSelectionMenus(event.getMessage().getActionRows());
                 List<ActionRow> actionRows = new ArrayList<>(oldActionRows.size());
                 outer:
                 for (ActionRow actionRow : oldActionRows) {
