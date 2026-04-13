@@ -195,7 +195,9 @@ public class LotteryPluginGUI implements Listener {
             meta.setCustomModelData(itemModelData);
         }
         itemStack.setItemMeta(meta);
-        if (LotterySixPlugin.version.isNewerOrEqualTo(MCVersion.V1_20_5)) {
+        if (LotterySixPlugin.version.isNewerOrEqualTo(MCVersion.V26_1)) {
+            itemStack = Bukkit.getUnsafe().modifyItemStack(itemStack, "[custom_data={LotterySixNumber:" + number + "}]");
+        } else if (LotterySixPlugin.version.isNewerOrEqualTo(MCVersion.V1_20_5)) {
             itemStack = Bukkit.getUnsafe().modifyItemStack(itemStack, itemStack.getType().getKey() + "[custom_data={LotterySixNumber:" + number + "}]");
         } else {
             itemStack = Bukkit.getUnsafe().modifyItemStack(itemStack, "{LotterySixNumber: " + number + "}");
@@ -216,7 +218,7 @@ public class LotteryPluginGUI implements Listener {
         if (item == null) {
             return null;
         }
-        item.addUnsafeEnchantment(XEnchantment.FORTUNE.getEnchant(), 8);
+        item.addUnsafeEnchantment(XEnchantment.FORTUNE.get(), 8);
         ItemMeta itemMeta = item.getItemMeta();
         itemMeta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
         item.setItemMeta(itemMeta);

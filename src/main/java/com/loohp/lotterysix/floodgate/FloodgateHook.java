@@ -40,8 +40,6 @@ import java.util.stream.Collectors;
 
 public class FloodgateHook {
 
-    private static final Material MATERIAL_WRITTEN_BOOK = XMaterial.WRITTEN_BOOK.parseMaterial();
-
     public static boolean isBedrockPlayer(UUID uuid) {
         if (!LotterySixPlugin.hasFloodgate) {
             return false;
@@ -56,7 +54,7 @@ public class FloodgateHook {
         if (book == null) {
             throw new IllegalArgumentException("Book cannot be null");
         }
-        if (!book.getType().equals(MATERIAL_WRITTEN_BOOK)) {
+        if (!book.getType().equals(XMaterial.WRITTEN_BOOK.get())) {
             throw new IllegalArgumentException("Book must be Material.WRITTEN_BOOK");
         }
         List<BaseComponent[]> pages = ((BookMeta) book.getItemMeta()).spigot().getPages();

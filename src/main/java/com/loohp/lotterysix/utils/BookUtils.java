@@ -35,7 +35,6 @@ import java.util.stream.Collectors;
 
 public class BookUtils {
 
-    private static final Material MATERIAL_WRITTEN_BOOK = XMaterial.WRITTEN_BOOK.parseMaterial();
     private static boolean bukkitHasOpenBook;
 
     static {
@@ -51,7 +50,7 @@ public class BookUtils {
         if (book == null) {
             throw new IllegalArgumentException("Book cannot be null");
         }
-        if (!book.getType().equals(MATERIAL_WRITTEN_BOOK)) {
+        if (!book.getType().equals(XMaterial.WRITTEN_BOOK.get())) {
             throw new IllegalArgumentException("Book must be Material.WRITTEN_BOOK");
         }
         if (LotterySixPlugin.hasFloodgate && FloodgateHook.isBedrockPlayer(player.getUniqueId())) {
@@ -69,7 +68,7 @@ public class BookUtils {
         if (book == null) {
             throw new IllegalArgumentException("Book cannot be null");
         }
-        if (!book.getType().equals(MATERIAL_WRITTEN_BOOK)) {
+        if (!book.getType().equals(XMaterial.WRITTEN_BOOK.get())) {
             throw new IllegalArgumentException("Book must be Material.WRITTEN_BOOK");
         }
         List<BaseComponent[]> pages = pagesComponent.stream().map(each -> new BaseComponent[] {each}).collect(Collectors.toList());
