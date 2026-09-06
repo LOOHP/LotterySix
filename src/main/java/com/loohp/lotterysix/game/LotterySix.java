@@ -349,6 +349,8 @@ public class LotterySix implements AutoCloseable {
 
     public boolean placeholderAPIHideResultsWhileGameIsLocked;
 
+    public boolean uncancelTopInventoryClickEvents;
+
     public boolean allowLoans;
     public Map<String, Long> playerBetLimit;
     public UUID lotteriesFundAccount;
@@ -891,6 +893,7 @@ public class LotterySix implements AutoCloseable {
         }
 
         updaterEnabled = config.getConfiguration().getBoolean("Options.Updater");
+        uncancelTopInventoryClickEvents = config.getConfiguration().getBoolean("Compatibility.UncancelTopInventoryClickEvents");
 
         betsAcceptDuration = config.getConfiguration().getLong("LotterySix.BetsAcceptDuration") * 1000;
         if (runInterval == null) {

@@ -323,6 +323,16 @@ public class LotteryPluginGUI implements Listener {
         }
     }
 
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onInventoryClickHigh(InventoryClickEvent event) {
+        Inventory inventory = event.getView().getTopInventory();
+        if (instance.uncancelTopInventoryClickEvents
+                && inventory.getHolder() instanceof InventoryGui.Holder
+                && event.getRawSlot() >= 0 && event.getRawSlot() < inventory.getSize()) {
+            event.setCancelled(false);
+        }
+    }
+
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onInventoryClick(InventoryClickEvent event) {
         Inventory inventory = event.getView().getTopInventory();

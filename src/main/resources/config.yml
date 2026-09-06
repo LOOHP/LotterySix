@@ -778,5 +778,9 @@ AdvancedGUICustomization:
 PlaceholderAPI:
   HideResultsWhileGameIsLocked: true
 
+Compatibility:
+  #Allow LotterySix GUI buttons to work when another plugin cancels all inventory clicks
+  UncancelTopInventoryClickEvents: false
+
 Options:
   Updater: true
